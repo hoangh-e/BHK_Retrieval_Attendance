@@ -53,3 +53,5 @@ CodeCoverage/
 TestResult.xml
 nunit-*.xml
 /BHK_Retrieval_Attendance.App/.vs
+/BHK_Retrieval_Attendance.App/packages
+/.vs
