@@ -1,28 +1,47 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
+using Riss.Devices;
 
 namespace BHK_Retrieval_Attendance.App
 {
-    /// <summary>
-    /// Interaction logic for MainWindow.xaml
-    /// </summary>
     public partial class MainWindow : Window
     {
         public MainWindow()
         {
             InitializeComponent();
+
+            // Test SDK
+            try
+            {
+
+                Device device = new Device
+                {
+                    DN = 1,
+                    IpAddress = "192.168.10.249",
+                    IpPort = 5500,
+                    Password = "0",
+                    Model = "ZDC2911",
+                    ConnectionModel = 5,
+                    CommunicationType = CommunicationType.Tcp, 
+                    Baudrate = 9600                           
+                };
+                DeviceConnection conn = DeviceConnection.CreateConnection(ref device);
+                int result = conn.Open();
+
+                if (result > 0)
+                {
+                    MessageBox.Show("✅ Kết nối thành công với thiết bị!");
+                    conn.Close();
+                }
+                else
+                {
+                    MessageBox.Show("❌ Không kết nối được với thiết bị.");
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Lỗi khi load package: {ex.Message}");
+            }
         }
     }
 }
