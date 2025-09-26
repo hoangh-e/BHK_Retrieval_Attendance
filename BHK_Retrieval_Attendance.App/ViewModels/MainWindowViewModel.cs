@@ -3,266 +3,130 @@ using System.ComponentModel;
 using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Input;
-using System.Threading.Tasks;
-using Microsoft.Extensions.DependencyInjection;
-using BHK.Retrieval.Attendance.WPF.Services;
+using BHK.Retrieval.Attendance.WPF.ViewModels.Base;
 using BHK.Retrieval.Attendance.WPF.Views.Pages;
-using BHK.Retrieval.Attendance.WPF.Models;
-using System.Windows.Threading;
 
 namespace BHK.Retrieval.Attendance.WPF.ViewModels
 {
-    public class MainWindowViewModel : INotifyPropertyChanged
+    public class MainWindowViewModel : BaseViewModel
     {
-        private readonly INavigationService _navigationService;
-        private readonly IDeviceService _deviceService;
-        private readonly IServiceProvider _serviceProvider;
-        private readonly DispatcherTimer _timer;
+        private object _currentContent;
+        private bool _isLoginVisible = true;
+        private LoginViewModel _loginViewModel;
 
-        public MainWindowViewModel(INavigationService navigationService, 
-                                  IDeviceService deviceService,
-                                  IServiceProvider serviceProvider)
+        public MainWindowViewModel()
         {
-            _navigationService = navigationService;
-            _deviceService = deviceService;
-            _serviceProvider = serviceProvider;
-
-            // Initialize commands
-            ToggleMenuCommand = new RelayCommand(ToggleMenu);
-            NavigateToDeviceConnectionCommand = new RelayCommand(NavigateToDeviceConnection);
-            NavigateToLoginCommand = new RelayCommand(NavigateToLogin);
-            NavigateToEmployeeSelectionCommand = new RelayCommand(NavigateToEmployeeSelection, CanNavigateToEmployeeSelection);
-            ExitApplicationCommand = new RelayCommand(ExitApplication);
-
-            // Initialize timer for current time
-            _timer = new DispatcherTimer();
-            _timer.Interval = TimeSpan.FromSeconds(1);
-            _timer.Tick += Timer_Tick;
-            _timer.Start();
-
-            // Subscribe to device connection events
-            _deviceService.ConnectionStatusChanged += OnDeviceConnectionStatusChanged;
-
-            // Initialize with welcome view
-            StatusMessage = "Chào mừng đến với hệ thống chấm công BHK";
-            IsMenuVisible = true;
-            CurrentTime = DateTime.Now;
-            UpdateDeviceConnectionStatus();
+            InitializeCommands();
+            InitializeViewModels();
+            NavigateToLogin();
         }
 
         #region Properties
 
-        private object? _currentView;
-        public object? CurrentView
+        public object CurrentContent
         {
-            get => _currentView;
-            set
-            {
-                _currentView = value;
-                OnPropertyChanged();
-            }
+            get => _currentContent;
+            set => SetProperty(ref _currentContent, value);
         }
 
-        private bool _isMenuVisible = true;
-        public bool IsMenuVisible
+        public bool IsLoginVisible
         {
-            get => _isMenuVisible;
-            set
-            {
-                _isMenuVisible = value;
-                OnPropertyChanged();
-            }
+            get => _isLoginVisible;
+            set => SetProperty(ref _isLoginVisible, value);
         }
 
-        private string _statusMessage = string.Empty;
-        public string StatusMessage
+        public LoginViewModel LoginViewModel
         {
-            get => _statusMessage;
-            set
-            {
-                _statusMessage = value;
-                OnPropertyChanged();
-            }
+            get => _loginViewModel;
+            set => SetProperty(ref _loginViewModel, value);
         }
-
-        private string _currentUser = "Chưa đăng nhập";
-        public string CurrentUser
-        {
-            get => _currentUser;
-            set
-            {
-                _currentUser = value;
-                OnPropertyChanged();
-                OnPropertyChanged(nameof(IsLoggedIn));
-                ((RelayCommand)NavigateToEmployeeSelectionCommand).RaiseCanExecuteChanged();
-            }
-        }
-
-        private DateTime _currentTime;
-        public DateTime CurrentTime
-        {
-            get => _currentTime;
-            set
-            {
-                _currentTime = value;
-                OnPropertyChanged();
-            }
-        }
-
-        private ConnectionStatus _deviceConnectionStatus = ConnectionStatus.Disconnected;
-        public ConnectionStatus DeviceConnectionStatus
-        {
-            get => _deviceConnectionStatus;
-            set
-            {
-                _deviceConnectionStatus = value;
-                OnPropertyChanged();
-                OnPropertyChanged(nameof(DeviceConnectionText));
-            }
-        }
-
-        public string DeviceConnectionText
-        {
-            get
-            {
-                return DeviceConnectionStatus switch
-                {
-                    ConnectionStatus.Connected => "Đã kết nối",
-                    ConnectionStatus.Connecting => "Đang kết nối...",
-                    ConnectionStatus.Disconnected => "Chưa kết nối",
-                    ConnectionStatus.Error => "Lỗi kết nối",
-                    _ => "Không xác định"
-                };
-            }
-        }
-
-        public bool IsLoggedIn => CurrentUser != "Chưa đăng nhập";
 
         #endregion
 
         #region Commands
 
-        public ICommand ToggleMenuCommand { get; }
-        public ICommand NavigateToDeviceConnectionCommand { get; }
-        public ICommand NavigateToLoginCommand { get; }
-        public ICommand NavigateToEmployeeSelectionCommand { get; }
-        public ICommand ExitApplicationCommand { get; }
+        public ICommand NavigateToAttendanceCommand { get; private set; }
+        public ICommand NavigateToEmployeeCommand { get; private set; }
+        public ICommand NavigateToReportCommand { get; private set; }
+        public ICommand NavigateToSettingsCommand { get; private set; }
+        public ICommand LogoutCommand { get; private set; }
 
         #endregion
 
-        #region Command Implementations
+        #region Initialization
 
-        private void ToggleMenu()
+        private void InitializeCommands()
         {
-            IsMenuVisible = !IsMenuVisible;
+            NavigateToAttendanceCommand = new RelayCommand(NavigateToAttendance);
+            NavigateToEmployeeCommand = new RelayCommand(NavigateToEmployee);
+            NavigateToReportCommand = new RelayCommand(NavigateToReport);
+            NavigateToSettingsCommand = new RelayCommand(NavigateToSettings);
+            LogoutCommand = new RelayCommand(Logout);
         }
 
-        private void NavigateToDeviceConnection()
+        private void InitializeViewModels()
         {
-            var view = _serviceProvider.GetRequiredService<DeviceConnectionView>();
-            CurrentView = view;
-            StatusMessage = "Quản lý kết nối thiết bị";
-        }
-
-        private void NavigateToLogin()
-        {
-            var view = _serviceProvider.GetRequiredService<LoginView>();
-            var viewModel = _serviceProvider.GetRequiredService<LoginViewModel>();
-            viewModel.LoginSuccessful += OnLoginSuccessful;
-            view.DataContext = viewModel;
-            CurrentView = view;
-            StatusMessage = "Đăng nhập vào hệ thống";
-        }
-
-        private bool CanNavigateToEmployeeSelection()
-        {
-            return IsLoggedIn;
-        }
-
-        private void NavigateToEmployeeSelection()
-        {
-            var view = _serviceProvider.GetRequiredService<EmployeeSelectionView>();
-            CurrentView = view;
-            StatusMessage = "Chọn nhân viên để xem thông tin";
-        }
-
-        private void ExitApplication()
-        {
-            Application.Current.Shutdown();
+            LoginViewModel = new LoginViewModel();
+            LoginViewModel.LoginSuccessful += OnLoginSuccessful;
         }
 
         #endregion
 
         #region Event Handlers
 
-        private void Timer_Tick(object? sender, EventArgs e)
+        private void OnLoginSuccessful(object sender, EventArgs e)
         {
-            CurrentTime = DateTime.Now;
-        }
-
-        private void OnDeviceConnectionStatusChanged(object? sender, ConnectionStatusChangedEventArgs e)
-        {
-            Application.Current.Dispatcher.Invoke(() =>
-            {
-                DeviceConnectionStatus = e.Status;
-                StatusMessage = e.Message;
-            });
-        }
-
-        private void OnLoginSuccessful(object? sender, LoginSuccessfulEventArgs e)
-        {
-            CurrentUser = e.UserName;
-            StatusMessage = $"Đăng nhập thành công. Chào mừng {e.UserName}!";
-        }
-
-        private void UpdateDeviceConnectionStatus()
-        {
-            DeviceConnectionStatus = _deviceService.IsConnected 
-                ? ConnectionStatus.Connected 
-                : ConnectionStatus.Disconnected;
+            IsLoginVisible = false;
+            NavigateToDashboard();
         }
 
         #endregion
 
-        #region INotifyPropertyChanged
+        #region Navigation Methods
 
-        public event PropertyChangedEventHandler? PropertyChanged;
-
-        protected virtual void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+        private void NavigateToLogin()
         {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+            CurrentContent = new LoginView { DataContext = LoginViewModel };
+            IsLoginVisible = true;
+        }
+
+        private void NavigateToDashboard()
+        {
+            CurrentContent = new DashboardView { DataContext = new DashboardViewModel() };
+        }
+
+        private void NavigateToAttendance(object parameter = null)
+        {
+            CurrentContent = new AttendanceListView { DataContext = new AttendanceListViewModel() };
+        }
+
+        private void NavigateToEmployee(object parameter = null)
+        {
+            CurrentContent = new EmployeeListView { DataContext = new EmployeeListViewModel() };
+        }
+
+        private void NavigateToReport(object parameter = null)
+        {
+            CurrentContent = new ReportGeneratorView { DataContext = new ReportGeneratorViewModel() };
+        }
+
+        private void NavigateToSettings(object parameter = null)
+        {
+            CurrentContent = new SettingsView { DataContext = new SettingsViewModel() };
+        }
+
+        private void Logout(object parameter = null)
+        {
+            // Clear user session
+            CurrentUser = null;
+            
+            // Navigate back to login
+            NavigateToLogin();
         }
 
         #endregion
     }
 
-    // Simple RelayCommand implementation
-    public class RelayCommand : ICommand
-    {
-        private readonly Action _execute;
-        private readonly Func<bool>? _canExecute;
-
-        public RelayCommand(Action execute, Func<bool>? canExecute = null)
-        {
-            _execute = execute ?? throw new ArgumentNullException(nameof(execute));
-            _canExecute = canExecute;
-        }
-
-        public event EventHandler? CanExecuteChanged;
-
-        public bool CanExecute(object? parameter)
-        {
-            return _canExecute?.Invoke() ?? true;
-        }
-
-        public void Execute(object? parameter)
-        {
-            _execute();
-        }
-
-        public void RaiseCanExecuteChanged()
-        {
-            CanExecuteChanged?.Invoke(this, EventArgs.Empty);
-        }
-    }
+    // Event handler delegate
+    public delegate void LoginSuccessfulEventHandler(object sender, EventArgs e);
 }

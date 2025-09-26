@@ -1,143 +1,54 @@
 using System;
-using System.ComponentModel;
-using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using System.Windows.Input;
-using BHK.Retrieval.Attendance.WPF.Models;
-using BHK.Retrieval.Attendance.WPF.Services;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
+using BHK.Retrieval.Attendance.WPF.ViewModels.Base;
 
 namespace BHK.Retrieval.Attendance.WPF.ViewModels
 {
-    public class LoginViewModel : INotifyPropertyChanged
+    public class LoginViewModel : BaseViewModel
     {
-        private readonly IUserService _userService;
-        private readonly IDeviceService _deviceService;
-        private readonly INavigationService _navigationService;
-        private readonly IDialogService _dialogService;
-        private readonly IConfiguration _configuration;
-        private readonly ILogger<LoginViewModel> _logger;
+        private string _username;
+        private string _password;
+        private bool _isLoading;
+        private string _errorMessage;
 
-        public LoginViewModel(IUserService userService,
-                            IDeviceService deviceService,
-                            INavigationService navigationService,
-                            IDialogService dialogService,
-                            IConfiguration configuration,
-                            ILogger<LoginViewModel> logger)
+        public LoginViewModel()
         {
-            _userService = userService;
-            _deviceService = deviceService;
-            _navigationService = navigationService;
-            _dialogService = dialogService;
-            _configuration = configuration;
-            _logger = logger;
-
-            // Initialize commands
-            LoginCommand = new AsyncRelayCommand(LoginAsync, CanLogin);
-
-            // Load saved settings
-            LoadSavedSettings();
-
-            // Start monitoring device connection
-            StartDeviceConnectionMonitoring();
+            LoginCommand = new RelayCommand(async () => await LoginAsync(), CanLogin);
         }
 
         #region Properties
 
-        private string _username = "";
         public string Username
         {
             get => _username;
-            set
-            {
-                _username = value;
-                OnPropertyChanged();
-                OnPropertyChanged(nameof(CanLogin));
-                ((AsyncRelayCommand)LoginCommand).RaiseCanExecuteChanged();
+            set 
+            { 
+                SetProperty(ref _username, value);
+                ((RelayCommand)LoginCommand).RaiseCanExecuteChanged();
             }
         }
 
-        private string _password = "";
         public string Password
         {
             get => _password;
-            set
-            {
-                _password = value;
-                OnPropertyChanged();
-                OnPropertyChanged(nameof(CanLogin));
-                ((AsyncRelayCommand)LoginCommand).RaiseCanExecuteChanged();
+            set 
+            { 
+                SetProperty(ref _password, value);
+                ((RelayCommand)LoginCommand).RaiseCanExecuteChanged();
             }
         }
 
-        private bool _rememberMe = false;
-        public bool RememberMe
-        {
-            get => _rememberMe;
-            set
-            {
-                _rememberMe = value;
-                OnPropertyChanged();
-            }
-        }
-
-        private bool _isLoading = false;
         public bool IsLoading
         {
             get => _isLoading;
-            set
-            {
-                _isLoading = value;
-                OnPropertyChanged();
-                OnPropertyChanged(nameof(CanLogin));
-                ((AsyncRelayCommand)LoginCommand).RaiseCanExecuteChanged();
-            }
+            set => SetProperty(ref _isLoading, value);
         }
 
-        private string _errorMessage = "";
         public string ErrorMessage
         {
             get => _errorMessage;
-            set
-            {
-                _errorMessage = value;
-                OnPropertyChanged();
-                OnPropertyChanged(nameof(HasError));
-            }
-        }
-
-        public bool HasError => !string.IsNullOrEmpty(ErrorMessage);
-
-        public bool CanLogin => !IsLoading && 
-                               !string.IsNullOrWhiteSpace(Username) && 
-                               !string.IsNullOrWhiteSpace(Password);
-
-        private DeviceConnectionStatus _deviceConnectionStatus = DeviceConnectionStatus.Disconnected;
-        public DeviceConnectionStatus DeviceConnectionStatus
-        {
-            get => _deviceConnectionStatus;
-            set
-            {
-                _deviceConnectionStatus = value;
-                OnPropertyChanged();
-                OnPropertyChanged(nameof(DeviceConnectionText));
-            }
-        }
-
-        public string DeviceConnectionText
-        {
-            get
-            {
-                return DeviceConnectionStatus switch
-                {
-                    DeviceConnectionStatus.Connected => "Thiết bị đã kết nối",
-                    DeviceConnectionStatus.Connecting => "Đang kết nối thiết bị...",
-                    DeviceConnectionStatus.Disconnected => "Thiết bị chưa kết nối",
-                    DeviceConnectionStatus.Error => "Lỗi kết nối thiết bị",
-                    _ => "Không xác định"
-                };
-            }
+            set => SetProperty(ref _errorMessage, value);
         }
 
         #endregion
@@ -148,145 +59,55 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
 
         #endregion
 
-        #region Command Implementations
+        #region Events
+
+        public event LoginSuccessfulEventHandler LoginSuccessful;
+
+        protected virtual void OnLoginSuccessful()
+        {
+            LoginSuccessful?.Invoke(this, EventArgs.Empty);
+        }
+
+        #endregion
+
+        #region Methods
+
+        private bool CanLogin()
+        {
+            return !string.IsNullOrWhiteSpace(Username) && 
+                   !string.IsNullOrWhiteSpace(Password) && 
+                   !IsLoading;
+        }
 
         private async Task LoginAsync()
         {
             try
             {
                 IsLoading = true;
-                ErrorMessage = "";
-                
-                _logger.LogInformation($"Attempting login for user: {Username}");
+                ErrorMessage = string.Empty;
 
-                // Validate credentials
-                var loginResult = await _userService.ValidateUserAsync(Username, Password);
-                
-                if (loginResult.IsSuccess && loginResult.Data != null)
+                // Simulate login process
+                await Task.Delay(1000);
+
+                // TODO: Implement actual authentication logic
+                if (Username == "admin" && Password == "123456")
                 {
-                    var user = loginResult.Data;
-                    _logger.LogInformation($"Login successful for user: {user.Username}");
-
-                    // Save credentials if remember me is checked
-                    if (RememberMe)
-                    {
-                        SaveUserCredentials();
-                    }
-                    else
-                    {
-                        ClearSavedCredentials();
-                    }
-
-                    // Set current user in user service
-                    await _userService.SetCurrentUserAsync(user);
-
-                    // Navigate to main application
-                    _navigationService.NavigateToMainWindow();
+                    // Login successful
+                    OnLoginSuccessful();
                 }
                 else
                 {
-                    ErrorMessage = loginResult.ErrorMessage ?? "Thông tin đăng nhập không chính xác.";
-                    _logger.LogWarning($"Login failed for user {Username}: {ErrorMessage}");
+                    ErrorMessage = "Tên đăng nhập hoặc mật khẩu không đúng";
                 }
             }
             catch (Exception ex)
             {
-                ErrorMessage = "Có lỗi xảy ra trong quá trình đăng nhập.";
-                _logger.LogError(ex, $"Login error for user: {Username}");
+                ErrorMessage = $"Lỗi đăng nhập: {ex.Message}";
             }
             finally
             {
                 IsLoading = false;
             }
-        }
-
-        #endregion
-
-        #region Private Methods
-
-        private void LoadSavedSettings()
-        {
-            try
-            {
-                var savedUsername = _configuration["Login:SavedUsername"];
-                var rememberMeSetting = _configuration["Login:RememberMe"];
-
-                if (!string.IsNullOrEmpty(savedUsername))
-                {
-                    Username = savedUsername;
-                    RememberMe = bool.TryParse(rememberMeSetting, out var remember) && remember;
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error loading saved login settings");
-            }
-        }
-
-        private void SaveUserCredentials()
-        {
-            try
-            {
-                // In a production app, you'd want to encrypt the password or use secure storage
-                // For this demo, we'll just save the username
-                _configuration["Login:SavedUsername"] = Username;
-                _configuration["Login:RememberMe"] = RememberMe.ToString();
-                
-                _logger.LogInformation("User credentials saved");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error saving user credentials");
-            }
-        }
-
-        private void ClearSavedCredentials()
-        {
-            try
-            {
-                _configuration["Login:SavedUsername"] = "";
-                _configuration["Login:RememberMe"] = "false";
-                
-                _logger.LogInformation("Saved credentials cleared");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error clearing saved credentials");
-            }
-        }
-
-        private async void StartDeviceConnectionMonitoring()
-        {
-            try
-            {
-                // Start monitoring device connection status
-                while (true)
-                {
-                    var connectionStatus = await _deviceService.CheckConnectionAsync();
-                    DeviceConnectionStatus = connectionStatus.IsSuccess ? 
-                        DeviceConnectionStatus.Connected : 
-                        DeviceConnectionStatus.Disconnected;
-
-                    // Wait 5 seconds before next check
-                    await Task.Delay(5000);
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error in device connection monitoring");
-                DeviceConnectionStatus = DeviceConnectionStatus.Error;
-            }
-        }
-
-        #endregion
-
-        #region INotifyPropertyChanged
-
-        public event PropertyChangedEventHandler? PropertyChanged;
-
-        protected virtual void OnPropertyChanged([CallerMemberName] string? propertyName = null)
-        {
-            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
 
         #endregion

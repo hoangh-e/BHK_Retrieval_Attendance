@@ -3,7 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
              xmlns:converters="clr-namespace:BHK.Retrieval.Attendance.WPF.Converters"
-             StartupUri="MainWindow.xaml">
+             StartupUri="Views/Windows/MainWindow.xaml">
 
     <Application.Resources>
         <ResourceDictionary>
@@ -17,6 +17,13 @@
             </ResourceDictionary.MergedDictionaries>
 
             <!-- Converters -->
+            <converters:AccessControlConverter x:Key="AccessControlConverter" />
+            <converters:AttendanceActionConverter x:Key="AttendanceActionConverter" />
+            <converters:BooleanToColorConverter x:Key="BooleanToColorConverter" />
+            <converters:BooleanToStatusConverter x:Key="BooleanToStatusConverter" />
+            <converters:GenderConverter x:Key="GenderConverter" />
+            <converters:PrivilegeConverter x:Key="PrivilegeConverter" />
+            <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
             <converters:BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
             <converters:InverseBooleanConverter x:Key="InverseBooleanConverter"/>
             <converters:InverseBooleanToVisibilityConverter x:Key="InverseBooleanToVisibilityConverter"/>
