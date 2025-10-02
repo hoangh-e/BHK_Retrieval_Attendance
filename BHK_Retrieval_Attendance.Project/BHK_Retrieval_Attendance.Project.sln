@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.36408.4 d17.14
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BHK_Retrieval_Attendance.Project", "BHK_Retrieval_Attendance.Project.csproj", "{4D48F2FC-526B-4136-80E0-2329FF1719EC}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{4D48F2FC-526B-4136-80E0-2329FF1719EC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4D48F2FC-526B-4136-80E0-2329FF1719EC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4D48F2FC-526B-4136-80E0-2329FF1719EC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4D48F2FC-526B-4136-80E0-2329FF1719EC}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {60A36D7F-57AA-4675-9E8A-8CE2A0615AB5}
+	EndGlobalSection
+EndGlobal
