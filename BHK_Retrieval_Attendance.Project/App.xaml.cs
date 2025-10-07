@@ -7,7 +7,8 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Serilog;
 using BHK.Retrieval.Attendance.WPF.Configuration.DI;
-using BHK.Retrieval.Attendance.WPF.Views.Windows;
+// TODO: Uncomment sau khi tạo MainWindow
+// using BHK.Retrieval.Attendance.WPF.Views.Windows;
 
 namespace BHK_Retrieval_Attendance.Project
 {
@@ -40,14 +41,25 @@ namespace BHK_Retrieval_Attendance.Project
                 // Start the host
                 await _host.StartAsync();
 
-                // Show Main Window
-                var mainWindow = ServiceProvider.GetRequiredService<MainWindow>();
-                mainWindow.Show();
+                // TODO: Uncomment sau khi tạo MainWindow
+                // var mainWindow = ServiceProvider.GetRequiredService<MainWindow>();
+                // mainWindow.Show();
+
+                // Tạm thời show message để test app startup
+                MessageBox.Show("Application Started Successfully!\n\nNuGet packages đã được cài đặt.\nTiếp theo: Tạo cấu trúc project và MainWindow.", 
+                    "✅ Build Thành Công", 
+                    MessageBoxButton.OK, 
+                    MessageBoxImage.Information);
+                
+                Log.Information("Application started successfully");
+                
+                // Shutdown sau khi show message (vì chưa có MainWindow)
+                Current.Shutdown();
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Application startup failed: {ex.Message}", 
-                    "Startup Error", 
+                MessageBox.Show($"Application startup failed: {ex.Message}\n\nStack Trace:\n{ex.StackTrace}", 
+                    "❌ Startup Error", 
                     MessageBoxButton.OK, 
                     MessageBoxImage.Error);
                 Log.Fatal(ex, "Application startup failed");

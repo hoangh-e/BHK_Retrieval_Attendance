@@ -4,7 +4,8 @@ using Microsoft.EntityFrameworkCore;
 using AutoMapper;
 using FluentValidation;
 using BHK.Retrieval.Attendance.Shared.Options;
-using BHK.Retrieval.Attendance.Infrastructure.Data.Context;
+// TODO: Uncomment sau khi tạo Infrastructure layer
+// using BHK.Retrieval.Attendance.Infrastructure.Data.Context;
 
 namespace BHK.Retrieval.Attendance.WPF.Configuration.DI
 {
@@ -15,8 +16,9 @@ namespace BHK.Retrieval.Attendance.WPF.Configuration.DI
             // Register Configuration Options
             RegisterOptions(services, configuration);
 
+            // TODO: Uncomment sau khi tạo Infrastructure layer
             // Register Infrastructure Services
-            RegisterInfrastructureServices(services, configuration);
+            // RegisterInfrastructureServices(services, configuration);
 
             // Register Core Services
             RegisterCoreServices(services);
@@ -46,6 +48,8 @@ namespace BHK.Retrieval.Attendance.WPF.Configuration.DI
             services.Configure<ApplicationOptions>(configuration.GetSection("ApplicationSettings"));
         }
 
+        // TODO: Uncomment sau khi tạo Infrastructure layer
+        /*
         private static void RegisterInfrastructureServices(IServiceCollection services, IConfiguration configuration)
         {
             // Database Context
@@ -60,10 +64,11 @@ namespace BHK.Retrieval.Attendance.WPF.Configuration.DI
             // services.AddScoped<IAttendanceRepository, AttendanceRepository>();
             // services.AddScoped<IDeviceRepository, DeviceRepository>();
         }
+        */
 
         private static void RegisterCoreServices(IServiceCollection services)
         {
-            // Register Core Use Cases (sẽ implement sau)
+            // TODO: Register Core Use Cases (sẽ implement sau)
             // services.AddScoped<IEmployeeService, EmployeeService>();
             // services.AddScoped<IAttendanceService, AttendanceService>();
             // services.AddScoped<IDeviceService, DeviceService>();
@@ -71,11 +76,11 @@ namespace BHK.Retrieval.Attendance.WPF.Configuration.DI
 
         private static void RegisterWpfServices(IServiceCollection services)
         {
-            // Register WPF-specific services
-            services.AddSingleton<IDialogService, DialogService>();
-            services.AddSingleton<INavigationService, NavigationService>();
-            services.AddSingleton<INotificationService, NotificationService>();
-            services.AddSingleton<IThemeService, ThemeService>();
+            // TODO: Register WPF-specific services (sẽ implement sau)
+            // services.AddSingleton<IDialogService, DialogService>();
+            // services.AddSingleton<INavigationService, NavigationService>();
+            // services.AddSingleton<INotificationService, NotificationService>();
+            // services.AddSingleton<IThemeService, ThemeService>();
         }
 
         private static void RegisterAutoMapper(IServiceCollection services)
@@ -85,7 +90,8 @@ namespace BHK.Retrieval.Attendance.WPF.Configuration.DI
 
         private static void RegisterValidation(IServiceCollection services)
         {
-            services.AddValidatorsFromAssembly(typeof(Bootstrapper).Assembly);
+            // TODO: Uncomment sau khi tạo Validators
+            // services.AddValidatorsFromAssembly(typeof(Bootstrapper).Assembly);
         }
     }
 }

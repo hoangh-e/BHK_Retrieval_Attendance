@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
-using BHK.Retrieval.Attendance.WPF.ViewModels;
+// TODO: Uncomment sau khi tạo ViewModels
+// using BHK.Retrieval.Attendance.WPF.ViewModels;
 
 namespace BHK.Retrieval.Attendance.WPF.Configuration.DI
 {
@@ -7,6 +8,8 @@ namespace BHK.Retrieval.Attendance.WPF.Configuration.DI
     {
         public static void RegisterViewModels(IServiceCollection services)
         {
+            // TODO: Uncomment sau khi tạo ViewModels
+            /*
             // Register ViewModels as Transient (tạo mới mỗi lần request)
             services.AddTransient<MainWindowViewModel>();
             services.AddTransient<DashboardViewModel>();
@@ -18,6 +21,7 @@ namespace BHK.Retrieval.Attendance.WPF.Configuration.DI
             services.AddTransient<DeviceConnectionViewModel>();
             services.AddTransient<ReportGeneratorViewModel>();
             services.AddTransient<SettingsViewModel>();
+            */
         }
     }
 }

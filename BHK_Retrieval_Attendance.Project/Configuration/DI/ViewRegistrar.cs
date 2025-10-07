@@ -1,6 +1,7 @@
 using Microsoft.Extensions.DependencyInjection;
-using BHK.Retrieval.Attendance.WPF.Views.Windows;
-using BHK.Retrieval.Attendance.WPF.Views.Pages;
+// TODO: Uncomment sau khi tạo các Views
+// using BHK.Retrieval.Attendance.WPF.Views.Windows;
+// using BHK.Retrieval.Attendance.WPF.Views.Pages;
 
 namespace BHK.Retrieval.Attendance.WPF.Configuration.DI
 {
@@ -8,6 +9,8 @@ namespace BHK.Retrieval.Attendance.WPF.Configuration.DI
     {
         public static void RegisterViews(IServiceCollection services)
         {
+            // TODO: Uncomment sau khi tạo MainWindow và các Views
+            /*
             // Register Windows
             services.AddSingleton<MainWindow>();
             services.AddTransient<SettingsWindow>();
@@ -21,6 +24,7 @@ namespace BHK.Retrieval.Attendance.WPF.Configuration.DI
             services.AddTransient<DeviceListView>();
             services.AddTransient<DeviceConnectionView>();
             services.AddTransient<ReportGeneratorView>();
+            */
         }
     }
 }
