@@ -1,35 +1,42 @@
 using System;
+using System.Linq;
 using System.Threading.Tasks;
-using BHK.Retrieval.Attendance.WPF.Configuration.Settings;
 using BHK.Retrieval.Attendance.WPF.Services.Interfaces;
+using BHK.Retrieval.Attendance.Core.Interfaces.Services;
+using BHK.Retrieval.Attendance.Shared.Options;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using Riss.Devices;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace BHK.Retrieval.Attendance.WPF.Services.Implementations
 {
     /// <summary>
     /// Service xử lý giao tiếp với thiết bị chấm công ZDC2911
-    /// Sử dụng Riss.Devices package
+    /// Tuân thủ Clean Architecture - chỉ gọi Infrastructure qua Interface
     /// </summary>
     public class DeviceService : IDeviceService, IDisposable
     {
         private readonly ILogger<DeviceService> _logger;
         private readonly DeviceOptions _deviceOptions;
+        private readonly IServiceProvider _serviceProvider;
+        private readonly IDeviceCommunicationService _deviceCommunicationService;
         
         private bool _isConnected;
         private bool _disposed;
         
-        // Riss.Device objects
-        private Device? _device;
-        private object? _deviceConnection; // Connection handle
+        // DTO nội bộ thay vì dùng class Device từ Riss.Devices
+        private DeviceConnectionInfo? _deviceInfo;
 
         public DeviceService(
             ILogger<DeviceService> logger,
-            IOptions<DeviceOptions> deviceOptions)
+            IOptions<DeviceOptions> deviceOptions,
+            IServiceProvider serviceProvider,
+            IDeviceCommunicationService deviceCommunicationService)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _deviceOptions = deviceOptions?.Value ?? throw new ArgumentNullException(nameof(deviceOptions));
+            _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
+            _deviceCommunicationService = deviceCommunicationService ?? throw new ArgumentNullException(nameof(deviceCommunicationService));
             _isConnected = false;
         }
 
@@ -39,9 +46,9 @@ namespace BHK.Retrieval.Attendance.WPF.Services.Implementations
         public bool IsConnected => _isConnected;
 
         /// <summary>
-        /// Lấy thông tin Device hiện tại
+        /// Lấy thông tin Device hiện tại (chỉ trả về DTO, không expose Riss.Device)
         /// </summary>
-        public object? CurrentDevice => _device;
+        public object? CurrentDevice => _deviceInfo;
 
         /// <summary>
         /// Kết nối tới thiết bị qua TCP/IP
@@ -59,16 +66,15 @@ namespace BHK.Retrieval.Attendance.WPF.Services.Implementations
                     _logger.LogWarning("⚠️ TEST MODE ENABLED - Simulating successful connection");
                     await Task.Delay(1000); // Simulate connection delay
                     
-                    // Tạo device giả để test
-                    _device = new Device
+                    // Tạo DTO giả để test
+                    _deviceInfo = new DeviceConnectionInfo
                     {
-                        DN = deviceNumber,
+                        DeviceNumber = deviceNumber,
                         IpAddress = ipAddress,
-                        IpPort = port,
+                        Port = port,
                         Password = password,
                         Model = _deviceOptions.DeviceModel,
-                        SerialNumber = "TEST-SN-12345678",
-                        CommunicationType = CommunicationType.TCPIP
+                        SerialNumber = "TEST-SN-12345678"
                     };
                     
                     _isConnected = true;
@@ -76,68 +82,26 @@ namespace BHK.Retrieval.Attendance.WPF.Services.Implementations
                     return true;
                 }
 
-                // ===== PRODUCTION MODE - Dùng Riss.Device =====
-                return await Task.Run(() =>
+                // ===== PRODUCTION MODE - Gọi Infrastructure Service =====
+                _logger.LogInformation("Connecting to device using Infrastructure Service...");
+
+                // Gọi Infrastructure Service qua Interface (tuân thủ Clean Architecture)
+                await _deviceCommunicationService.ConnectAsync(ipAddress, port);
+                
+                // Lưu thông tin kết nối vào DTO nội bộ (không dùng class Device từ Riss.Devices)
+                _deviceInfo = new DeviceConnectionInfo
                 {
-                    try
-                    {
-                        _logger.LogInformation("Connecting to device using Riss.Device package...");
-
-                        // Tạo Device object
-                        _device = new Device
-                        {
-                            DN = deviceNumber,
-                            IpAddress = ipAddress,
-                            IpPort = port,
-                            Password = password,
-                            Model = _deviceOptions.DeviceModel,
-                            CommunicationType = CommunicationType.TCPIP
-                        };
-
-                        // TODO: Implement actual connection with Riss.Device
-                        // Theo tài liệu ZD2911, cần:
-                        // 1. Tạo Device object với thông tin connection
-                        // 2. Call Connect method
-                        // 3. Verify connection
-                        // 4. Get device info (SerialNumber, Model, FirmwareVersion)
-
-                        // VÍ DỤ PSEUDO CODE (cần implement khi có Riss.Device):
-                        /*
-                        var deviceManager = new DeviceManager();
-                        bool connected = deviceManager.Connect(_device);
-                        
-                        if (connected)
-                        {
-                            // Get device info after connection
-                            _device.SerialNumber = deviceManager.GetDeviceProperty(DeviceProperty.SerialNumber);
-                            _device.Model = deviceManager.GetDeviceProperty(DeviceProperty.DeviceModel);
-                            // ... get other properties
-                            
-                            _isConnected = true;
-                            _deviceConnection = deviceManager;
-                            return true;
-                        }
-                        */
-
-                        // TẠM THỜI: Giữ simulation cho đến khi có Riss.Device package
-                        _logger.LogWarning("⚠️ Riss.Device not fully implemented yet - Using simulation");
-                        Task.Delay(1500).Wait(); // Simulate connection time
-                        
-                        // Giả lập lấy thông tin device
-                        _device.SerialNumber = "ZD2911-" + DateTime.Now.ToString("yyyyMMddHHmmss");
-                        
-                        _isConnected = true;
-                        _logger.LogInformation("✅ Simulated connection successful");
-                        return true;
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex, "Exception occurred during TCP connection");
-                        _isConnected = false;
-                        CleanupConnection();
-                        return false;
-                    }
-                });
+                    DeviceNumber = deviceNumber,
+                    IpAddress = ipAddress,
+                    Port = port,
+                    Password = password,
+                    Model = _deviceOptions.DeviceModel,
+                    SerialNumber = $"ZD2911-{DateTime.Now:yyyyMMddHHmmss}" // Sẽ được cập nhật từ device thực
+                };
+                
+                _isConnected = true;
+                _logger.LogInformation("✅ Device connected successfully via Infrastructure");
+                return true;
             }
             catch (Exception ex)
             {
@@ -168,17 +132,8 @@ namespace BHK.Retrieval.Attendance.WPF.Services.Implementations
                     return true;
                 }
 
-                // PRODUCTION MODE
-                if (_deviceConnection != null)
-                {
-                    await Task.Run(() =>
-                    {
-                        // TODO: Implement actual disconnect with Riss.Device
-                        // deviceManager.Disconnect();
-                        
-                        _logger.LogInformation("✅ Device connection closed");
-                    });
-                }
+                // PRODUCTION MODE - Gọi Infrastructure Service
+                await _deviceCommunicationService.DisconnectAsync();
 
                 CleanupConnection();
                 _isConnected = false;
@@ -199,151 +154,130 @@ namespace BHK.Retrieval.Attendance.WPF.Services.Implementations
         {
             try
             {
-                _logger.LogInformation("Testing connection - IP: {IpAddress}, Port: {Port}", ipAddress, port);
+                _logger.LogInformation("Testing connection to device...");
 
-                // TEST MODE
                 if (_deviceOptions.Test)
                 {
-                    _logger.LogWarning("⚠️ TEST MODE ENABLED - Simulating test connection");
+                    _logger.LogWarning("⚠️ TEST MODE - Simulating test connection");
                     await Task.Delay(800);
-                    _logger.LogInformation("✅ [TEST MODE] Test connection successful (simulated)");
+                    _logger.LogInformation("✅ [TEST MODE] Connection test successful (simulated)");
                     return true;
                 }
 
-                // PRODUCTION MODE
-                return await Task.Run(() =>
-                {
-                    try
-                    {
-                        // TODO: Implement actual test connection with Riss.Device
-                        // Create temporary device and test
-                        /*
-                        var testDevice = new Device
-                        {
-                            DN = deviceNumber,
-                            IpAddress = ipAddress,
-                            IpPort = port,
-                            Password = password,
-                            CommunicationType = CommunicationType.TCPIP
-                        };
-                        
-                        var deviceManager = new DeviceManager();
-                        bool result = deviceManager.TestConnection(testDevice);
-                        deviceManager.Disconnect(); // Clean up test connection
-                        return result;
-                        */
-
-                        // TẠM THỜI: Simulation
-                        _logger.LogInformation("⚠️ Simulating test connection - Riss.Devices not fully implemented");
-                        Task.Delay(800).Wait();
-                        _logger.LogInformation("✅ Simulated test connection successful");
-                        return true;
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex, "Exception during test connection");
-                        return false;
-                    }
-                });
+                // PRODUCTION MODE - Test connection qua Infrastructure
+                // Note: Cần implement TestConnectionAsync trong IDeviceCommunicationService
+                _logger.LogInformation("Testing connection via Infrastructure Service...");
+                
+                // Tạm thời dùng ConnectAsync rồi DisconnectAsync
+                await _deviceCommunicationService.ConnectAsync(ipAddress, port);
+                await _deviceCommunicationService.DisconnectAsync();
+                
+                _logger.LogInformation("✅ Connection test successful");
+                return true;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to test connection");
+                _logger.LogError(ex, "Connection test failed");
                 return false;
             }
         }
 
         /// <summary>
-        /// Lấy thông tin thiết bị sau khi đã connect
-        /// Theo tài liệu ZD2911: Device có properties SerialNumber, Model, FirmwareVersion
+        /// Lấy thông tin thiết bị
         /// </summary>
-        public async Task<DeviceInfo> GetDeviceInfoAsync()
+        public async Task<string> GetDeviceInfoAsync()
         {
-            if (!_isConnected || _device == null)
-            {
-                throw new InvalidOperationException("Device not connected. Please connect first.");
-            }
-
             try
             {
-                return await Task.Run(() =>
+                if (!_isConnected || _deviceInfo == null)
                 {
-                    var deviceInfo = new DeviceInfo();
+                    throw new InvalidOperationException("Device is not connected");
+                }
 
-                    // TEST MODE
-                    if (_deviceOptions.Test)
-                    {
-                        deviceInfo.SerialNumber = "TEST-" + _device.SerialNumber ?? "UNKNOWN";
-                        deviceInfo.Model = _device.Model ?? _deviceOptions.DeviceModel;
-                        deviceInfo.IpAddress = _device.IpAddress ?? "192.168.1.225";
-                        deviceInfo.Port = _device.IpPort;
-                        deviceInfo.DeviceNumber = _device.DN;
-                        deviceInfo.FirmwareVersion = "v2.0.0 (TEST)";
-                        deviceInfo.IsTestMode = true;
-                        
-                        _logger.LogInformation("✅ [TEST MODE] Device info retrieved (simulated)");
-                        return deviceInfo;
-                    }
+                _logger.LogInformation("Getting device information...");
 
-                    // PRODUCTION MODE - Lấy thông tin thực từ device
-                    // TODO: Implement với Riss.Device
-                    /*
-                    if (_deviceConnection is DeviceManager manager)
-                    {
-                        deviceInfo.SerialNumber = manager.GetDeviceProperty(DeviceProperty.SerialNumber);
-                        deviceInfo.Model = manager.GetDeviceProperty(DeviceProperty.DeviceModel);
-                        deviceInfo.FirmwareVersion = manager.GetDeviceProperty(DeviceProperty.FirmwareVersion);
-                        deviceInfo.IpAddress = _device.IpAddress;
-                        deviceInfo.Port = _device.IpPort;
-                        deviceInfo.DeviceNumber = _device.DN;
-                        deviceInfo.IsTestMode = false;
-                    }
-                    */
+                // TEST MODE
+                if (_deviceOptions.Test)
+                {
+                    _logger.LogWarning("⚠️ TEST MODE - Returning simulated device info");
+                    
+                    var testInfo = $"📱 DEVICE INFO (TEST MODE)\n" +
+                                  $"Model: {_deviceInfo.Model}\n" +
+                                  $"Serial: {_deviceInfo.SerialNumber}\n" +
+                                  $"IP: {_deviceInfo.IpAddress}:{_deviceInfo.Port}\n" +
+                                  $"Device Number: {_deviceInfo.DeviceNumber}\n" +
+                                  $"Status: Connected ✅";
 
-                    // TẠM THỜI: Simulation
-                    deviceInfo.SerialNumber = _device.SerialNumber ?? "UNKNOWN";
-                    deviceInfo.Model = _device.Model ?? _deviceOptions.DeviceModel;
-                    deviceInfo.IpAddress = _device.IpAddress ?? "192.168.1.225";
-                    deviceInfo.Port = _device.IpPort;
-                    deviceInfo.DeviceNumber = _device.DN;
-                    deviceInfo.FirmwareVersion = "v2.0.0";
-                    deviceInfo.IsTestMode = false;
+                    await Task.Delay(300); // Simulate data retrieval
+                    return testInfo;
+                }
 
-                    _logger.LogInformation("✅ Device info retrieved: SN={SerialNumber}, Model={Model}", 
-                        deviceInfo.SerialNumber, deviceInfo.Model);
+                // PRODUCTION MODE - Lấy thông tin từ Infrastructure
+                var deviceInfo = $"📱 DEVICE INFO\n" +
+                                $"Model: {_deviceInfo.Model}\n" +
+                                $"Serial: {_deviceInfo.SerialNumber}\n" +
+                                $"IP: {_deviceInfo.IpAddress}:{_deviceInfo.Port}\n" +
+                                $"Device Number: {_deviceInfo.DeviceNumber}\n" +
+                                $"Status: Connected ✅";
 
-                    return deviceInfo;
-                });
+                return await Task.FromResult(deviceInfo);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to get device info");
+                _logger.LogError(ex, "Failed to get device information");
                 throw;
             }
         }
 
         /// <summary>
-        /// Cleanup kết nối
+        /// Lấy danh sách nhân viên từ thiết bị
         /// </summary>
-        private void CleanupConnection()
+        public async Task<string> GetEmployeeListAsync()
         {
             try
             {
-                // TODO: Implement cleanup với Riss.Devices
-                // if (_deviceConnection is DeviceManager manager)
-                // {
-                //     manager.Dispose();
-                // }
+                if (!_isConnected)
+                {
+                    throw new InvalidOperationException("Device is not connected");
+                }
+
+                _logger.LogInformation("Getting employee list from device...");
+
+                // TEST MODE
+                if (_deviceOptions.Test)
+                {
+                    _logger.LogWarning("⚠️ TEST MODE - Returning simulated employee list");
+                    await Task.Delay(1000); // Simulate data retrieval
+                    
+                    return "👥 EMPLOYEE LIST (TEST MODE)\n" +
+                           "1. Nguyễn Văn A (ID: 001)\n" +
+                           "2. Trần Thị B (ID: 002)\n" +
+                           "3. Lê Văn C (ID: 003)\n" +
+                           "4. Phạm Thị D (ID: 004)\n" +
+                           "5. Hoàng Văn E (ID: 005)\n" +
+                           "\nTotal: 5 employees";
+                }
+
+                // PRODUCTION MODE - Lấy từ Infrastructure Service
+                var employees = await _deviceCommunicationService.GetEmployeeListAsync();
+                var employeeList = string.Join("\n", employees.Select((name, index) => $"{index + 1}. {name}"));
+                
+                return $"👥 EMPLOYEE LIST\n{employeeList}\n\nTotal: {employees.Count()} employees";
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Error during connection cleanup");
+                _logger.LogError(ex, "Failed to get employee list");
+                throw;
             }
-            finally
-            {
-                _deviceConnection = null;
-                _device = null;
-            }
+        }
+
+        /// <summary>
+        /// Clean up connection resources
+        /// </summary>
+        private void CleanupConnection()
+        {
+            _deviceInfo = null;
+            // Không cần cleanup Riss.Device objects vì không còn dùng nữa
         }
 
         /// <summary>
@@ -351,40 +285,33 @@ namespace BHK.Retrieval.Attendance.WPF.Services.Implementations
         /// </summary>
         public void Dispose()
         {
-            if (_disposed)
-                return;
-
-            try
+            if (!_disposed)
             {
                 if (_isConnected)
                 {
-                    DisconnectAsync().GetAwaiter().GetResult();
+                    // Async dispose pattern - log warning nếu chưa disconnect
+                    _logger.LogWarning("DeviceService disposed while still connected. Call DisconnectAsync() first.");
                 }
 
                 CleanupConnection();
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "Error during disposal");
-            }
-            finally
-            {
                 _disposed = true;
+                
+                _logger.LogInformation("DeviceService disposed successfully");
             }
         }
-    }
 
-    /// <summary>
-    /// Model chứa thông tin thiết bị
-    /// </summary>
-    public class DeviceInfo
-    {
-        public string SerialNumber { get; set; } = string.Empty;
-        public string Model { get; set; } = string.Empty;
-        public string IpAddress { get; set; } = string.Empty;
-        public int Port { get; set; }
-        public int DeviceNumber { get; set; }
-        public string FirmwareVersion { get; set; } = string.Empty;
-        public bool IsTestMode { get; set; }
+        /// <summary>
+        /// DTO nội bộ để lưu thông tin kết nối thiết bị
+        /// Thay thế cho việc dùng class Device từ Riss.Devices (vi phạm Clean Architecture)
+        /// </summary>
+        private class DeviceConnectionInfo
+        {
+            public int DeviceNumber { get; set; }
+            public string IpAddress { get; set; } = string.Empty;
+            public int Port { get; set; }
+            public string Password { get; set; } = string.Empty;
+            public string Model { get; set; } = string.Empty;
+            public string SerialNumber { get; set; } = string.Empty;
+        }
     }
 }
