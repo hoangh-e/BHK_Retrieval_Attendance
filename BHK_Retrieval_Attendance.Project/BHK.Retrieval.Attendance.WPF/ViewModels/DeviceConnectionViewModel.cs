@@ -368,16 +368,17 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
                 // Delay ngắn để user thấy thông báo
                 await Task.Delay(1500);
                 
-                // Navigate tới HomePage view
-                _navigationService.NavigateTo("HomePage");
+                // ✅ SỬA: Navigate bằng generic type
+                _navigationService.NavigateTo<HomePageViewModel>();
                 
                 _logger.LogInformation("Successfully navigated to HomePage");
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to navigate to HomePage");
-                // ✅ Use DialogHelper for navigation warning
-                DialogHelper.ShowWarning("Kết nối thành công nhưng không thể chuyển đến màn hình tiếp theo", ex.Message);
+                DialogHelper.ShowWarning(
+                    "Kết nối thành công nhưng không thể chuyển đến màn hình tiếp theo", 
+                    ex.Message);
             }
         }
 

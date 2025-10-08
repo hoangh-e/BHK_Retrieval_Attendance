@@ -58,22 +58,18 @@ namespace BHK.Retrieval.Attendance.WPF.Configuration.DI
         /// </summary>
         private static void RegisterApplicationServices(IServiceCollection services)
         {
-            // Device Service - Scoped vì cần maintain connection state
+            // Device Service - Scoped
             services.AddScoped<IDeviceService, DeviceService>();
 
-            // Dialog Service - Singleton vì stateless
+            // Dialog Service - Singleton
             services.AddSingleton<IDialogService, DialogService>();
 
-            // Navigation Service - Singleton vì quản lý navigation toàn app
-            services.AddSingleton<INavigationService, NavigationService>();
+            // ✅ SỬA: NavigationService - Singleton
+            services.AddSingleton<NavigationService>();
+            services.AddSingleton<INavigationService>(sp => sp.GetRequiredService<NavigationService>());
 
             // Configuration Service - Singleton
             services.AddSingleton<IConfigurationService, ConfigurationService>();
-
-            // TODO: Thêm các services khác khi implement
-            // services.AddScoped<IAttendanceService, AttendanceService>();
-            // services.AddScoped<IEmployeeService, EmployeeService>();
-            // services.AddScoped<IReportService, ReportService>();
         }
 
         /// <summary>

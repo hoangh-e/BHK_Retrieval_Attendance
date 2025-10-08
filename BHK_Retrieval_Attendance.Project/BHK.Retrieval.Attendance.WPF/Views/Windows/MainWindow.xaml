@@ -2,13 +2,29 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+        xmlns:vm="clr-namespace:BHK.Retrieval.Attendance.WPF.ViewModels"
+        xmlns:views="clr-namespace:BHK.Retrieval.Attendance.WPF.Views.Pages"
         Title="BHK Attendance System" 
-        Height="700" Width="1000"
+        Height="700" 
+        Width="1000"
         WindowStartupLocation="CenterScreen"
-        WindowState="Maximized"
         Background="White">
     
-    <Frame x:Name="MainFrame" 
-           NavigationUIVisibility="Hidden"
-           Background="White"/>
+    <!-- DataTemplates: Map ViewModel Type → View -->
+    <Window.Resources>
+        <!-- DeviceConnectionViewModel → DeviceConnectionView -->
+        <DataTemplate DataType="{x:Type vm:DeviceConnectionViewModel}">
+            <views:DeviceConnectionView/>
+        </DataTemplate>
+        
+        <!-- HomePageViewModel → HomePageView -->
+        <DataTemplate DataType="{x:Type vm:HomePageViewModel}">
+            <views:HomePageView/>
+        </DataTemplate>
+        
+        <!-- Thêm các DataTemplate khác ở đây khi cần -->
+    </Window.Resources>
+    
+    <!-- ContentControl tự động chọn View dựa trên CurrentViewModel type -->
+    <ContentControl Content="{Binding CurrentViewModel}"/>
 </Window>

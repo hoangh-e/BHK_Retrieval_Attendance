@@ -1,60 +1,26 @@
 using System;
-using System.Threading.Tasks;
+using BHK.Retrieval.Attendance.WPF.ViewModels.Base;
 
 namespace BHK.Retrieval.Attendance.WPF.Services.Interfaces
 {
     /// <summary>
-    /// Service interface cho navigation giữa các views
+    /// Service interface cho navigation - ContentControl pattern
     /// </summary>
     public interface INavigationService
     {
         /// <summary>
-        /// Navigate tới một view theo tên
+        /// Navigate đến ViewModel bằng generic type
         /// </summary>
-        /// <param name="viewName">Tên của view cần navigate tới</param>
-        void NavigateTo(string viewName);
+        void NavigateTo<TViewModel>() where TViewModel : BaseViewModel;
 
         /// <summary>
-        /// Navigate tới một view với parameters
+        /// CurrentViewModel đang được hiển thị
         /// </summary>
-        /// <param name="viewName">Tên của view</param>
-        /// <param name="parameter">Parameters truyền vào</param>
-        void NavigateTo(string viewName, object parameter);
-
-        /// <summary>
-        /// Navigate async
-        /// </summary>
-        Task NavigateToAsync(string viewName);
-
-        /// <summary>
-        /// Navigate async với parameters
-        /// </summary>
-        Task NavigateToAsync(string viewName, object parameter);
-
-        /// <summary>
-        /// Quay lại view trước đó
-        /// </summary>
-        void GoBack();
-
-        /// <summary>
-        /// Kiểm tra có thể go back hay không
-        /// </summary>
-        bool CanGoBack { get; }
-
-        /// <summary>
-        /// Clear navigation history
-        /// </summary>
-        void ClearHistory();
-
-        /// <summary>
-        /// Set navigation frame cho service
-        /// </summary>
-        /// <param name="frame">Frame để navigate</param>
-        void SetNavigationFrame(System.Windows.Controls.Frame frame);
+        BaseViewModel CurrentViewModel { get; }
 
         /// <summary>
         /// Event khi navigation thay đổi
         /// </summary>
-        event EventHandler<string>? Navigated;
+        event EventHandler<BaseViewModel> Navigated;
     }
 }
