@@ -17,20 +17,20 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
             _logger = logger;
         }
 
-        public async Task ConnectDeviceAsync()
-        {
-            try
+            public async Task ConnectDeviceAsync()
             {
-                _logger.LogInformation("Connecting to device...");
-                await _deviceService.ConnectAsync("192.168.1.10", 4370);
-                _logger.LogInformation("✅ Device connected successfully");
+                try
+                {
+                    _logger.LogInformation("Connecting to device...");
+                    await _deviceService.ConnectAsync("192.168.1.10", 4370,0,"");
+                    _logger.LogInformation("✅ Device connected successfully");
+                }
+                catch (System.Exception ex)
+                {
+                    _logger.LogError(ex, "❌ Failed to connect to device");
+                    throw;
+                }
             }
-            catch (System.Exception ex)
-            {
-                _logger.LogError(ex, "❌ Failed to connect to device");
-                throw;
-            }
-        }
 
         public async Task GetEmployeeListAsync()
         {

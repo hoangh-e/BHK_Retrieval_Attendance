@@ -9,13 +9,14 @@ namespace BHK.Retrieval.Attendance.WPF.Models.Device
     /// </summary>
     public class DeviceConnectionModel : INotifyPropertyChanged
     {
-        private string _ipAddress = "192.168.1.225";
-        private int _port = 4370;
-        private int _deviceNumber = 1;
-        private string _password = "0";
+        // ✅ Loại bỏ giá trị default hardcode - để ViewModel inject từ config
+        private string _ipAddress = string.Empty;
+        private int _port = 0;
+        private int _deviceNumber = 0;
+        private string _password = string.Empty;
         private bool _isConnected;
         private string _connectionStatus = "Disconnected";
-        private string _deviceModel = "ZDC2911";
+        private string _deviceModel = string.Empty;
 
         /// <summary>
         /// Địa chỉ IP của thiết bị
@@ -130,9 +131,9 @@ namespace BHK.Retrieval.Attendance.WPF.Models.Device
             }
         }
 
-        public event PropertyChangedEventHandler PropertyChanged;
+        public event PropertyChangedEventHandler? PropertyChanged;
 
-        protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
+        protected virtual void OnPropertyChanged([CallerMemberName] string? propertyName = null)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }

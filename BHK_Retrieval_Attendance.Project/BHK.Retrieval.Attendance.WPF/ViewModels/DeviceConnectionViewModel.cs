@@ -54,7 +54,7 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
             ConnectCommand = new RelayCommand(async _ => await ConnectAsync(), _ => CanConnect());
             DisconnectCommand = new RelayCommand(async _ => await DisconnectAsync(), _ => CanDisconnect());
             TestConnectionCommand = new RelayCommand(async _ => await TestConnectionAsync(), _ => CanTestConnection());
-            RefreshCommand = new RelayCommand(_ => Refresh(), _ => !IsBusy);
+            RefreshCommand = new RelayCommand(async _ => await RefreshAsync(), _ => !IsBusy);
 
             _logger.LogInformation("DeviceConnectionViewModel initialized with config - IP: {IP}, Port: {Port}, TestMode: {TestMode}", 
                 _deviceOptions.DefaultIpAddress, _deviceOptions.DefaultPort, _deviceOptions.Test);
@@ -280,19 +280,59 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
             }
         }
 
-        private void Refresh()
+        private async Task RefreshAsync()
         {
-            _logger.LogInformation("Refreshing connection settings");
-            
-            // Reset về giá trị mặc định từ config
-            ConnectionModel.IpAddress = _deviceOptions.DefaultIpAddress;
-            ConnectionModel.Port = _deviceOptions.DefaultPort;
-            ConnectionModel.DeviceNumber = _deviceOptions.DefaultDeviceNumber;
-            ConnectionModel.Password = _deviceOptions.DefaultPassword;
-            
-            StatusMessage = _deviceOptions.Test ? "Settings refreshed (TEST MODE)" : "Settings refreshed";
-            
-            _logger.LogInformation("Settings reset to default values");
+            if (IsBusy) return;
+
+            try
+            {
+                IsBusy = true;
+                _logger.LogInformation("Refreshing connection settings");
+                
+                // ✅ CHỈ RESET KHI TEST MODE hoặc user xác nhận
+                if (_deviceOptions.Test)
+                {
+                    // Test mode - tự động reset
+                    ConnectionModel.IpAddress = _deviceOptions.DefaultIpAddress;
+                    ConnectionModel.Port = _deviceOptions.DefaultPort;
+                    ConnectionModel.DeviceNumber = _deviceOptions.DefaultDeviceNumber;
+                    ConnectionModel.Password = _deviceOptions.DefaultPassword;
+                    StatusMessage = "⚠️ TEST MODE - Settings refreshed to default";
+                    _logger.LogInformation("Settings refreshed in TEST MODE");
+                }
+                else
+                {
+                    // Production mode - xác nhận trước khi reset
+                    bool userConfirmed = await _dialogService.ShowConfirmationAsync(
+                        "Reset Settings", 
+                        "Do you want to reset connection settings to default values?\n\nThis will overwrite your current settings.");
+                    
+                    if (userConfirmed)
+                    {
+                        ConnectionModel.IpAddress = _deviceOptions.DefaultIpAddress;
+                        ConnectionModel.Port = _deviceOptions.DefaultPort;
+                        ConnectionModel.DeviceNumber = _deviceOptions.DefaultDeviceNumber;
+                        ConnectionModel.Password = _deviceOptions.DefaultPassword;
+                        StatusMessage = "Settings reset to default values";
+                        _logger.LogInformation("Settings reset to default values by user confirmation");
+                    }
+                    else
+                    {
+                        StatusMessage = "Refresh cancelled by user";
+                        _logger.LogInformation("Settings refresh cancelled by user");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error during settings refresh");
+                StatusMessage = "Error refreshing settings";
+                await _dialogService.ShowErrorAsync("Error", $"Failed to refresh settings: {ex.Message}");
+            }
+            finally
+            {
+                IsBusy = false;
+            }
         }
 
         /// <summary>

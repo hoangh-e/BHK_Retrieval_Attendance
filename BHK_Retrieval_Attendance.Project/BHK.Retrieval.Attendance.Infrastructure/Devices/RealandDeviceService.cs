@@ -56,13 +56,12 @@ namespace BHK.Retrieval.Attendance.Infrastructure.Devices
                     if (string.IsNullOrEmpty(password))
                         throw new ArgumentException("Password cannot be null or empty", nameof(password));
 
-                    // ✅ Khởi tạo Device theo chuẩn ZDC2911_Demo với input parameters
                     _device = new Device
                     {
-                        DN = deviceNumber, // ✅ Sử dụng deviceNumber từ input
-                        Password = password, // ✅ Sử dụng password từ input
+                        DN = deviceNumber, 
+                        Password = password,
                         Model = "ZDC2911",
-                        ConnectionModel = 5, // ✅ QUAN TRỌNG: Phải = 5 cho ZD2911
+                        ConnectionModel = 5, 
                         IpAddress = ip,
                         IpPort = port,
                         CommunicationType = CommunicationType.Tcp
