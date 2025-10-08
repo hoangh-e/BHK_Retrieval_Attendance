@@ -95,7 +95,9 @@ namespace BHK.Retrieval.Attendance.Infrastructure.Devices
                 }
                 catch (Exception ex)
                 {
-                    _logger?.LogError(ex, "Infrastructure: Connection failed");
+                    // Log lỗi chi tiết
+                    _logger?.LogError(ex, "Infrastructure: Connection failed - IP: {ip}:{port}, DN: {deviceNumber}", 
+                        ip, port, deviceNumber);
                     
                     // Cleanup khi có exception
                     try
@@ -108,7 +110,10 @@ namespace BHK.Retrieval.Attendance.Infrastructure.Devices
                     _device = null;
                     _isConnected = false;
                     
-                    throw; // ✅ Re-throw để DeviceService bắt được
+                    // ✅ Throw với message thân thiện hơn
+                    // Phân loại lỗi dựa trên exception message
+                    string userFriendlyMessage = GetUserFriendlyErrorMessage(ex.Message, ip, port);
+                    throw new Exception(userFriendlyMessage, ex);
                 }
             });
         }
@@ -207,6 +212,47 @@ namespace BHK.Retrieval.Attendance.Infrastructure.Devices
                     _disposed = true;
                     _logger?.LogInformation("Infrastructure: RealandDeviceService disposed");
                 }
+            }
+        }
+
+        /// <summary>
+        /// Chuyển đổi technical error message thành user-friendly message
+        /// </summary>
+        private string GetUserFriendlyErrorMessage(string exceptionMessage, string ip, int port)
+        {
+            // Phân loại lỗi dựa trên exception message
+            if (exceptionMessage.Contains("AddressError") || 
+                exceptionMessage.Contains("Address"))
+            {
+                return $"Không thể kết nối đến thiết bị tại {ip}:{port}\n\n" +
+                       "Nguyên nhân có thể:\n" +
+                       "• Địa chỉ IP không chính xác\n" +
+                       "• Thiết bị chưa được bật nguồn\n" +
+                       "• Thiết bị không cùng mạng với máy tính\n" +
+                       "• Firewall đang chặn kết nối";
+            }
+            else if (exceptionMessage.Contains("Timeout") || 
+                     exceptionMessage.Contains("timeout"))
+            {
+                return $"Thiết bị tại {ip}:{port} không phản hồi\n\n" +
+                       "Vui lòng kiểm tra:\n" +
+                       "• Thiết bị đã được bật nguồn\n" +
+                       "• Kết nối mạng ổn định\n" +
+                       "• Không có ứng dụng khác đang kết nối";
+            }
+            else if (exceptionMessage.Contains("Port") || 
+                     exceptionMessage.Contains("port"))
+            {
+                return $"Không thể kết nối qua cổng {port}\n\n" +
+                       "Vui lòng kiểm tra:\n" +
+                       "• Cổng kết nối đúng (mặc định: 4370)\n" +
+                       "• Cổng chưa bị chặn bởi Firewall";
+            }
+            else
+            {
+                // Lỗi chung
+                return $"Không thể kết nối đến thiết bị tại {ip}:{port}\n\n" +
+                       $"Lỗi: {exceptionMessage}";
             }
         }
     }
