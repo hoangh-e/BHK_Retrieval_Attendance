@@ -78,6 +78,9 @@ namespace BHK.Retrieval.Attendance.WPF
             // Infrastructure layer services (cần configuration)
             services.RegisterInfrastructureServices(configuration);
 
+            // Application layer services (bao gồm IConfigurationService)
+            services.AddApplicationServices();
+
             // WPF layer services
             services.RegisterWpfServices();
 
