@@ -7,21 +7,43 @@ namespace BHK.Retrieval.Attendance.Infrastructure.DeviceIntegration.Wrappers.Rea
         private Device? _device;
         private DeviceConnection? _connection;
 
-        public bool Connect(string ipAddress, int port)
+        public bool Connect(string ipAddress, int port, int deviceNumber, string password)
         {
             try
             {
-                // TODO: Implement actual connection logic based on ZD2911 User Guide
-                // The DeviceConnection might need specific constructor parameters or factory method
-                // _connection = DeviceConnectionFactory.Create(ipAddress, port);
-                // _device = new Device(connection);
-                
-                // Placeholder implementation until we have the actual API documentation
-                return true;
+                _device = new Device
+                {
+                    DN = deviceNumber,
+                    Password = password,
+                    Model = "ZDC2911",
+                    ConnectionModel = 5,
+                    IpAddress = ipAddress,
+                    IpPort = port,
+                    CommunicationType = CommunicationType.Tcp
+                };
+
+                _connection = DeviceConnection.CreateConnection(ref _device);
+
+                int result = _connection.Open();
+
+                if (result > 0)
+                {
+                    // success
+                    return true;
+                }
+                else
+                {
+                    // fail
+                    _connection = null;
+                    _device = null;
+                    return false;
+                }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                // Log error
+                // Log exception
+                _connection = null;
+                _device = null;
                 return false;
             }
         }

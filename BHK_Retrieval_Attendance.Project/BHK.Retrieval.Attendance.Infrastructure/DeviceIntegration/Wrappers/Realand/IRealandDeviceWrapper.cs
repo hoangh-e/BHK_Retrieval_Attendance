@@ -2,7 +2,7 @@ namespace BHK.Retrieval.Attendance.Infrastructure.DeviceIntegration.Wrappers.Rea
 {
     public interface IRealandDeviceWrapper
     {
-        bool Connect(string ipAddress, int port);
+        bool Connect(string ipAddress, int port, int deviceNumber, string password);
         bool Disconnect();
         bool IsConnected { get; }
     }
