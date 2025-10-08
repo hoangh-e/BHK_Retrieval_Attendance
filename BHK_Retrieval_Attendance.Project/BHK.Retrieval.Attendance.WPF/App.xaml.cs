@@ -8,7 +8,9 @@ using Microsoft.Extensions.Options;
 using Serilog;
 using BHK.Retrieval.Attendance.WPF.Configuration.DI;
 using BHK.Retrieval.Attendance.WPF.Views.Pages;
+using BHK.Retrieval.Attendance.WPF.Views.Windows;
 using BHK.Retrieval.Attendance.WPF.ViewModels;
+using BHK.Retrieval.Attendance.WPF.Services.Interfaces;
 using BHK.Retrieval.Attendance.WPF.Utilities;
 using BHK.Retrieval.Attendance.Shared.Options;
 
@@ -95,25 +97,38 @@ namespace BHK.Retrieval.Attendance.WPF
         }
 
         /// <summary>
-        /// Show MainWindow with Frame navigation (New approach)
+        /// Show MainWindow với ContentControl navigation
         /// </summary>
         private void ShowMainWindow()
         {
             try
             {
                 if (_host == null)
-                {
                     throw new InvalidOperationException("Host is not initialized");
-                }
                 
-                var mainWindow = _host.Services.GetRequiredService<BHK.Retrieval.Attendance.WPF.Views.Windows.MainWindow>();
+                Log.Information("Resolving MainWindow and ViewModels...");
+                
+                // ✅ Resolve NavigationService để khởi tạo
+                var navigationService = _host.Services.GetRequiredService<INavigationService>();
+                
+                // ✅ Resolve MainWindow (sẽ tự động inject MainWindowViewModel)
+                var mainWindow = _host.Services.GetRequiredService<MainWindow>();
+                
+                Log.Information("MainWindow resolved successfully");
+                
+                // ✅ Navigate đến DeviceConnectionView ngay khi show
+                navigationService.NavigateTo<DeviceConnectionViewModel>();
+                
+                // Show window
                 mainWindow.Show();
+                
+                Log.Information("MainWindow shown with DeviceConnectionView");
             }
             catch (Exception ex)
             {
                 Log.Error(ex, "Error showing MainWindow");
                 
-                // Fallback to old approach if MainWindow fails
+                // Fallback
                 Log.Information("Falling back to DeviceConnectionView");
                 ShowDeviceConnectionView();
             }

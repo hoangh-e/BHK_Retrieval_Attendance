@@ -18,22 +18,23 @@ namespace BHK.Retrieval.Attendance.WPF.Configuration.DI
     {
         /// <summary>
         /// Đăng ký tất cả services vào DI container
+        /// ✅ THỨ TỰ QUAN TRỌNG!
         /// </summary>
         public static IServiceCollection RegisterServices(this IServiceCollection services, IConfiguration configuration)
         {
-            // Configuration Options
+            // 1. Configuration Options
             RegisterOptions(services, configuration);
 
-            // Infrastructure Services (Device Communication)
+            // 2. Infrastructure Services (Device Communication)
             services.AddDeviceServices();
 
-            // Application Services
-            RegisterApplicationServices(services);
-
-            // ViewModels
+            // ✅ 3. ViewModels (TRƯỚC Application Services)
             RegisterViewModels(services);
 
-            // Views/Pages
+            // ✅ 4. Application Services (SAU ViewModels)
+            RegisterApplicationServices(services);
+
+            // 5. Views/Pages
             RegisterViews(services);
 
             return services;
@@ -55,6 +56,7 @@ namespace BHK.Retrieval.Attendance.WPF.Configuration.DI
 
         /// <summary>
         /// Đăng ký Application Services
+        /// ✅ ĐĂNG KÝ SAU ViewModels
         /// </summary>
         private static void RegisterApplicationServices(IServiceCollection services)
         {
@@ -64,29 +66,33 @@ namespace BHK.Retrieval.Attendance.WPF.Configuration.DI
             // Dialog Service - Singleton
             services.AddSingleton<IDialogService, DialogService>();
 
-            // ✅ SỬA: NavigationService - Singleton
+            // Configuration Service - Singleton
+            services.AddSingleton<IConfigurationService, ConfigurationService>();
+
+            // ✅ NavigationService - Singleton (phụ thuộc MainWindowViewModel)
             services.AddSingleton<NavigationService>();
             services.AddSingleton<INavigationService>(sp => sp.GetRequiredService<NavigationService>());
 
-            // Configuration Service - Singleton
-            services.AddSingleton<IConfigurationService, ConfigurationService>();
+            // TODO: Thêm các services khác khi implement
         }
 
         /// <summary>
         /// Đăng ký ViewModels
+        /// ✅ ĐĂNG KÝ TRƯỚC Application Services
         /// </summary>
         private static void RegisterViewModels(IServiceCollection services)
         {
-            // Transient vì mỗi view sẽ có instance riêng
-            services.AddTransient<DeviceConnectionViewModel>();
+            // ✅ MainWindowViewModel - Singleton (QUAN TRỌNG!)
+            services.AddSingleton<MainWindowViewModel>();
+            
+            // DeviceConnectionViewModel - Singleton (initial view)
+            services.AddSingleton<DeviceConnectionViewModel>();
+            
+            // ViewModels khác - Transient
             services.AddTransient<HomePageViewModel>();
             services.AddTransient<DeviceViewModel>();
             
             // TODO: Thêm các ViewModels khác khi implement
-            // services.AddTransient<DashboardViewModel>();
-            // services.AddTransient<AttendanceListViewModel>();
-            // services.AddTransient<EmployeeListViewModel>();
-            // services.AddTransient<SettingsViewModel>();
         }
 
         /// <summary>
@@ -94,28 +100,9 @@ namespace BHK.Retrieval.Attendance.WPF.Configuration.DI
         /// </summary>
         private static void RegisterViews(IServiceCollection services)
         {
-            // Transient vì mỗi lần navigate tạo instance mới
-            services.AddTransient<DeviceConnectionView>(sp =>
-            {
-                var view = new DeviceConnectionView();
-                var viewModel = sp.GetRequiredService<DeviceConnectionViewModel>();
-                view.DataContext = viewModel;
-                return view;
-            });
-
-            services.AddTransient<HomePageView>(sp =>
-            {
-                var viewModel = sp.GetRequiredService<HomePageViewModel>();
-                var logger = sp.GetRequiredService<ILogger<HomePageView>>();
-                return new HomePageView(viewModel, logger);
-            });
-
-            // Main Window - Transient vì window nên được tạo mới mỗi lần cần
-            services.AddTransient<BHK.Retrieval.Attendance.WPF.Views.Windows.MainWindow>();
-
-            // TODO: Thêm các Views khác khi implement
-            // services.AddTransient<DashboardView>(sp => { ... });
-            // services.AddTransient<AttendanceListView>(sp => { ... });
+            // ✅ CHỈ cần đăng ký MainWindow
+            // Các Views khác WPF tự tạo từ DataTemplate
+            services.AddSingleton<MainWindow>();
         }
     }
 }
