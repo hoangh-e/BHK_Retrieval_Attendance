@@ -155,7 +155,7 @@
                                 <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="*"/>
                             </Grid.ColumnDefinitions>
-                            <materialDesign:PackIcon Kind="DevicesOther" 
+                            <materialDesign:PackIcon Kind="Monitor" 
                                                     VerticalAlignment="Center"
                                                     Margin="0,0,12,0"/>
                             <StackPanel Grid.Column="1" Orientation="Horizontal">
