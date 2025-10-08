@@ -4,6 +4,7 @@ using System.Windows.Input;
 using BHK.Retrieval.Attendance.WPF.Models.Device;
 using BHK.Retrieval.Attendance.WPF.Services.Interfaces;
 using BHK.Retrieval.Attendance.WPF.ViewModels.Base;
+using BHK.Retrieval.Attendance.WPF.Utilities;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using BHK.Retrieval.Attendance.Shared.Options;
@@ -138,11 +139,13 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
                     
                     _logger.LogInformation("✅ Connection successful");
                     
-                    await _dialogService.ShowMessageAsync(
-                        "Success", 
+                    // ✅ Use DialogHelper for success message
+                    DialogHelper.ShowSuccess(
                         _deviceOptions.Test 
-                            ? "Connected successfully (TEST MODE)\n\nTest mode is enabled. This is a simulated connection." 
-                            : "Connected to device successfully!");
+                            ? "Kết nối thành công (TEST MODE)\n\nChế độ thử nghiệm được bật. Đây là kết nối mô phỏng." 
+                            : "Kết nối thiết bị thành công!",
+                        "Kết nối thành công"
+                    );
 
                     // Chuyển sang giao diện kế tiếp sau khi kết nối thành công
                     await NavigateToNextViewAsync();
@@ -154,12 +157,15 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
                     
                     _logger.LogWarning("❌ Connection failed");
                     
-                    await _dialogService.ShowMessageAsync(
-                        "Error", 
-                        "Failed to connect to device.\n\nPlease check:\n" +
-                        "• Device is powered on\n" +
-                        "• Network connection\n" +
-                        "• IP address and port are correct");
+                    // ✅ Use DialogHelper for error message
+                    DialogHelper.ShowError(
+                        "Không thể kết nối đến thiết bị",
+                        "Vui lòng kiểm tra:\n" +
+                        "• Thiết bị đã được bật nguồn\n" +
+                        "• Kết nối mạng\n" +
+                        "• Địa chỉ IP và cổng kết nối đúng",
+                        "Kết nối thất bại"
+                    );
                 }
             }
             catch (Exception ex)
@@ -168,7 +174,12 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
                 StatusMessage = "Connection error";
                 ConnectionModel.IsConnected = false;
                 
-                await _dialogService.ShowMessageAsync("Error", $"Connection error: {ex.Message}");
+                // ✅ Use DialogHelper for exception error
+                DialogHelper.ShowError(
+                    "Lỗi khi kết nối thiết bị",
+                    ex.Message,
+                    "Lỗi kết nối"
+                );
             }
             finally
             {
@@ -200,14 +211,16 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
                     StatusMessage = "Disconnected";
                     _logger.LogInformation("✅ Disconnected successfully");
                     
-                    await _dialogService.ShowMessageAsync("Success", "Disconnected from device successfully");
+                    // ✅ Use DialogHelper for disconnect success
+                    DialogHelper.ShowInformation("Đã ngắt kết nối thiết bị thành công", "Ngắt kết nối");
                 }
                 else
                 {
                     StatusMessage = "Disconnect failed";
                     _logger.LogWarning("❌ Disconnect failed");
                     
-                    await _dialogService.ShowMessageAsync("Warning", "Failed to disconnect properly");
+                    // ✅ Use DialogHelper for disconnect warning
+                    DialogHelper.ShowWarning("Không thể ngắt kết nối đúng cách", "Vui lòng thử lại hoặc khởi động lại ứng dụng");
                 }
             }
             catch (Exception ex)
@@ -215,7 +228,8 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
                 _logger.LogError(ex, "Exception during disconnection");
                 StatusMessage = "Disconnect error";
                 
-                await _dialogService.ShowMessageAsync("Error", $"Disconnect error: {ex.Message}");
+                // ✅ Use DialogHelper for disconnect error
+                DialogHelper.ShowError("Lỗi khi ngắt kết nối", ex.Message, "Lỗi ngắt kết nối");
             }
             finally
             {
@@ -251,20 +265,25 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
                     StatusMessage = _deviceOptions.Test ? "Test successful (TEST MODE)" : "Test successful";
                     _logger.LogInformation("✅ Test connection successful");
                     
-                    await _dialogService.ShowMessageAsync(
-                        "Success", 
+                    // ✅ Use DialogHelper for test success
+                    DialogHelper.ShowSuccess(
                         _deviceOptions.Test 
-                            ? "Test connection successful (TEST MODE)\n\nThe device is reachable (simulated)." 
-                            : "Test connection successful!\n\nThe device is reachable and ready to connect.");
+                            ? "Kiểm tra kết nối thành công (TEST MODE)\n\nThiết bị có thể kết nối được (mô phỏng)." 
+                            : "Kiểm tra kết nối thành công!\n\nThiết bị có thể kết nối và sẵn sàng.",
+                        "Kiểm tra kết nối"
+                    );
                 }
                 else
                 {
                     StatusMessage = "Test failed";
                     _logger.LogWarning("❌ Test connection failed");
                     
-                    await _dialogService.ShowMessageAsync(
-                        "Failed", 
-                        "Test connection failed.\n\nThe device is not reachable. Please check your network settings.");
+                    // ✅ Use DialogHelper for test failure
+                    DialogHelper.ShowError(
+                        "Kiểm tra kết nối thất bại",
+                        "Không thể kết nối đến thiết bị. Vui lòng kiểm tra cài đặt mạng.",
+                        "Kiểm tra kết nối"
+                    );
                 }
             }
             catch (Exception ex)
@@ -272,7 +291,8 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
                 _logger.LogError(ex, "Exception during test connection");
                 StatusMessage = "Test error";
                 
-                await _dialogService.ShowMessageAsync("Error", $"Test error: {ex.Message}");
+                // ✅ Use DialogHelper for test error
+                DialogHelper.ShowError("Lỗi khi kiểm tra kết nối", ex.Message, "Lỗi kiểm tra");
             }
             finally
             {
@@ -327,7 +347,8 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
             {
                 _logger.LogError(ex, "Error during settings refresh");
                 StatusMessage = "Error refreshing settings";
-                await _dialogService.ShowErrorAsync("Error", $"Failed to refresh settings: {ex.Message}");
+                // ✅ Use DialogHelper for refresh error
+                DialogHelper.ShowError("Lỗi khi làm mới cài đặt", ex.Message, "Lỗi làm mới");
             }
             finally
             {
@@ -355,7 +376,8 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Failed to navigate to Connection Success view");
-                await _dialogService.ShowMessageAsync("Warning", "Connected successfully but failed to navigate to success screen.");
+                // ✅ Use DialogHelper for navigation warning
+                DialogHelper.ShowWarning("Kết nối thành công nhưng không thể chuyển đến màn hình tiếp theo", ex.Message);
             }
         }
 

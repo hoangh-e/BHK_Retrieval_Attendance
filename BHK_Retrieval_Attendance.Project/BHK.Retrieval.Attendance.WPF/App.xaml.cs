@@ -9,6 +9,7 @@ using Serilog;
 using BHK.Retrieval.Attendance.WPF.Configuration.DI;
 using BHK.Retrieval.Attendance.WPF.Views.Pages;
 using BHK.Retrieval.Attendance.WPF.ViewModels;
+using BHK.Retrieval.Attendance.WPF.Utilities;
 using BHK.Retrieval.Attendance.Shared.Options;
 
 namespace BHK.Retrieval.Attendance.WPF
@@ -63,8 +64,14 @@ namespace BHK.Retrieval.Attendance.WPF
             catch (Exception ex)
             {
                 Log.Fatal(ex, "Application failed to start");
-                MessageBox.Show($"Application startup failed: {ex.Message}", 
-                    "Fatal Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                
+                // ✅ Use DialogHelper for application startup error
+                DialogHelper.ShowError(
+                    "Ứng dụng không thể khởi động",
+                    ex.Message,
+                    "Lỗi nghiêm trọng"
+                );
+                
                 Current.Shutdown();
             }
         }
@@ -120,8 +127,13 @@ namespace BHK.Retrieval.Attendance.WPF
             catch (Exception ex)
             {
                 Log.Error(ex, "Error showing Device Connection View");
-                MessageBox.Show($"Error: {ex.Message}", "Startup Error", 
-                    MessageBoxButton.OK, MessageBoxImage.Error);
+                
+                // ✅ Use DialogHelper for window creation error
+                DialogHelper.ShowError(
+                    "Lỗi khi hiển thị giao diện kết nối",
+                    ex.Message,
+                    "Lỗi khởi động"
+                );
             }
         }
 

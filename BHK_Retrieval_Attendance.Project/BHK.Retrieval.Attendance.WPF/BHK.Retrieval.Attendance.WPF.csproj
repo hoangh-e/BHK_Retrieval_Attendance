@@ -39,6 +39,9 @@
     
     <!-- Validation -->
     <PackageReference Include="FluentValidation" Version="11.8.0" />
+
+    <!-- Dialogs -->
+    <PackageReference Include="Ookii.Dialogs.Wpf" Version="4.0.0" />
   </ItemGroup>
 
   <ItemGroup>

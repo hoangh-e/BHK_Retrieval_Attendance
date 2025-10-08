@@ -1,6 +1,7 @@
 using System;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
+using BHK.Retrieval.Attendance.WPF.Services;
 
 namespace BHK.Retrieval.Attendance.WPF.Models.Device
 {
@@ -17,6 +18,9 @@ namespace BHK.Retrieval.Attendance.WPF.Models.Device
         private bool _isConnected;
         private string _connectionStatus = "Disconnected";
         private string _deviceModel = string.Empty;
+        private string _lastError = string.Empty;
+        private DateTime? _lastConnected;
+        private DeviceInfo? _deviceInfo;
 
         /// <summary>
         /// Địa chỉ IP của thiết bị
@@ -129,6 +133,108 @@ namespace BHK.Retrieval.Attendance.WPF.Models.Device
                     OnPropertyChanged();
                 }
             }
+        }
+
+        /// <summary>
+        /// Thông báo lỗi cuối cùng
+        /// </summary>
+        public string LastError
+        {
+            get => _lastError;
+            set
+            {
+                if (_lastError != value)
+                {
+                    _lastError = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Thời gian kết nối cuối cùng
+        /// </summary>
+        public DateTime? LastConnected
+        {
+            get => _lastConnected;
+            set
+            {
+                if (_lastConnected != value)
+                {
+                    _lastConnected = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Thông tin chi tiết thiết bị
+        /// </summary>
+        public DeviceInfo? DeviceInfo
+        {
+            get => _deviceInfo;
+            set
+            {
+                if (_deviceInfo != value)
+                {
+                    _deviceInfo = value;
+                    OnPropertyChanged();
+                    
+                    // Update related properties
+                    if (value != null)
+                    {
+                        DeviceModel = value.DeviceName;
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Chuỗi hiển thị thông tin kết nối
+        /// </summary>
+        public string ConnectionInfo => IsConnected
+            ? $"Đã kết nối: {IpAddress}:{Port}"
+            : $"Chưa kết nối: {IpAddress}:{Port}";
+
+        /// <summary>
+        /// Kiểm tra tính hợp lệ của thông tin kết nối
+        /// </summary>
+        public bool IsValid => !string.IsNullOrWhiteSpace(IpAddress) && Port > 0 && Port <= 65535;
+
+        /// <summary>
+        /// Cập nhật trạng thái kết nối thành công
+        /// </summary>
+        /// <param name="deviceInfo">Thông tin thiết bị</param>
+        public void UpdateConnectionSuccess(DeviceInfo deviceInfo)
+        {
+            IsConnected = true;
+            DeviceInfo = deviceInfo;
+            LastConnected = DateTime.Now;
+            LastError = string.Empty;
+            ConnectionStatus = $"Đã kết nối - {deviceInfo.DeviceName}";
+        }
+
+        /// <summary>
+        /// Cập nhật trạng thái kết nối thất bại
+        /// </summary>
+        /// <param name="errorMessage">Thông báo lỗi</param>
+        public void UpdateConnectionFailure(string errorMessage)
+        {
+            IsConnected = false;
+            DeviceInfo = null;
+            LastError = errorMessage;
+            ConnectionStatus = "Kết nối thất bại";
+        }
+
+        /// <summary>
+        /// Đặt lại trạng thái kết nối
+        /// </summary>
+        public void ResetConnection()
+        {
+            IsConnected = false;
+            DeviceInfo = null;
+            ConnectionStatus = "Chưa kết nối";
+            LastError = string.Empty;
         }
 
         public event PropertyChangedEventHandler? PropertyChanged;
