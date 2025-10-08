@@ -4,6 +4,7 @@ using BHK.Retrieval.Attendance.WPF.Services.Interfaces;
 using BHK.Retrieval.Attendance.WPF.Services.Implementations;
 using BHK.Retrieval.Attendance.WPF.ViewModels;
 using BHK.Retrieval.Attendance.WPF.Views.Pages;
+using BHK.Retrieval.Attendance.Infrastructure.DeviceIntegration.Wrappers.Realand;
 
 namespace BHK.Retrieval.Attendance.WPF.Configuration.DI
 {
@@ -46,6 +47,9 @@ namespace BHK.Retrieval.Attendance.WPF.Configuration.DI
         /// </summary>
         public static IServiceCollection RegisterInfrastructureServices(this IServiceCollection services, IConfiguration configuration)
         {
+            // Device Integration Services
+            services.AddSingleton<IRealandDeviceWrapper, RealandDeviceWrapper>();
+            
             // TODO: Đăng ký các services từ Infrastructure layer
             // services.AddDbContext<AttendanceDbContext>(options =>
             //     options.UseSqlServer(configuration.GetConnectionString("DefaultConnection")));

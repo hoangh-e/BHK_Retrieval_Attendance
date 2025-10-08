@@ -31,10 +31,11 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Device Integration (Local DLL) - Uncomment khi có file -->
-    <!-- <Reference Include="Riss.Devices">
-      <HintPath>..\..\packages\Riss.Devices\Riss.Devices.dll</HintPath>
-    </Reference> -->
+    <!-- Device Integration (Local DLL) -->
+    <Reference Include="Riss.Devices">
+      <HintPath>..\packages\Riss.Devices\Riss.Devices.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
   </ItemGroup>
 
   <ItemGroup>
