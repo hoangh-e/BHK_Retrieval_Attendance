@@ -14,13 +14,16 @@ namespace BHK.Retrieval.Attendance.WPF.Views.Pages
         public HomePageView(HomePageViewModel viewModel, ILogger<HomePageView> logger)
         {
             InitializeComponent();
-            DataContext = viewModel;
+            DataContext = viewModel;  // ✅ Quan trọng
             _logger = logger;
 
             // Set default tab to Device Info
-            MainTabControl.SelectedIndex = 0;
+            if (MainTabControl != null)
+            {
+                MainTabControl.SelectedIndex = 0;
+            }
 
-            _logger.LogInformation("HomePageView initialized");
+            _logger.LogInformation("HomePageView initialized with DataContext");
         }
 
         private void MainTabControl_SelectionChanged(object sender, SelectionChangedEventArgs e)    

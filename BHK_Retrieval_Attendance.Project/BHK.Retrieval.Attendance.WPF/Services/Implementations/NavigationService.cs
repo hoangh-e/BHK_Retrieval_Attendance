@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Navigation;
 using BHK.Retrieval.Attendance.WPF.Services.Interfaces;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.DependencyInjection;
@@ -216,20 +218,36 @@ namespace BHK.Retrieval.Attendance.WPF.Services.Implementations
             {
                 _logger.LogInformation("Creating new window for view: {ViewName}", viewName);
 
-                // Tạo window tạm thời để hiển thị kết nối thành công
+                // Tạo page instance
+                var page = CreatePage(viewName, parameter);
+                
+                if (page == null)
+                {
+                    _logger.LogError("Failed to create page for view: {ViewName}", viewName);
+                    return;
+                }
+
+                // Tạo window với Frame bên trong để có thể navigate
                 var window = new Window
                 {
                     Title = GetWindowTitle(viewName),
-                    Width = 800,
-                    Height = 600,
+                    Width = 1000,
+                    Height = 700,
                     WindowStartupLocation = WindowStartupLocation.CenterScreen,
-                    Content = CreatePage(viewName, parameter)
+                    Content = new Frame
+                    {
+                        Content = page,
+                        NavigationUIVisibility = NavigationUIVisibility.Hidden
+                    }
                 };
 
+                // Hiển thị window mới
                 window.Show();
                 
-                // Đóng window hiện tại (DeviceConnection)
-                Application.Current.Windows[0]?.Close();
+                // Đóng window cũ (DeviceConnection)
+                Application.Current.Windows.OfType<Window>()
+                    .FirstOrDefault(w => w.Title.Contains("Device Connection"))
+                    ?.Close();
             }
             catch (Exception ex)
             {

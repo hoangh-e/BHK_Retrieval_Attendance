@@ -58,8 +58,8 @@ namespace BHK.Retrieval.Attendance.WPF
 
                 await _host.StartAsync();
 
-                // Show Device Connection View with UI settings from config
-                ShowDeviceConnectionView();
+                // Show MainWindow instead of DeviceConnectionView directly
+                ShowMainWindow();
             }
             catch (Exception ex)
             {
@@ -94,6 +94,34 @@ namespace BHK.Retrieval.Attendance.WPF
                 .CreateLogger();
         }
 
+        /// <summary>
+        /// Show MainWindow with Frame navigation (New approach)
+        /// </summary>
+        private void ShowMainWindow()
+        {
+            try
+            {
+                if (_host == null)
+                {
+                    throw new InvalidOperationException("Host is not initialized");
+                }
+                
+                var mainWindow = _host.Services.GetRequiredService<BHK.Retrieval.Attendance.WPF.Views.Windows.MainWindow>();
+                mainWindow.Show();
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Error showing MainWindow");
+                
+                // Fallback to old approach if MainWindow fails
+                Log.Information("Falling back to DeviceConnectionView");
+                ShowDeviceConnectionView();
+            }
+        }
+
+        /// <summary>
+        /// Show DeviceConnectionView directly (Fallback approach)
+        /// </summary>
         private void ShowDeviceConnectionView()
         {
             try

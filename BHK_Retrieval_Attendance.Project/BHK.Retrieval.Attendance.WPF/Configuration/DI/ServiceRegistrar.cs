@@ -5,6 +5,7 @@ using BHK.Retrieval.Attendance.WPF.Services.Interfaces;
 using BHK.Retrieval.Attendance.WPF.Services.Implementations;
 using BHK.Retrieval.Attendance.WPF.ViewModels;
 using BHK.Retrieval.Attendance.WPF.Views.Pages;
+using BHK.Retrieval.Attendance.WPF.Views.Windows;
 using BHK.Retrieval.Attendance.Shared.Options;
 using BHK.Retrieval.Attendance.Infrastructure.Configuration;
 
@@ -112,6 +113,9 @@ namespace BHK.Retrieval.Attendance.WPF.Configuration.DI
                 var logger = sp.GetRequiredService<ILogger<HomePageView>>();
                 return new HomePageView(viewModel, logger);
             });
+
+            // Main Window
+            services.AddSingleton<BHK.Retrieval.Attendance.WPF.Views.Windows.MainWindow>();
 
             // TODO: Thêm các Views khác khi implement
             // services.AddTransient<DashboardView>(sp => { ... });

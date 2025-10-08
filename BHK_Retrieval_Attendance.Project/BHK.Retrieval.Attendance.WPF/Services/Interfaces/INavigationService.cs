@@ -47,6 +47,12 @@ namespace BHK.Retrieval.Attendance.WPF.Services.Interfaces
         void ClearHistory();
 
         /// <summary>
+        /// Set navigation frame cho service
+        /// </summary>
+        /// <param name="frame">Frame để navigate</param>
+        void SetNavigationFrame(System.Windows.Controls.Frame frame);
+
+        /// <summary>
         /// Event khi navigation thay đổi
         /// </summary>
         event EventHandler<string>? Navigated;
