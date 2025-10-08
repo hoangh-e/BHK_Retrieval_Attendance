@@ -86,19 +86,10 @@ namespace BHK.Retrieval.Attendance.WPF.Services.Implementations
                 _logger.LogInformation("Connecting to device using Infrastructure Service...");
 
                 // Gọi Infrastructure Service qua Interface (tuân thủ Clean Architecture)
-                await _deviceCommunicationService.ConnectAsync(ipAddress, port);
+                // ✅ Truyền đầy đủ parameters: ip, port, deviceNumber, password
+                await _deviceCommunicationService.ConnectAsync(ipAddress, port, deviceNumber, password);
                 
-                // Lưu thông tin kết nối vào DTO nội bộ (không dùng class Device từ Riss.Devices)
-                _deviceInfo = new DeviceConnectionInfo
-                {
-                    DeviceNumber = deviceNumber,
-                    IpAddress = ipAddress,
-                    Port = port,
-                    Password = password,
-                    Model = _deviceOptions.DeviceModel,
-                    SerialNumber = $"ZD2911-{DateTime.Now:yyyyMMddHHmmss}" // Sẽ được cập nhật từ device thực
-                };
-                
+
                 _isConnected = true;
                 _logger.LogInformation("✅ Device connected successfully via Infrastructure");
                 return true;
@@ -169,7 +160,8 @@ namespace BHK.Retrieval.Attendance.WPF.Services.Implementations
                 _logger.LogInformation("Testing connection via Infrastructure Service...");
                 
                 // Tạm thời dùng ConnectAsync rồi DisconnectAsync
-                await _deviceCommunicationService.ConnectAsync(ipAddress, port);
+                // ✅ Truyền đầy đủ parameters: ip, port, deviceNumber, password
+                await _deviceCommunicationService.ConnectAsync(ipAddress, port, deviceNumber, password);
                 await _deviceCommunicationService.DisconnectAsync();
                 
                 _logger.LogInformation("✅ Connection test successful");
