@@ -23,7 +23,7 @@ namespace BHK.Retrieval.Attendance.WPF.Views.Pages
             _logger.LogInformation("HomePageView initialized");
         }
 
-        private void MainTabControl_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void MainTabControl_SelectionChanged(object sender, SelectionChangedEventArgs e)    
         {
             if (e.Source is TabControl tabControl)
             {

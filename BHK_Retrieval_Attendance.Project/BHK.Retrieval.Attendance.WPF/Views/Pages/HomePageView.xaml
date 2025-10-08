@@ -49,7 +49,7 @@
                 <TabItem x:Name="DeviceInfoTab">
                     <TabItem.Header>
                         <StackPanel Width="100" Margin="8">
-                            <materialDesign:PackIcon Kind="DevicesOther" 
+                            <materialDesign:PackIcon Kind="Monitor" 
                                                     Width="24" Height="24" 
                                                     HorizontalAlignment="Center"/>
                             <TextBlock Text="Thông tin thiết bị" 
