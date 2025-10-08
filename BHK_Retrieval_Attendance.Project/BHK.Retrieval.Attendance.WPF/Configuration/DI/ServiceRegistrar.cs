@@ -5,6 +5,7 @@ using BHK.Retrieval.Attendance.WPF.Services.Implementations;
 using BHK.Retrieval.Attendance.WPF.ViewModels;
 using BHK.Retrieval.Attendance.WPF.Views.Pages;
 using BHK.Retrieval.Attendance.Shared.Options;
+using BHK.Retrieval.Attendance.Infrastructure.Configuration;
 
 namespace BHK.Retrieval.Attendance.WPF.Configuration.DI
 {
@@ -20,6 +21,9 @@ namespace BHK.Retrieval.Attendance.WPF.Configuration.DI
         {
             // Configuration Options
             RegisterOptions(services, configuration);
+
+            // Infrastructure Services (Device Communication)
+            services.AddDeviceServices();
 
             // Application Services
             RegisterApplicationServices(services);
@@ -78,6 +82,7 @@ namespace BHK.Retrieval.Attendance.WPF.Configuration.DI
             // Transient vì mỗi view sẽ có instance riêng
             services.AddTransient<DeviceConnectionViewModel>();
             services.AddTransient<ConnectionSuccessViewModel>();
+            services.AddTransient<DeviceViewModel>();
             
             // TODO: Thêm các ViewModels khác khi implement
             // services.AddTransient<DashboardViewModel>();
