@@ -114,8 +114,8 @@ namespace BHK.Retrieval.Attendance.WPF.Configuration.DI
                 return new HomePageView(viewModel, logger);
             });
 
-            // Main Window
-            services.AddSingleton<BHK.Retrieval.Attendance.WPF.Views.Windows.MainWindow>();
+            // Main Window - Transient vì window nên được tạo mới mỗi lần cần
+            services.AddTransient<BHK.Retrieval.Attendance.WPF.Views.Windows.MainWindow>();
 
             // TODO: Thêm các Views khác khi implement
             // services.AddTransient<DashboardView>(sp => { ... });

@@ -5,8 +5,10 @@
         Title="BHK Attendance System" 
         Height="700" Width="1000"
         WindowStartupLocation="CenterScreen"
-        WindowState="Maximized">
+        WindowState="Maximized"
+        Background="White">
     
     <Frame x:Name="MainFrame" 
-           NavigationUIVisibility="Hidden"/>
+           NavigationUIVisibility="Hidden"
+           Background="White"/>
 </Window>
