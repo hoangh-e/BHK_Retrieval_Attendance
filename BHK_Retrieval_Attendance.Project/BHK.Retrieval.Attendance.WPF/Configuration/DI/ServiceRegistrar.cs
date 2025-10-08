@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using BHK.Retrieval.Attendance.WPF.Services.Interfaces;
 using BHK.Retrieval.Attendance.WPF.Services.Implementations;
 using BHK.Retrieval.Attendance.WPF.ViewModels;
@@ -81,7 +82,7 @@ namespace BHK.Retrieval.Attendance.WPF.Configuration.DI
         {
             // Transient vì mỗi view sẽ có instance riêng
             services.AddTransient<DeviceConnectionViewModel>();
-            services.AddTransient<ConnectionSuccessViewModel>();
+            services.AddTransient<HomePageViewModel>();
             services.AddTransient<DeviceViewModel>();
             
             // TODO: Thêm các ViewModels khác khi implement
@@ -105,12 +106,11 @@ namespace BHK.Retrieval.Attendance.WPF.Configuration.DI
                 return view;
             });
 
-            services.AddTransient<ConnectionSuccessView>(sp =>
+            services.AddTransient<HomePageView>(sp =>
             {
-                var view = new ConnectionSuccessView();
-                var viewModel = sp.GetRequiredService<ConnectionSuccessViewModel>();
-                view.DataContext = viewModel;
-                return view;
+                var viewModel = sp.GetRequiredService<HomePageViewModel>();
+                var logger = sp.GetRequiredService<ILogger<HomePageView>>();
+                return new HomePageView(viewModel, logger);
             });
 
             // TODO: Thêm các Views khác khi implement

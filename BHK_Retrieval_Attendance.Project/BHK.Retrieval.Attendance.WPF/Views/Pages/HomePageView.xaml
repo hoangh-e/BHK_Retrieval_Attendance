@@ -1,0 +1,257 @@
+<UserControl x:Class="BHK.Retrieval.Attendance.WPF.Views.Pages.HomePageView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+             mc:Ignorable="d"
+             d:DesignHeight="600" d:DesignWidth="1000"
+             Background="{DynamicResource MaterialDesignPaper}">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <materialDesign:Card Grid.Row="0" Margin="16,16,16,8">
+            <Grid Margin="16">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <materialDesign:PackIcon Grid.Column="0" 
+                                        Kind="HomeCircle" 
+                                        Width="32" Height="32" 
+                                        VerticalAlignment="Center"
+                                        Foreground="{DynamicResource PrimaryHueMidBrush}"/>
+
+                <TextBlock Grid.Column="1" 
+                          Text="HỆ THỐNG QUẢN LÝ CHẤM CÔNG"
+                          FontSize="24" 
+                          FontWeight="Bold"
+                          VerticalAlignment="Center"
+                          Margin="16,0,0,0"
+                          Foreground="{DynamicResource PrimaryHueMidBrush}"/>
+            </Grid>
+        </materialDesign:Card>
+
+        <!-- Tab Control -->
+        <materialDesign:Card Grid.Row="1" Margin="16,8,16,16">
+            <TabControl x:Name="MainTabControl"
+                       Style="{StaticResource MaterialDesignNavigationRailTabControl}"
+                       materialDesign:ColorZoneAssist.Mode="PrimaryMid"
+                       SelectionChanged="MainTabControl_SelectionChanged">
+
+                <!-- Tab: Thông tin thiết bị -->
+                <TabItem x:Name="DeviceInfoTab">
+                    <TabItem.Header>
+                        <StackPanel Width="100" Margin="8">
+                            <materialDesign:PackIcon Kind="DevicesOther" 
+                                                    Width="24" Height="24" 
+                                                    HorizontalAlignment="Center"/>
+                            <TextBlock Text="Thông tin thiết bị" 
+                                      TextWrapping="Wrap"
+                                      TextAlignment="Center"
+                                      Margin="0,4,0,0"/>
+                        </StackPanel>
+                    </TabItem.Header>
+                    <ScrollViewer VerticalScrollBarVisibility="Auto">
+                        <StackPanel Margin="24">
+                            <TextBlock Text="THÔNG TIN THIẾT BỊ ĐÃ KẾT NỐI"
+                                      FontSize="20"
+                                      FontWeight="Bold"
+                                      Margin="0,0,0,24"/>
+
+                            <!-- Device Info Cards -->
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="16"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+
+                                <!-- IP Address -->
+                                <materialDesign:Card Grid.Row="0" Grid.Column="0" Margin="0,0,0,16">
+                                    <StackPanel Margin="16">
+                                        <TextBlock Text="Địa chỉ IP" 
+                                                  FontWeight="Bold" 
+                                                  Foreground="{DynamicResource PrimaryHueMidBrush}"/>
+                                        <TextBlock Text="{Binding IpAddress}" 
+                                                  FontSize="18" 
+                                                  Margin="0,8,0,0"/>
+                                    </StackPanel>
+                                </materialDesign:Card>
+
+                                <!-- Port -->
+                                <materialDesign:Card Grid.Row="0" Grid.Column="2" Margin="0,0,0,16">
+                                    <StackPanel Margin="16">
+                                        <TextBlock Text="Cổng" 
+                                                  FontWeight="Bold" 
+                                                  Foreground="{DynamicResource PrimaryHueMidBrush}"/>
+                                        <TextBlock Text="{Binding Port}" 
+                                                  FontSize="18" 
+                                                  Margin="0,8,0,0"/>
+                                    </StackPanel>
+                                </materialDesign:Card>
+
+                                <!-- Device Number -->
+                                <materialDesign:Card Grid.Row="1" Grid.Column="0" Margin="0,0,0,16">
+                                    <StackPanel Margin="16">
+                                        <TextBlock Text="Số thiết bị" 
+                                                  FontWeight="Bold" 
+                                                  Foreground="{DynamicResource PrimaryHueMidBrush}"/>
+                                        <TextBlock Text="{Binding DeviceNumber}" 
+                                                  FontSize="18" 
+                                                  Margin="0,8,0,0"/>
+                                    </StackPanel>
+                                </materialDesign:Card>
+
+                                <!-- Device Model -->
+                                <materialDesign:Card Grid.Row="1" Grid.Column="2" Margin="0,0,0,16">
+                                    <StackPanel Margin="16">
+                                        <TextBlock Text="Model thiết bị" 
+                                                  FontWeight="Bold" 
+                                                  Foreground="{DynamicResource PrimaryHueMidBrush}"/>
+                                        <TextBlock Text="{Binding DeviceModel}" 
+                                                  FontSize="18" 
+                                                  Margin="0,8,0,0"/>
+                                    </StackPanel>
+                                </materialDesign:Card>
+
+                                <!-- Connection Time -->
+                                <materialDesign:Card Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="3">
+                                    <StackPanel Margin="16">
+                                        <TextBlock Text="Thời gian kết nối" 
+                                                  FontWeight="Bold" 
+                                                  Foreground="{DynamicResource PrimaryHueMidBrush}"/>
+                                        <TextBlock Text="{Binding ConnectionTime, StringFormat='dd/MM/yyyy HH:mm:ss'}" 
+                                                  FontSize="18" 
+                                                  Margin="0,8,0,0"/>
+                                    </StackPanel>
+                                </materialDesign:Card>
+                            </Grid>
+
+                            <!-- Test Mode Warning -->
+                            <materialDesign:Card Background="{DynamicResource ValidationErrorBrush}"
+                                                Visibility="{Binding IsTestMode, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                                Margin="0,16,0,0">
+                                <StackPanel Margin="16" Orientation="Horizontal">
+                                    <materialDesign:PackIcon Kind="AlertCircle" 
+                                                            Width="24" Height="24"
+                                                            Foreground="White"
+                                                            VerticalAlignment="Center"/>
+                                    <TextBlock Text="CHẾ ĐỘ THỬ NGHIỆM - Kết nối mô phỏng"
+                                              Foreground="White"
+                                              FontWeight="Bold"
+                                              VerticalAlignment="Center"
+                                              Margin="8,0,0,0"/>
+                                </StackPanel>
+                            </materialDesign:Card>
+                        </StackPanel>
+                    </ScrollViewer>
+                </TabItem>
+
+                <!-- Tab: Quản lý chấm công -->
+                <TabItem x:Name="AttendanceTab">
+                    <TabItem.Header>
+                        <StackPanel Width="100" Margin="8">
+                            <materialDesign:PackIcon Kind="ClockOutline" 
+                                                    Width="24" Height="24" 
+                                                    HorizontalAlignment="Center"/>
+                            <TextBlock Text="Quản lý chấm công" 
+                                      TextWrapping="Wrap"
+                                      TextAlignment="Center"
+                                      Margin="0,4,0,0"/>
+                        </StackPanel>
+                    </TabItem.Header>
+                    <StackPanel Margin="24">
+                        <TextBlock Text="QUẢN LÝ CHẤM CÔNG" 
+                                  FontSize="20" 
+                                  FontWeight="Bold"/>
+                        <TextBlock Text="Tính năng đang phát triển..." 
+                                  Margin="0,16,0,0" 
+                                  FontStyle="Italic"/>
+                    </StackPanel>
+                </TabItem>
+
+                <!-- Tab: Quản lý nhân viên -->
+                <TabItem x:Name="EmployeeTab">
+                    <TabItem.Header>
+                        <StackPanel Width="100" Margin="8">
+                            <materialDesign:PackIcon Kind="AccountGroup" 
+                                                    Width="24" Height="24" 
+                                                    HorizontalAlignment="Center"/>
+                            <TextBlock Text="Quản lý nhân viên" 
+                                      TextWrapping="Wrap"
+                                      TextAlignment="Center"
+                                      Margin="0,4,0,0"/>
+                        </StackPanel>
+                    </TabItem.Header>
+                    <StackPanel Margin="24">
+                        <TextBlock Text="QUẢN LÝ NHÂN VIÊN" 
+                                  FontSize="20" 
+                                  FontWeight="Bold"/>
+                        <TextBlock Text="Tính năng đang phát triển..." 
+                                  Margin="0,16,0,0" 
+                                  FontStyle="Italic"/>
+                    </StackPanel>
+                </TabItem>
+
+                <!-- Tab: Cài đặt -->
+                <TabItem x:Name="SettingsTab">
+                    <TabItem.Header>
+                        <StackPanel Width="100" Margin="8">
+                            <materialDesign:PackIcon Kind="Settings" 
+                                                    Width="24" Height="24" 
+                                                    HorizontalAlignment="Center"/>
+                            <TextBlock Text="Cài đặt" 
+                                      TextWrapping="Wrap"
+                                      TextAlignment="Center"
+                                      Margin="0,4,0,0"/>
+                        </StackPanel>
+                    </TabItem.Header>
+                    <StackPanel Margin="24">
+                        <TextBlock Text="CÀI ĐẶT HỆ THỐNG" 
+                                  FontSize="20" 
+                                  FontWeight="Bold"/>
+                        <TextBlock Text="Tính năng đang phát triển..." 
+                                  Margin="0,16,0,0" 
+                                  FontStyle="Italic"/>
+                    </StackPanel>
+                </TabItem>
+
+                <!-- Tab: Lịch sử -->
+                <TabItem x:Name="HistoryTab">
+                    <TabItem.Header>
+                        <StackPanel Width="100" Margin="8">
+                            <materialDesign:PackIcon Kind="History" 
+                                                    Width="24" Height="24" 
+                                                    HorizontalAlignment="Center"/>
+                            <TextBlock Text="Lịch sử" 
+                                      TextWrapping="Wrap"
+                                      TextAlignment="Center"
+                                      Margin="0,4,0,0"/>
+                        </StackPanel>
+                    </TabItem.Header>
+                    <StackPanel Margin="24">
+                        <TextBlock Text="LỊCH SỬ HOẠT ĐỘNG" 
+                                  FontSize="20" 
+                                  FontWeight="Bold"/>
+                        <TextBlock Text="Tính năng đang phát triển..." 
+                                  Margin="0,16,0,0" 
+                                  FontStyle="Italic"/>
+                    </StackPanel>
+                </TabItem>
+
+            </TabControl>
+        </materialDesign:Card>
+    </Grid>
+</UserControl>

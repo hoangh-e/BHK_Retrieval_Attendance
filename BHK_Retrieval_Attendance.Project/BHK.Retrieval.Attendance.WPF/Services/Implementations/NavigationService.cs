@@ -195,7 +195,7 @@ namespace BHK.Retrieval.Attendance.WPF.Services.Implementations
                 { "AttendanceList", "BHK.Retrieval.Attendance.WPF.Views.Pages.AttendanceListView" },
                 { "EmployeeList", "BHK.Retrieval.Attendance.WPF.Views.Pages.EmployeeListView" },
                 { "Settings", "BHK.Retrieval.Attendance.WPF.Views.Pages.SettingsView" },
-                { "ConnectionSuccess", "BHK.Retrieval.Attendance.WPF.Views.Pages.ConnectionSuccessView" }
+                { "HomePage", "BHK.Retrieval.Attendance.WPF.Views.Pages.HomePageView" }
             };
 
             if (mapping.TryGetValue(viewName, out var typeName))
@@ -245,7 +245,7 @@ namespace BHK.Retrieval.Attendance.WPF.Services.Implementations
             return viewName switch
             {
                 "Dashboard" => "BHK Attendance - Dashboard",
-                "ConnectionSuccess" => "Connection Successful",
+                "HomePage" => "BHK Attendance - Home",
                 "AttendanceList" => "Attendance Records",
                 "EmployeeList" => "Employee Management",
                 "Settings" => "Settings",

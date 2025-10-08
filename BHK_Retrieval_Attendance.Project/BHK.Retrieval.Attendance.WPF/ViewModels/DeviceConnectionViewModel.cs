@@ -363,19 +363,19 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
         {
             try
             {
-                _logger.LogInformation("Navigating to Connection Success view after successful connection");
+                _logger.LogInformation("Navigating to HomePage after successful connection");
                 
                 // Delay ngắn để user thấy thông báo
                 await Task.Delay(1500);
                 
-                // Navigate tới ConnectionSuccess view
-                _navigationService.NavigateTo("ConnectionSuccess");
+                // Navigate tới HomePage view
+                _navigationService.NavigateTo("HomePage");
                 
-                _logger.LogInformation("Successfully navigated to Connection Success screen");
+                _logger.LogInformation("Successfully navigated to HomePage");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to navigate to Connection Success view");
+                _logger.LogError(ex, "Failed to navigate to HomePage");
                 // ✅ Use DialogHelper for navigation warning
                 DialogHelper.ShowWarning("Kết nối thành công nhưng không thể chuyển đến màn hình tiếp theo", ex.Message);
             }
