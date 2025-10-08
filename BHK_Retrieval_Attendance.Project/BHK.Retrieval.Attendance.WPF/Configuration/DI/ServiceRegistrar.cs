@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using BHK.Retrieval.Attendance.WPF.Services.Interfaces;
 using BHK.Retrieval.Attendance.WPF.Services.Implementations;
@@ -16,13 +17,55 @@ namespace BHK.Retrieval.Attendance.WPF.Configuration.DI
         /// </summary>
         public static IServiceCollection AddApplicationServices(this IServiceCollection services)
         {
-            // Register Services
+            // Register Services với dependency injection
             services.AddSingleton<IDeviceService, DeviceService>();
             services.AddSingleton<IDialogService, DialogService>();
+            services.AddScoped<IConfigurationService, ConfigurationService>();
 
             // TODO: Thêm các services khác
             // services.AddSingleton<INavigationService, NavigationService>();
             // services.AddSingleton<INotificationService, NotificationService>();
+
+            return services;
+        }
+
+        /// <summary>
+        /// Đăng ký Core services từ Core layer
+        /// </summary>
+        public static IServiceCollection RegisterCoreServices(this IServiceCollection services)
+        {
+            // TODO: Đăng ký các services từ Core layer
+            // services.AddScoped<IEmployeeService, EmployeeService>();
+            // services.AddScoped<IAttendanceService, AttendanceService>();
+
+            return services;
+        }
+
+        /// <summary>
+        /// Đăng ký Infrastructure services với configuration
+        /// </summary>
+        public static IServiceCollection RegisterInfrastructureServices(this IServiceCollection services, IConfiguration configuration)
+        {
+            // TODO: Đăng ký các services từ Infrastructure layer
+            // services.AddDbContext<AttendanceDbContext>(options =>
+            //     options.UseSqlServer(configuration.GetConnectionString("DefaultConnection")));
+            
+            // services.AddScoped<IEmployeeRepository, EmployeeRepository>();
+            // services.AddScoped<IAttendanceRepository, AttendanceRepository>();
+
+            return services;
+        }
+
+        /// <summary>
+        /// Đăng ký WPF specific services
+        /// </summary>
+        public static IServiceCollection RegisterWpfServices(this IServiceCollection services)
+        {
+            // Đăng ký ViewModels
+            services.AddViewModels();
+
+            // Đăng ký Views
+            services.AddViews();
 
             return services;
         }
@@ -34,6 +77,7 @@ namespace BHK.Retrieval.Attendance.WPF.Configuration.DI
         {
             // Register ViewModels
             services.AddTransient<DeviceConnectionViewModel>();
+            services.AddTransient<ConfigurationDemoViewModel>();
 
             // TODO: Thêm các ViewModels khác
             // services.AddTransient<MainWindowViewModel>();
