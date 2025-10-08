@@ -95,9 +95,6 @@ namespace BHK.Retrieval.Attendance.WPF
                 {
                     throw new InvalidOperationException("Host is not initialized");
                 }
-
-                // Test configuration trước khi show view
-                var configDemo = _host.Services.GetRequiredService<ConfigurationDemoViewModel>();
                 
                 var view = _host.Services.GetRequiredService<DeviceConnectionView>();
                 var viewModel = _host.Services.GetRequiredService<DeviceConnectionViewModel>();
