@@ -1,0 +1,46 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>BHK.Retrieval.Attendance.Infrastructure</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Entity Framework -->
+    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.0" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="8.0.0" />
+    
+    <!-- SharePoint PnP -->
+    <PackageReference Include="PnP.Framework" Version="1.12.0" />
+    
+    <!-- Export Libraries -->
+    <PackageReference Include="EPPlus" Version="7.0.0" />
+    <PackageReference Include="iTextSharp" Version="5.5.13.3" />
+    
+    <!-- Email -->
+    <PackageReference Include="MailKit" Version="4.3.0" />
+    
+    <!-- Configuration -->
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Options" Version="8.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Device Integration (Local DLL) - Uncomment khi có file -->
+    <!-- <Reference Include="Riss.Devices">
+      <HintPath>..\..\packages\Riss.Devices\Riss.Devices.dll</HintPath>
+    </Reference> -->
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Project References - Infrastructure phụ thuộc Core và Shared -->
+    <ProjectReference Include="..\BHK.Retrieval.Attendance.Core\BHK.Retrieval.Attendance.Core.csproj" />
+    <ProjectReference Include="..\BHK.Retrieval.Attendance.Shared\BHK.Retrieval.Attendance.Shared.csproj" />
+  </ItemGroup>
+
+</Project>

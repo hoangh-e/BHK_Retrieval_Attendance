@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>BHK.Retrieval.Attendance.Core</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Validation -->
+    <PackageReference Include="FluentValidation" Version="11.8.0" />
+    
+    <!-- MediatR for CQRS pattern -->
+    <PackageReference Include="MediatR" Version="12.2.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Project References - Core chỉ phụ thuộc Shared -->
+    <ProjectReference Include="..\BHK.Retrieval.Attendance.Shared\BHK.Retrieval.Attendance.Shared.csproj" />
+  </ItemGroup>
+
+</Project>

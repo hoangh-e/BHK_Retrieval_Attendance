@@ -39,20 +39,22 @@
     
     <!-- Validation -->
     <PackageReference Include="FluentValidation" Version="11.8.0" />
-    
-    <!-- MediatR for CQRS pattern -->
-    <PackageReference Include="MediatR" Version="12.2.0" />
-    
-    <!-- Entity Framework -->
-    <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.0" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.0" />
-    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.0" />
-    
-    <!-- Export Libraries -->
-    <PackageReference Include="EPPlus" Version="7.0.0" />
-    
-    <!-- Email -->
-    <PackageReference Include="MailKit" Version="4.3.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Project References - Clean Architecture Dependencies -->
+    <ProjectReference Include="..\BHK.Retrieval.Attendance.Core\BHK.Retrieval.Attendance.Core.csproj" />
+    <ProjectReference Include="..\BHK.Retrieval.Attendance.Infrastructure\BHK.Retrieval.Attendance.Infrastructure.csproj" />
+    <ProjectReference Include="..\BHK.Retrieval.Attendance.Shared\BHK.Retrieval.Attendance.Shared.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="appsettings.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="appsettings.Development.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
 </Project>
