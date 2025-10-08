@@ -71,18 +71,8 @@ namespace BHK.Retrieval.Attendance.WPF
 
         private void ConfigureServices(IServiceCollection services, IConfiguration configuration)
         {
-            // 🏗️ Clean Architecture Service Registration
-            // Core layer services
-            services.RegisterCoreServices();
-
-            // Infrastructure layer services (cần configuration)
-            services.RegisterInfrastructureServices(configuration);
-
-            // Application layer services (bao gồm IConfigurationService)
-            services.AddApplicationServices();
-
-            // WPF layer services
-            services.RegisterWpfServices();
+            // 🏗️ Sử dụng ServiceRegistrar mới - đăng ký tất cả services
+            services.RegisterServices(configuration);
 
             // TODO: Add other configurations
             // services.AddAutoMapper(typeof(App).Assembly);

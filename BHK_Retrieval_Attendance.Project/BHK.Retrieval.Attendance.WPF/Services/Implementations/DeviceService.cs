@@ -2,24 +2,29 @@ using System;
 using System.Threading.Tasks;
 using BHK.Retrieval.Attendance.WPF.Services.Interfaces;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using BHK.Retrieval.Attendance.Shared.Options;
 
 namespace BHK.Retrieval.Attendance.WPF.Services.Implementations
 {
     /// <summary>
-    /// Service quản lý kết nối và giao tiếp với thiết bị chấm công
+    /// Service quản lý kết nối và giao tiếp với thiết bị chấm công ZDC2911
     /// </summary>
-    public class DeviceService : IDeviceService
+    public class DeviceService : IDeviceService, IDisposable
     {
         private readonly ILogger<DeviceService> _logger;
+        private readonly DeviceOptions _deviceOptions;
+        private object? _device;
+        private object? _deviceConnection;
         private bool _isConnected;
+        private bool _disposed;
 
-        // TODO: Thêm các fields cho Riss.Devices sau khi integrate
-        // private Device _device;
-        // private DeviceConnection _deviceConnection;
-
-        public DeviceService(ILogger<DeviceService> logger)
+        public DeviceService(
+            ILogger<DeviceService> logger,
+            IOptions<DeviceOptions> deviceOptions)
         {
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _deviceOptions = deviceOptions?.Value ?? throw new ArgumentNullException(nameof(deviceOptions));
             _isConnected = false;
         }
 
@@ -29,180 +34,210 @@ namespace BHK.Retrieval.Attendance.WPF.Services.Implementations
         public bool IsConnected => _isConnected;
 
         /// <summary>
+        /// Lấy thông tin Device hiện tại
+        /// </summary>
+        public object? CurrentDevice => _device;
+
+        /// <summary>
         /// Kết nối tới thiết bị qua TCP/IP
         /// </summary>
         public async Task<bool> ConnectTcpAsync(string ipAddress, int port, int deviceNumber, string password)
         {
             try
             {
-                _logger.LogInformation("Connecting to device - IP: {IpAddress}, Port: {Port}, DN: {DeviceNumber}", 
+                _logger.LogInformation("Starting TCP connection - IP: {IpAddress}, Port: {Port}, DN: {DeviceNumber}", 
                     ipAddress, port, deviceNumber);
 
-                // TODO: Implement logic kết nối thực tế với Riss.Devices
-                /*
-                _device = new Device
+                // Kiểm tra Test Mode
+                if (_deviceOptions.Test)
                 {
-                    DN = deviceNumber,
-                    Password = password,
-                    Model = "ZDC2911",
-                    ConnectionModel = 5, // ZD2911 Platform
-                    CommunicationType = CommunicationType.Tcp,
-                    IpAddress = ipAddress,
-                    IpPort = port
-                };
-
-                _deviceConnection = DeviceConnection.CreateConnection(ref _device);
-                int result = _deviceConnection.Open();
-                
-                if (result > 0)
-                {
+                    _logger.LogWarning("⚠️ TEST MODE ENABLED - Simulating successful connection");
+                    await Task.Delay(1000); // Simulate connection delay
                     _isConnected = true;
-                    _logger.LogInformation("Device connected successfully");
+                    _logger.LogInformation("✅ [TEST MODE] Device connected successfully (simulated)");
                     return true;
                 }
-                else
-                {
-                    _logger.LogWarning("Failed to connect to device. Result code: {ResultCode}", result);
-                    return false;
-                }
-                */
 
-                // Mô phỏng kết nối
-                await Task.Delay(1000);
-                _isConnected = true;
-                return true;
+                // Logic kết nối thực tế sẽ được implement khi có Riss.Devices
+                return await Task.Run(() =>
+                {
+                    try
+                    {
+                        // Tạm thời simulate thành công (cho khi chưa có Riss.Devices)
+                        _logger.LogInformation("⚠️ Simulating connection - Riss.Devices not available");
+                        Task.Delay(1500).Wait(); // Simulate connection time
+                        _isConnected = true;
+                        _logger.LogInformation("✅ Simulated connection successful");
+                        return true;
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Exception occurred during TCP connection");
+                        _isConnected = false;
+                        CleanupConnection();
+                        return false;
+                    }
+                });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error connecting to device");
+                _logger.LogError(ex, "Failed to connect to device via TCP/IP");
                 _isConnected = false;
-                throw;
+                CleanupConnection();
+                return false;
             }
         }
 
         /// <summary>
-        /// Ngắt kết nối khỏi thiết bị
+        /// Ngắt kết nối với thiết bị
         /// </summary>
-        public async Task DisconnectAsync()
+        public async Task<bool> DisconnectAsync()
         {
             try
             {
-                _logger.LogInformation("Disconnecting from device");
+                _logger.LogInformation("Disconnecting from device...");
 
-                // TODO: Gọi service để ngắt kết nối
-                /*
+                // Kiểm tra Test Mode
+                if (_deviceOptions.Test)
+                {
+                    _logger.LogWarning("⚠️ TEST MODE ENABLED - Simulating disconnection");
+                    await Task.Delay(500);
+                    _isConnected = false;
+                    _logger.LogInformation("✅ [TEST MODE] Device disconnected successfully (simulated)");
+                    return true;
+                }
+
                 if (_deviceConnection != null)
                 {
-                    _deviceConnection.Close();
-                    _deviceConnection = null;
+                    await Task.Run(() =>
+                    {
+                        _logger.LogInformation("✅ Device connection closed");
+                    });
                 }
-                
-                _device = null;
-                */
 
-                // Mô phỏng ngắt kết nối
-                await Task.Delay(500);
+                CleanupConnection();
                 _isConnected = false;
-
                 _logger.LogInformation("Device disconnected successfully");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to disconnect from device");
-                throw;
-            }
-        }
-
-        /// <summary>
-        /// Kiểm tra kết nối tới thiết bị
-        /// </summary>
-        public async Task<bool> TestConnectionAsync(string ipAddress, int port)
-        {
-            try
-            {
-                _logger.LogInformation("Testing connection to {IpAddress}:{Port}", ipAddress, port);
-
-                // TODO: Implement logic test kết nối thực tế
-                // Có thể dùng ping hoặc thử kết nối socket đơn giản
-
-                // Mô phỏng test connection
-                await Task.Delay(800);
-
-                _logger.LogInformation("Connection test completed");
                 return true;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error testing connection");
+                _logger.LogError(ex, "Error while disconnecting from device");
                 return false;
             }
         }
 
         /// <summary>
-        /// Lấy trạng thái hiện tại của thiết bị
+        /// Test kết nối tới thiết bị (không lưu connection)
         /// </summary>
-        public async Task<string> GetDeviceStatusAsync()
+        public async Task<bool> TestConnectionAsync(string ipAddress, int port, int deviceNumber, string password)
         {
             try
             {
-                if (!_isConnected)
+                _logger.LogInformation("Testing connection - IP: {IpAddress}, Port: {Port}", ipAddress, port);
+
+                // Kiểm tra Test Mode
+                if (_deviceOptions.Test)
                 {
-                    return "Disconnected";
+                    _logger.LogWarning("⚠️ TEST MODE ENABLED - Simulating test connection");
+                    await Task.Delay(800);
+                    _logger.LogInformation("✅ [TEST MODE] Test connection successful (simulated)");
+                    return true;
                 }
 
-                _logger.LogInformation("Getting device status");
-
-                // TODO: Implement logic lấy status từ thiết bị thực tế
-                /*
-                if (_deviceConnection != null && _device != null)
+                // Test thực tế - tạm thời simulate
+                return await Task.Run(() =>
                 {
-                    // Lấy thông tin device info, firmware version, etc.
-                    return "Connected - Device Ready";
-                }
-                */
-
-                // Mô phỏng lấy status
-                await Task.Delay(300);
-                return "Connected - Device Ready";
+                    try
+                    {
+                        _logger.LogInformation("⚠️ Simulating test connection - Riss.Devices not available");
+                        Task.Delay(800).Wait();
+                        _logger.LogInformation("✅ Simulated test connection successful");
+                        return true;
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "Exception during test connection");
+                        return false;
+                    }
+                });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error getting device status");
-                return "Error";
+                _logger.LogError(ex, "Failed to test connection");
+                return false;
             }
         }
 
-        #region Private Helper Methods
-
         /// <summary>
-        /// Validate địa chỉ IP
+        /// Lấy thông tin thiết bị
         /// </summary>
-        private bool IsValidIpAddress(string ipAddress)
+        public async Task<string> GetDeviceInfoAsync()
         {
-            if (string.IsNullOrWhiteSpace(ipAddress))
-                return false;
-
-            var parts = ipAddress.Split('.');
-            if (parts.Length != 4)
-                return false;
-
-            foreach (var part in parts)
+            if (!_isConnected || _device == null)
             {
-                if (!int.TryParse(part, out int value) || value < 0 || value > 255)
-                    return false;
+                return "Device not connected";
             }
 
-            return true;
+            try
+            {
+                return await Task.Run(() =>
+                {
+                    return $"Device Model: {_deviceOptions.DeviceModel}, IP: {_deviceOptions.DefaultIpAddress}:{_deviceOptions.DefaultPort}";
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to get device info");
+                return "Error getting device info";
+            }
         }
 
         /// <summary>
-        /// Validate port number
+        /// Cleanup kết nối
         /// </summary>
-        private bool IsValidPort(int port)
+        private void CleanupConnection()
         {
-            return port > 0 && port <= 65535;
+            try
+            {
+                // TODO: Implement cleanup với Riss.Devices
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Error during connection cleanup");
+            }
+            finally
+            {
+                _deviceConnection = null;
+                _device = null;
+            }
         }
 
-        #endregion
+        /// <summary>
+        /// Dispose resources
+        /// </summary>
+        public void Dispose()
+        {
+            if (_disposed)
+                return;
+
+            try
+            {
+                if (_isConnected)
+                {
+                    DisconnectAsync().GetAwaiter().GetResult();
+                }
+
+                CleanupConnection();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Error during disposal");
+            }
+            finally
+            {
+                _disposed = true;
+            }
+        }
     }
 }

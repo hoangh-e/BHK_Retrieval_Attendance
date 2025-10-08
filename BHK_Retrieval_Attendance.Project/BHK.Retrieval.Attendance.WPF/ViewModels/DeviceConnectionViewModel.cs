@@ -1,228 +1,278 @@
 using System;
 using System.Threading.Tasks;
-using System.Windows;
 using System.Windows.Input;
-using CommunityToolkit.Mvvm.Input;
-using BHK.Retrieval.Attendance.WPF.ViewModels.Base;
 using BHK.Retrieval.Attendance.WPF.Models.Device;
 using BHK.Retrieval.Attendance.WPF.Services.Interfaces;
+using BHK.Retrieval.Attendance.WPF.ViewModels.Base;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using BHK.Retrieval.Attendance.Shared.Options;
 
 namespace BHK.Retrieval.Attendance.WPF.ViewModels
 {
     /// <summary>
-    /// ViewModel cho giao diện kết nối TCP/IP
+    /// ViewModel cho giao diện kết nối thiết bị TCP/IP
     /// </summary>
     public class DeviceConnectionViewModel : BaseViewModel
     {
         private readonly IDeviceService _deviceService;
         private readonly IDialogService _dialogService;
         private readonly ILogger<DeviceConnectionViewModel> _logger;
-        
+        private readonly DeviceOptions _deviceOptions;
+        private readonly INavigationService _navigationService;
+
         private DeviceConnectionModel _connectionModel;
+        private bool _isBusy;
+        private string _statusMessage;
 
         public DeviceConnectionViewModel(
             IDeviceService deviceService,
             IDialogService dialogService,
-            ILogger<DeviceConnectionViewModel> logger)
+            ILogger<DeviceConnectionViewModel> logger,
+            IOptions<DeviceOptions> deviceOptions,
+            INavigationService navigationService)
         {
             _deviceService = deviceService ?? throw new ArgumentNullException(nameof(deviceService));
             _dialogService = dialogService ?? throw new ArgumentNullException(nameof(dialogService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _deviceOptions = deviceOptions?.Value ?? throw new ArgumentNullException(nameof(deviceOptions));
+            _navigationService = navigationService ?? throw new ArgumentNullException(nameof(navigationService));
 
-            Title = "Device Connection - TCP/IP";
-            ConnectionModel = new DeviceConnectionModel();
+            // Khởi tạo Model với giá trị từ appsettings.json
+            _connectionModel = new DeviceConnectionModel
+            {
+                IpAddress = _deviceOptions.DefaultIpAddress,
+                Port = _deviceOptions.DefaultPort,
+                DeviceNumber = _deviceOptions.DefaultDeviceNumber,
+                Password = _deviceOptions.DefaultPassword,
+                DeviceModel = _deviceOptions.DeviceModel
+            };
 
-            // Khởi tạo Commands
-            ConnectCommand = new AsyncRelayCommand(ConnectAsync, CanConnect);
-            DisconnectCommand = new AsyncRelayCommand(DisconnectAsync, CanDisconnect);
-            TestConnectionCommand = new AsyncRelayCommand(TestConnectionAsync, CanTestConnection);
-            RefreshCommand = new AsyncRelayCommand(RefreshAsync);
+            _statusMessage = "Ready to connect";
+
+            // Initialize commands
+            ConnectCommand = new RelayCommand(async _ => await ConnectAsync(), _ => CanConnect());
+            DisconnectCommand = new RelayCommand(async _ => await DisconnectAsync(), _ => CanDisconnect());
+            TestConnectionCommand = new RelayCommand(async _ => await TestConnectionAsync(), _ => CanTestConnection());
+            RefreshCommand = new RelayCommand(_ => Refresh(), _ => !IsBusy);
+
+            _logger.LogInformation("DeviceConnectionViewModel initialized with config - IP: {IP}, Port: {Port}, TestMode: {TestMode}", 
+                _deviceOptions.DefaultIpAddress, _deviceOptions.DefaultPort, _deviceOptions.Test);
+
+            // Hiển thị thông báo nếu đang ở Test Mode
+            if (_deviceOptions.Test)
+            {
+                StatusMessage = "⚠️ TEST MODE - Connection will be simulated";
+                _logger.LogWarning("Application is running in TEST MODE");
+            }
         }
 
         #region Properties
 
-        /// <summary>
-        /// Model chứa thông tin kết nối
-        /// </summary>
         public DeviceConnectionModel ConnectionModel
         {
             get => _connectionModel;
             set => SetProperty(ref _connectionModel, value);
         }
 
+        public new bool IsBusy
+        {
+            get => _isBusy;
+            set
+            {
+                if (SetProperty(ref _isBusy, value))
+                {
+                    // Refresh command can execute state
+                    CommandManager.InvalidateRequerySuggested();
+                }
+            }
+        }
+
+        public string StatusMessage
+        {
+            get => _statusMessage;
+            set => SetProperty(ref _statusMessage, value);
+        }
+
+        public bool IsTestMode => _deviceOptions.Test;
+
         #endregion
 
         #region Commands
 
-        /// <summary>
-        /// Command để kết nối thiết bị
-        /// </summary>
-        public IAsyncRelayCommand ConnectCommand { get; }
-
-        /// <summary>
-        /// Command để ngắt kết nối
-        /// </summary>
-        public IAsyncRelayCommand DisconnectCommand { get; }
-
-        /// <summary>
-        /// Command để kiểm tra kết nối
-        /// </summary>
-        public IAsyncRelayCommand TestConnectionCommand { get; }
-
-        /// <summary>
-        /// Command để refresh trạng thái
-        /// </summary>
-        public IAsyncRelayCommand RefreshCommand { get; }
+        public ICommand ConnectCommand { get; }
+        public ICommand DisconnectCommand { get; }
+        public ICommand TestConnectionCommand { get; }
+        public ICommand RefreshCommand { get; }
 
         #endregion
 
-        #region Command Methods
+        #region Command Implementations
 
-        /// <summary>
-        /// Kiểm tra có thể kết nối không
-        /// </summary>
         private bool CanConnect()
         {
-            return !ConnectionModel.IsConnected && 
-                   !string.IsNullOrWhiteSpace(ConnectionModel.IpAddress) &&
-                   !IsBusy;
+            return !IsBusy && !ConnectionModel.IsConnected && !string.IsNullOrWhiteSpace(ConnectionModel.IpAddress);
         }
 
-        /// <summary>
-        /// Thực hiện kết nối tới thiết bị
-        /// </summary>
         private async Task ConnectAsync()
         {
+            if (IsBusy) return;
+
             try
             {
                 IsBusy = true;
-                ConnectionModel.ConnectionStatus = "Connecting...";
-                _logger.LogInformation("Attempting to connect to device at {IpAddress}:{Port}", 
+                StatusMessage = _deviceOptions.Test ? "Connecting (TEST MODE)..." : "Connecting to device...";
+                _logger.LogInformation("Attempting to connect - IP: {IP}, Port: {Port}", 
                     ConnectionModel.IpAddress, ConnectionModel.Port);
 
-                // TODO: Gọi service để kết nối thiết bị
-                var result = await _deviceService.ConnectTcpAsync(
+                bool success = await _deviceService.ConnectTcpAsync(
                     ConnectionModel.IpAddress,
                     ConnectionModel.Port,
                     ConnectionModel.DeviceNumber,
-                    ConnectionModel.Password
-                );
+                    ConnectionModel.Password);
 
-                if (result)
+                if (success)
                 {
                     ConnectionModel.IsConnected = true;
-                    ConnectionModel.ConnectionStatus = $"Connected to {ConnectionModel.IpAddress}";
+                    StatusMessage = _deviceOptions.Test ? "Connected (TEST MODE)" : "Connected successfully";
                     
-                    _logger.LogInformation("Successfully connected to device");
-                    await _dialogService.ShowMessageAsync("Success", "Device connected successfully!", "OK");
+                    _logger.LogInformation("✅ Connection successful");
+                    
+                    await _dialogService.ShowMessageAsync(
+                        "Success", 
+                        _deviceOptions.Test 
+                            ? "Connected successfully (TEST MODE)\n\nTest mode is enabled. This is a simulated connection." 
+                            : "Connected to device successfully!");
+
+                    // Chuyển sang giao diện kế tiếp sau khi kết nối thành công
+                    await NavigateToNextViewAsync();
                 }
                 else
                 {
                     ConnectionModel.IsConnected = false;
-                    ConnectionModel.ConnectionStatus = "Connection Failed";
-                    await _dialogService.ShowErrorAsync("Connection Error", "Failed to connect to device");
+                    StatusMessage = "Connection failed";
+                    
+                    _logger.LogWarning("❌ Connection failed");
+                    
+                    await _dialogService.ShowMessageAsync(
+                        "Error", 
+                        "Failed to connect to device.\n\nPlease check:\n" +
+                        "• Device is powered on\n" +
+                        "• Network connection\n" +
+                        "• IP address and port are correct");
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to connect to device");
+                _logger.LogError(ex, "Exception during connection");
+                StatusMessage = "Connection error";
                 ConnectionModel.IsConnected = false;
-                ConnectionModel.ConnectionStatus = "Connection Failed";
-                await _dialogService.ShowErrorAsync("Connection Error", ex.Message);
+                
+                await _dialogService.ShowMessageAsync("Error", $"Connection error: {ex.Message}");
             }
             finally
             {
                 IsBusy = false;
-                ConnectCommand.NotifyCanExecuteChanged();
-                DisconnectCommand.NotifyCanExecuteChanged();
-                TestConnectionCommand.NotifyCanExecuteChanged();
+                CommandManager.InvalidateRequerySuggested();
             }
         }
 
-        /// <summary>
-        /// Kiểm tra có thể ngắt kết nối không
-        /// </summary>
         private bool CanDisconnect()
         {
-            return ConnectionModel.IsConnected && !IsBusy;
+            return !IsBusy && ConnectionModel.IsConnected;
         }
 
-        /// <summary>
-        /// Ngắt kết nối khỏi thiết bị
-        /// </summary>
         private async Task DisconnectAsync()
         {
+            if (IsBusy) return;
+
             try
             {
                 IsBusy = true;
-                ConnectionModel.ConnectionStatus = "Disconnecting...";
-                _logger.LogInformation("Disconnecting from device");
+                StatusMessage = "Disconnecting...";
+                _logger.LogInformation("Attempting to disconnect");
 
-                await _deviceService.DisconnectAsync();
+                bool success = await _deviceService.DisconnectAsync();
 
-                ConnectionModel.IsConnected = false;
-                ConnectionModel.ConnectionStatus = "Disconnected";
-                
-                _logger.LogInformation("Successfully disconnected from device");
-                await _dialogService.ShowMessageAsync("Disconnected", "Device disconnected successfully!", "OK");
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Failed to disconnect from device");
-                await _dialogService.ShowErrorAsync("Disconnect Error", ex.Message);
-            }
-            finally
-            {
-                IsBusy = false;
-                ConnectCommand.NotifyCanExecuteChanged();
-                DisconnectCommand.NotifyCanExecuteChanged();
-                TestConnectionCommand.NotifyCanExecuteChanged();
-            }
-        }
-
-        /// <summary>
-        /// Kiểm tra có thể test kết nối không
-        /// </summary>
-        private bool CanTestConnection()
-        {
-            return !string.IsNullOrWhiteSpace(ConnectionModel.IpAddress) && !IsBusy;
-        }
-
-        /// <summary>
-        /// Test kết nối tới thiết bị
-        /// </summary>
-        private async Task TestConnectionAsync()
-        {
-            try
-            {
-                IsBusy = true;
-                ConnectionModel.ConnectionStatus = "Testing connection...";
-                _logger.LogInformation("Testing connection to device");
-
-                var isReachable = await _deviceService.TestConnectionAsync(
-                    ConnectionModel.IpAddress,
-                    ConnectionModel.Port
-                );
-
-                if (isReachable)
+                if (success)
                 {
-                    ConnectionModel.ConnectionStatus = "Device is reachable";
-                    await _dialogService.ShowMessageAsync("Test Result", 
-                        $"Device at {ConnectionModel.IpAddress}:{ConnectionModel.Port} is reachable!", "OK");
+                    ConnectionModel.IsConnected = false;
+                    StatusMessage = "Disconnected";
+                    _logger.LogInformation("✅ Disconnected successfully");
+                    
+                    await _dialogService.ShowMessageAsync("Success", "Disconnected from device successfully");
                 }
                 else
                 {
-                    ConnectionModel.ConnectionStatus = "Device is not reachable";
-                    await _dialogService.ShowWarningAsync("Test Result", 
-                        "Device is not reachable. Please check IP and Port.");
+                    StatusMessage = "Disconnect failed";
+                    _logger.LogWarning("❌ Disconnect failed");
+                    
+                    await _dialogService.ShowMessageAsync("Warning", "Failed to disconnect properly");
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to test connection");
-                ConnectionModel.ConnectionStatus = "Test failed";
-                await _dialogService.ShowErrorAsync("Test Error", ex.Message);
+                _logger.LogError(ex, "Exception during disconnection");
+                StatusMessage = "Disconnect error";
+                
+                await _dialogService.ShowMessageAsync("Error", $"Disconnect error: {ex.Message}");
+            }
+            finally
+            {
+                IsBusy = false;
+                CommandManager.InvalidateRequerySuggested();
+            }
+        }
+
+        private bool CanTestConnection()
+        {
+            return !IsBusy && !string.IsNullOrWhiteSpace(ConnectionModel.IpAddress);
+        }
+
+        private async Task TestConnectionAsync()
+        {
+            if (IsBusy) return;
+
+            try
+            {
+                IsBusy = true;
+                StatusMessage = _deviceOptions.Test ? "Testing connection (TEST MODE)..." : "Testing connection...";
+                _logger.LogInformation("Testing connection - IP: {IP}, Port: {Port}", 
+                    ConnectionModel.IpAddress, ConnectionModel.Port);
+
+                bool success = await _deviceService.TestConnectionAsync(
+                    ConnectionModel.IpAddress,
+                    ConnectionModel.Port,
+                    ConnectionModel.DeviceNumber,
+                    ConnectionModel.Password);
+
+                if (success)
+                {
+                    StatusMessage = _deviceOptions.Test ? "Test successful (TEST MODE)" : "Test successful";
+                    _logger.LogInformation("✅ Test connection successful");
+                    
+                    await _dialogService.ShowMessageAsync(
+                        "Success", 
+                        _deviceOptions.Test 
+                            ? "Test connection successful (TEST MODE)\n\nThe device is reachable (simulated)." 
+                            : "Test connection successful!\n\nThe device is reachable and ready to connect.");
+                }
+                else
+                {
+                    StatusMessage = "Test failed";
+                    _logger.LogWarning("❌ Test connection failed");
+                    
+                    await _dialogService.ShowMessageAsync(
+                        "Failed", 
+                        "Test connection failed.\n\nThe device is not reachable. Please check your network settings.");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Exception during test connection");
+                StatusMessage = "Test error";
+                
+                await _dialogService.ShowMessageAsync("Error", $"Test error: {ex.Message}");
             }
             finally
             {
@@ -230,55 +280,78 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
             }
         }
 
+        private void Refresh()
+        {
+            _logger.LogInformation("Refreshing connection settings");
+            
+            // Reset về giá trị mặc định từ config
+            ConnectionModel.IpAddress = _deviceOptions.DefaultIpAddress;
+            ConnectionModel.Port = _deviceOptions.DefaultPort;
+            ConnectionModel.DeviceNumber = _deviceOptions.DefaultDeviceNumber;
+            ConnectionModel.Password = _deviceOptions.DefaultPassword;
+            
+            StatusMessage = _deviceOptions.Test ? "Settings refreshed (TEST MODE)" : "Settings refreshed";
+            
+            _logger.LogInformation("Settings reset to default values");
+        }
+
         /// <summary>
-        /// Refresh trạng thái kết nối
+        /// Chuyển sang giao diện kế tiếp sau khi kết nối thành công
         /// </summary>
-        private async Task RefreshAsync()
+        private async Task NavigateToNextViewAsync()
         {
             try
             {
-                IsBusy = true;
-                _logger.LogInformation("Refreshing device status");
-
-                var status = await _deviceService.GetDeviceStatusAsync();
-                ConnectionModel.ConnectionStatus = status;
-
-                _logger.LogInformation("Device status refreshed");
+                _logger.LogInformation("Navigating to Connection Success view after successful connection");
+                
+                // Delay ngắn để user thấy thông báo
+                await Task.Delay(1500);
+                
+                // Navigate tới ConnectionSuccess view
+                _navigationService.NavigateTo("ConnectionSuccess");
+                
+                _logger.LogInformation("Successfully navigated to Connection Success screen");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Failed to refresh device status");
-                await _dialogService.ShowErrorAsync("Refresh Error", ex.Message);
-            }
-            finally
-            {
-                IsBusy = false;
+                _logger.LogError(ex, "Failed to navigate to Connection Success view");
+                await _dialogService.ShowMessageAsync("Warning", "Connected successfully but failed to navigate to success screen.");
             }
         }
 
         #endregion
 
-        #region Validation Methods
+        #region Helper Classes
 
         /// <summary>
-        /// Validate địa chỉ IP
+        /// RelayCommand implementation for ICommand
         /// </summary>
-        private bool ValidateIpAddress(string ipAddress)
+        private class RelayCommand : ICommand
         {
-            if (string.IsNullOrWhiteSpace(ipAddress))
-                return false;
+            private readonly Action<object?> _execute;
+            private readonly Predicate<object?>? _canExecute;
 
-            var parts = ipAddress.Split('.');
-            if (parts.Length != 4)
-                return false;
-
-            foreach (var part in parts)
+            public RelayCommand(Action<object?> execute, Predicate<object?>? canExecute = null)
             {
-                if (!int.TryParse(part, out int value) || value < 0 || value > 255)
-                    return false;
+                _execute = execute ?? throw new ArgumentNullException(nameof(execute));
+                _canExecute = canExecute;
             }
 
-            return true;
+            public event EventHandler? CanExecuteChanged
+            {
+                add => CommandManager.RequerySuggested += value;
+                remove => CommandManager.RequerySuggested -= value;
+            }
+
+            public bool CanExecute(object? parameter)
+            {
+                return _canExecute?.Invoke(parameter) ?? true;
+            }
+
+            public void Execute(object? parameter)
+            {
+                _execute(parameter);
+            }
         }
 
         #endregion

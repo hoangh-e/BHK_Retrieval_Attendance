@@ -15,21 +15,26 @@ namespace BHK.Retrieval.Attendance.WPF.Services.Interfaces
         /// <summary>
         /// Ngắt kết nối khỏi thiết bị
         /// </summary>
-        Task DisconnectAsync();
+        Task<bool> DisconnectAsync();
 
         /// <summary>
-        /// Kiểm tra kết nối tới thiết bị
+        /// Kiểm tra kết nối tới thiết bị (test connection không lưu state)
         /// </summary>
-        Task<bool> TestConnectionAsync(string ipAddress, int port);
+        Task<bool> TestConnectionAsync(string ipAddress, int port, int deviceNumber, string password);
 
         /// <summary>
-        /// Lấy trạng thái hiện tại của thiết bị
+        /// Lấy thông tin thiết bị
         /// </summary>
-        Task<string> GetDeviceStatusAsync();
+        Task<string> GetDeviceInfoAsync();
 
         /// <summary>
         /// Kiểm tra xem thiết bị có đang kết nối không
         /// </summary>
         bool IsConnected { get; }
+
+        /// <summary>
+        /// Lấy thông tin Device hiện tại
+        /// </summary>
+        object? CurrentDevice { get; }
     }
 }

@@ -1,109 +1,116 @@
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Configuration;
 using BHK.Retrieval.Attendance.WPF.Services.Interfaces;
 using BHK.Retrieval.Attendance.WPF.Services.Implementations;
 using BHK.Retrieval.Attendance.WPF.ViewModels;
 using BHK.Retrieval.Attendance.WPF.Views.Pages;
-using BHK.Retrieval.Attendance.Infrastructure.DeviceIntegration.Wrappers.Realand;
+using BHK.Retrieval.Attendance.Shared.Options;
 
 namespace BHK.Retrieval.Attendance.WPF.Configuration.DI
 {
     /// <summary>
-    /// Service registration cho Dependency Injection
+    /// Service registration cho Dependency Injection container
     /// </summary>
     public static class ServiceRegistrar
     {
         /// <summary>
-        /// Đăng ký các services
+        /// Đăng ký tất cả services vào DI container
         /// </summary>
-        public static IServiceCollection AddApplicationServices(this IServiceCollection services)
+        public static IServiceCollection RegisterServices(this IServiceCollection services, IConfiguration configuration)
         {
-            // Register Services với dependency injection
-            services.AddSingleton<IDeviceService, DeviceService>();
+            // Configuration Options
+            RegisterOptions(services, configuration);
+
+            // Application Services
+            RegisterApplicationServices(services);
+
+            // ViewModels
+            RegisterViewModels(services);
+
+            // Views/Pages
+            RegisterViews(services);
+
+            return services;
+        }
+
+        /// <summary>
+        /// Đăng ký Configuration Options (IOptions pattern)
+        /// </summary>
+        private static void RegisterOptions(IServiceCollection services, IConfiguration configuration)
+        {
+            services.Configure<ApplicationOptions>(configuration.GetSection(ApplicationOptions.SectionName));
+            services.Configure<DatabaseOptions>(configuration.GetSection(DatabaseOptions.SectionName));
+            services.Configure<DeviceOptions>(configuration.GetSection(DeviceOptions.SectionName));
+            services.Configure<SharePointOptions>(configuration.GetSection(SharePointOptions.SectionName));
+            services.Configure<EmailOptions>(configuration.GetSection(EmailOptions.SectionName));
+            services.Configure<ReportOptions>(configuration.GetSection(ReportOptions.SectionName));
+            services.Configure<UIOptions>(configuration.GetSection(UIOptions.SectionName));
+        }
+
+        /// <summary>
+        /// Đăng ký Application Services
+        /// </summary>
+        private static void RegisterApplicationServices(IServiceCollection services)
+        {
+            // Device Service - Scoped vì cần maintain connection state
+            services.AddScoped<IDeviceService, DeviceService>();
+
+            // Dialog Service - Singleton vì stateless
             services.AddSingleton<IDialogService, DialogService>();
-            services.AddScoped<IConfigurationService, ConfigurationService>();
 
-            // TODO: Thêm các services khác
-            // services.AddSingleton<INavigationService, NavigationService>();
-            // services.AddSingleton<INotificationService, NotificationService>();
+            // Navigation Service - Singleton vì quản lý navigation toàn app
+            services.AddSingleton<INavigationService, NavigationService>();
 
-            return services;
-        }
+            // Configuration Service - Singleton
+            services.AddSingleton<IConfigurationService, ConfigurationService>();
 
-        /// <summary>
-        /// Đăng ký Core services từ Core layer
-        /// </summary>
-        public static IServiceCollection RegisterCoreServices(this IServiceCollection services)
-        {
-            // TODO: Đăng ký các services từ Core layer
-            // services.AddScoped<IEmployeeService, EmployeeService>();
+            // TODO: Thêm các services khác khi implement
             // services.AddScoped<IAttendanceService, AttendanceService>();
-
-            return services;
+            // services.AddScoped<IEmployeeService, EmployeeService>();
+            // services.AddScoped<IReportService, ReportService>();
         }
 
         /// <summary>
-        /// Đăng ký Infrastructure services với configuration
+        /// Đăng ký ViewModels
         /// </summary>
-        public static IServiceCollection RegisterInfrastructureServices(this IServiceCollection services, IConfiguration configuration)
+        private static void RegisterViewModels(IServiceCollection services)
         {
-            // Device Integration Services
-            services.AddSingleton<IRealandDeviceWrapper, RealandDeviceWrapper>();
-            
-            // TODO: Đăng ký các services từ Infrastructure layer
-            // services.AddDbContext<AttendanceDbContext>(options =>
-            //     options.UseSqlServer(configuration.GetConnectionString("DefaultConnection")));
-            
-            // services.AddScoped<IEmployeeRepository, EmployeeRepository>();
-            // services.AddScoped<IAttendanceRepository, AttendanceRepository>();
-
-            return services;
-        }
-
-        /// <summary>
-        /// Đăng ký WPF specific services
-        /// </summary>
-        public static IServiceCollection RegisterWpfServices(this IServiceCollection services)
-        {
-            // Đăng ký ViewModels
-            services.AddViewModels();
-
-            // Đăng ký Views
-            services.AddViews();
-
-            return services;
-        }
-
-        /// <summary>
-        /// Đăng ký các ViewModels
-        /// </summary>
-        public static IServiceCollection AddViewModels(this IServiceCollection services)
-        {
-            // Register ViewModels
+            // Transient vì mỗi view sẽ có instance riêng
             services.AddTransient<DeviceConnectionViewModel>();
-            services.AddTransient<ConfigurationDemoViewModel>();
-
-            // TODO: Thêm các ViewModels khác
-            // services.AddTransient<MainWindowViewModel>();
+            services.AddTransient<ConnectionSuccessViewModel>();
+            
+            // TODO: Thêm các ViewModels khác khi implement
             // services.AddTransient<DashboardViewModel>();
+            // services.AddTransient<AttendanceListViewModel>();
             // services.AddTransient<EmployeeListViewModel>();
-
-            return services;
+            // services.AddTransient<SettingsViewModel>();
         }
 
         /// <summary>
-        /// Đăng ký các Views
+        /// Đăng ký Views/Pages
         /// </summary>
-        public static IServiceCollection AddViews(this IServiceCollection services)
+        private static void RegisterViews(IServiceCollection services)
         {
-            // Register Views
-            services.AddTransient<DeviceConnectionView>();
+            // Transient vì mỗi lần navigate tạo instance mới
+            services.AddTransient<DeviceConnectionView>(sp =>
+            {
+                var view = new DeviceConnectionView();
+                var viewModel = sp.GetRequiredService<DeviceConnectionViewModel>();
+                view.DataContext = viewModel;
+                return view;
+            });
 
-            // TODO: Thêm các Views khác
-            // services.AddTransient<MainWindow>();
-            // services.AddTransient<DashboardView>();
+            services.AddTransient<ConnectionSuccessView>(sp =>
+            {
+                var view = new ConnectionSuccessView();
+                var viewModel = sp.GetRequiredService<ConnectionSuccessViewModel>();
+                view.DataContext = viewModel;
+                return view;
+            });
 
-            return services;
+            // TODO: Thêm các Views khác khi implement
+            // services.AddTransient<DashboardView>(sp => { ... });
+            // services.AddTransient<AttendanceListView>(sp => { ... });
         }
     }
 }
