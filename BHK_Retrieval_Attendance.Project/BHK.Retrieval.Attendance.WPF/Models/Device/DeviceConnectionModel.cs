@@ -1,7 +1,6 @@
 using System;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
-using BHK.Retrieval.Attendance.WPF.Services;
 
 namespace BHK.Retrieval.Attendance.WPF.Models.Device
 {
