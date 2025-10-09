@@ -208,34 +208,75 @@ namespace BHK.Retrieval.Attendance.Infrastructure.Devices
                 {
                     _logger?.LogInformation("Infrastructure: Getting all employees from device");
 
-                    // TODO: Implement theo ZD2911 User Guide
-                    // _deviceConnection.GetProperty(DeviceProperty.AllUser, ...) 
+                    // ✅ LẤY DỮ LIỆU THỰC TỪ THIẾT BỊ theo ZDC2911 User Guide
+                    // Bước 1: Lấy danh sách user từ thiết bị
+                    object extraProperty = (UInt64)0; // 0 = lấy tất cả user
+                    object? extraData = null;
                     
-                    // TẠM THỜI: Mock data
-                    var employees = new List<EmployeeDto>();
-                    for (int i = 1; i <= 50; i++)
+                    bool result = _deviceConnection.GetProperty(
+                        DeviceProperty.Enrolls, 
+                        extraProperty, 
+                        ref _device, 
+                        ref extraData
+                    );
+
+                    if (!result || extraData == null)
                     {
-                        employees.Add(new EmployeeDto
-                        {
-                            DIN = (ulong)i,
-                            UserName = $"Nhân viên {i}",
-                            IDNumber = $"NV{i:D4}",
-                            DeptId = (i % 3 + 1).ToString(),
-                            Privilege = i % 4,
-                            Enable = true,
-                            Sex = i % 2, // 0=Male, 1=Female
-                            Birthday = DateTime.Now.AddYears(-25 - i % 10),
-                            Enrollments = new List<EnrollmentDto>()
-                        });
+                        _logger?.LogWarning("Infrastructure: Failed to get user list from device or no users found");
+                        return new List<EmployeeDto>();
                     }
 
-                    _logger?.LogInformation("Infrastructure: Retrieved {count} employees", employees.Count);
+                    var users = (List<User>)extraData;
+                    
+                    if (users.Count == 0)
+                    {
+                        _logger?.LogWarning("Infrastructure: No employees found on device");
+                        return new List<EmployeeDto>();
+                    }
+
+                    _logger?.LogInformation("Infrastructure: Retrieved {count} users from device (without enrollments)", users.Count);
+
+                    // Bước 2: Lấy enrollment data cho từng user
+                    // ✅ Sử dụng for loop thay vì foreach để có thể dùng ref
+                    for (int i = 0; i < users.Count; i++)
+                    {
+                        try
+                        {
+                            User user = users[i];
+                            object? enrollData = null;
+                            
+                            bool enrollResult = _deviceConnection.GetProperty(
+                                UserProperty.Enroll, 
+                                null, 
+                                ref user, 
+                                ref enrollData
+                            );
+                            
+                            // ✅ Cập nhật lại user trong list sau khi GetProperty
+                            users[i] = user;
+                            
+                            if (!enrollResult)
+                            {
+                                _logger?.LogWarning("Infrastructure: Failed to get enrollment data for user DIN: {din}", user.DIN);
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger?.LogWarning(ex, "Infrastructure: Error getting enrollment data for user DIN: {din}", users[i].DIN);
+                            // Tiếp tục với user khác
+                        }
+                    }
+
+                    // ✅ Convert từ Riss.Devices.User sang EmployeeDto
+                    var employees = users.Select(user => MapRissUserToEmployeeDto(user)).ToList();
+                    
+                    _logger?.LogInformation("Infrastructure: Successfully converted {count} employees to DTOs", employees.Count);
                     return employees;
                 }
                 catch (Exception ex)
                 {
                     _logger?.LogError(ex, "Infrastructure: Failed to get all employees");
-                    throw;
+                    throw new InvalidOperationException("Failed to retrieve employees from device. Please check device connection.", ex);
                 }
             });
         }
@@ -254,25 +295,61 @@ namespace BHK.Retrieval.Attendance.Infrastructure.Devices
                 {
                     _logger?.LogInformation("Infrastructure: Getting employee by DIN: {din}", din);
 
-                    // TODO: Implement theo ZD2911 User Guide
-                    // _deviceConnection.GetProperty(DeviceProperty.UserByDIN, ...)
+                    // ✅ LẤY DỮ LIỆU THỰC từ thiết bị theo ZDC2911 User Guide
+                    // Lấy thông tin user cụ thể bằng cách lấy 1 user từ thiết bị
+                    object extraProperty = (UInt64)din; // DIN cụ thể
+                    object? extraData = null;
+                    
+                    bool result = _deviceConnection.GetProperty(
+                        DeviceProperty.Enrolls, 
+                        extraProperty, 
+                        ref _device, 
+                        ref extraData
+                    );
 
-                    // TẠM THỜI: Mock data
-                    return new EmployeeDto
+                    if (!result || extraData == null)
                     {
-                        DIN = din,
-                        UserName = $"Nhân viên {din}",
-                        IDNumber = $"NV{din:D4}",
-                        DeptId = "1",
-                        Privilege = 0,
-                        Enable = true,
-                        Sex = 0, // 0=Male
-                        Birthday = DateTime.Now.AddYears(-30),
-                        Enrollments = new List<EnrollmentDto>
+                        _logger?.LogWarning("Infrastructure: Failed to get user with DIN: {din} from device", din);
+                        return null;
+                    }
+
+                    var users = (List<User>)extraData;
+                    
+                    if (users.Count == 0)
+                    {
+                        _logger?.LogWarning("Infrastructure: No user found with DIN: {din}", din);
+                        return null;
+                    }
+
+                    // Lấy user đầu tiên (should only be one)
+                    User user = users[0];
+
+                    // Lấy enrollment data
+                    try
+                    {
+                        object? enrollData = null;
+                        bool enrollResult = _deviceConnection.GetProperty(
+                            UserProperty.Enroll, 
+                            null, 
+                            ref user, 
+                            ref enrollData
+                        );
+                        
+                        if (!enrollResult)
                         {
-                            new EnrollmentDto { EnrollType = 0, Data = string.Empty, DataLength = 0 }
+                            _logger?.LogWarning("Infrastructure: Failed to get enrollment data for user DIN: {din}", din);
                         }
-                    };
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger?.LogWarning(ex, "Infrastructure: Error getting enrollment data for user DIN: {din}", din);
+                    }
+
+                    // Convert sang DTO
+                    var employeeDto = MapRissUserToEmployeeDto(user);
+                    
+                    _logger?.LogInformation("Infrastructure: Successfully retrieved employee DIN: {din}", din);
+                    return employeeDto;
                 }
                 catch (Exception ex)
                 {
@@ -296,10 +373,29 @@ namespace BHK.Retrieval.Attendance.Infrastructure.Devices
                 {
                     _logger?.LogInformation("Infrastructure: Getting employee count");
 
-                    // TODO: Implement theo ZD2911 User Guide
-                    // _deviceConnection.GetProperty(DeviceProperty.UserCount, ...)
+                    // ✅ LẤY DỮ LIỆU THỰC: Lấy tất cả user rồi đếm số lượng
+                    // Không có API trực tiếp để lấy count, phải lấy toàn bộ danh sách
+                    object extraProperty = (UInt64)0; // 0 = lấy tất cả user
+                    object? extraData = null;
+                    
+                    bool result = _deviceConnection.GetProperty(
+                        DeviceProperty.Enrolls, 
+                        extraProperty, 
+                        ref _device, 
+                        ref extraData
+                    );
 
-                    return 50; // Mock data
+                    if (!result || extraData == null)
+                    {
+                        _logger?.LogWarning("Infrastructure: Failed to get user list for counting");
+                        return 0;
+                    }
+
+                    var users = (List<User>)extraData;
+                    int count = users.Count;
+                    
+                    _logger?.LogInformation("Infrastructure: Employee count: {count}", count);
+                    return count;
                 }
                 catch (Exception ex)
                 {
@@ -412,11 +508,27 @@ namespace BHK.Retrieval.Attendance.Infrastructure.Devices
                 {
                     _logger?.LogInformation("Infrastructure: Clearing all employees");
 
-                    // TODO: Implement
-                    // _deviceConnection.SetProperty(DeviceProperty.ClearAllUsers, ...)
+                    // ✅ LẤY DỮ LIỆU THỰC theo ZDC2911 User Guide
+                    // EmptyUserEnrollInfo: DIN=0 xóa tất cả user
+                    object extraData = (UInt64)0; // 0 = xóa tất cả
+                    
+                    bool result = _deviceConnection.SetProperty(
+                        DeviceProperty.Enrolls, 
+                        null, 
+                        _device, 
+                        extraData
+                    );
 
-                    _logger?.LogInformation("Infrastructure: Successfully cleared all employees");
-                    return true;
+                    if (result)
+                    {
+                        _logger?.LogInformation("Infrastructure: Successfully cleared all employees");
+                        return true;
+                    }
+                    else
+                    {
+                        _logger?.LogWarning("Infrastructure: Failed to clear all employees");
+                        return false;
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -577,6 +689,124 @@ namespace BHK.Retrieval.Attendance.Infrastructure.Devices
                     throw;
                 }
             });
+        }
+
+        /// <summary>
+        /// Mapper: Riss.Devices.User -> EmployeeDto
+        /// Chuyển đổi từ đối tượng User của thư viện Riss.Devices sang DTO của Core layer
+        /// </summary>
+        private EmployeeDto MapRissUserToEmployeeDto(User rissUser)
+        {
+            var dto = new EmployeeDto
+            {
+                DIN = rissUser.DIN,
+                UserName = rissUser.UserName ?? string.Empty,
+                IDNumber = rissUser.IDNumber ?? string.Empty,
+                DeptId = rissUser.DeptId ?? string.Empty,
+                Privilege = rissUser.Privilege,
+                Enable = rissUser.Enable,
+                Birthday = rissUser.Birthday,
+                Comment = rissUser.Comment ?? string.Empty,
+                AccessControl = rissUser.AccessControl,
+                ValidityPeriod = rissUser.ValidityPeriod,
+                ValidDate = rissUser.ValidDate,
+                InvalidDate = rissUser.InvalidDate,
+                UserGroup = rissUser.UserGroup,
+                AccessTimeZone = rissUser.AccessTimeZone,
+                AttType = rissUser.AttType
+            };
+
+            // ✅ Map Sex property using reflection (Riss.Devices.Sex enum -> int)
+            var sexProperty = rissUser.GetType().GetProperty("Sex");
+            if (sexProperty != null)
+            {
+                var sexValue = sexProperty.GetValue(rissUser);
+                if (sexValue != null)
+                {
+                    // Convert enum to int: 0=Male, 1=Female
+                    dto.Sex = Convert.ToInt32(sexValue);
+                }
+            }
+
+            // ✅ Map enrollments từ Riss.Devices.Enroll -> EnrollmentDto
+            if (rissUser.Enrolls != null && rissUser.Enrolls.Count > 0)
+            {
+                dto.Enrollments = rissUser.Enrolls.Select(enroll => new EnrollmentDto
+                {
+                    EnrollType = (int)enroll.EnrollType,
+                    Data = ConvertEnrollDataToString(enroll),
+                    DataLength = GetEnrollDataLength(enroll)
+                }).ToList();
+            }
+            else
+            {
+                dto.Enrollments = new List<EnrollmentDto>();
+            }
+
+            return dto;
+        }
+
+        /// <summary>
+        /// Chuyển đổi dữ liệu enrollment từ Riss.Devices.Enroll sang string
+        /// </summary>
+        private string ConvertEnrollDataToString(Enroll enroll)
+        {
+            try
+            {
+                // Vân tay: trả về base64 của Fingerprint
+                if (enroll.Fingerprint != null && enroll.Fingerprint.Length > 0)
+                {
+                    return Convert.ToBase64String(enroll.Fingerprint);
+                }
+
+                // Mật khẩu: trả về Password trực tiếp
+                if (!string.IsNullOrEmpty(enroll.Password))
+                {
+                    return enroll.Password;
+                }
+
+                // Thẻ: trả về CardID
+                if (!string.IsNullOrEmpty(enroll.CardID))
+                {
+                    return enroll.CardID;
+                }
+
+                return string.Empty;
+            }
+            catch
+            {
+                return string.Empty;
+            }
+        }
+
+        /// <summary>
+        /// Lấy độ dài dữ liệu enrollment
+        /// </summary>
+        private int GetEnrollDataLength(Enroll enroll)
+        {
+            try
+            {
+                if (enroll.Fingerprint != null && enroll.Fingerprint.Length > 0)
+                {
+                    return enroll.Fingerprint.Length;
+                }
+
+                if (!string.IsNullOrEmpty(enroll.Password))
+                {
+                    return enroll.Password.Length;
+                }
+
+                if (!string.IsNullOrEmpty(enroll.CardID))
+                {
+                    return enroll.CardID.Length;
+                }
+
+                return 0;
+            }
+            catch
+            {
+                return 0;
+            }
         }
 
         /// <summary>
