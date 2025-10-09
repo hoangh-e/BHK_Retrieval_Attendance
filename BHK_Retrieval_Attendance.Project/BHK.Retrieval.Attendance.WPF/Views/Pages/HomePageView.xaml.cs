@@ -1,6 +1,7 @@
+using System.Windows;
 using System.Windows.Controls;
 using BHK.Retrieval.Attendance.WPF.ViewModels;
-using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace BHK.Retrieval.Attendance.WPF.Views.Pages
 {
@@ -9,21 +10,21 @@ namespace BHK.Retrieval.Attendance.WPF.Views.Pages
     /// </summary>
     public partial class HomePageView : UserControl
     {
-        private readonly ILogger<HomePageView> _logger;
-
-        public HomePageView(HomePageViewModel viewModel, ILogger<HomePageView> logger)
+        // Constructor mặc định cho XAML
+        public HomePageView()
         {
             InitializeComponent();
-            DataContext = viewModel;  // ✅ Quan trọng
-            _logger = logger;
-
-            // Set default tab to Device Info
-            if (MainTabControl != null)
-            {
-                MainTabControl.SelectedIndex = 0;
-            }
-
-            _logger.LogInformation("HomePageView initialized with DataContext");
+            
+            // Tự động inject ViewModel từ DI container
+            // Note: In this simplified version, ViewModel should be injected through the DI constructor
+            // This default constructor is primarily for XAML designer support
+        }
+        
+        // Constructor với DI (optional, giữ lại nếu cần)
+        public HomePageView(HomePageViewModel viewModel)
+        {
+            InitializeComponent();
+            DataContext = viewModel;
         }
 
         private void MainTabControl_SelectionChanged(object sender, SelectionChangedEventArgs e)    
@@ -33,7 +34,7 @@ namespace BHK.Retrieval.Attendance.WPF.Views.Pages
                 var selectedTab = tabControl.SelectedItem as TabItem;
                 if (selectedTab != null)
                 {
-                    _logger.LogInformation($"Tab changed to: {selectedTab.Name}");
+                    // Tab selection changed - logging removed for simplified version
                 }
             }
         }
