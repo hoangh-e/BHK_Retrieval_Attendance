@@ -203,33 +203,22 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
                 StatusMessage = "Disconnecting...";
                 _logger.LogInformation("Attempting to disconnect");
 
-                bool success = await _deviceService.DisconnectAsync();
+                await _deviceService.DisconnectAsync();
 
-                if (success)
-                {
-                    ConnectionModel.IsConnected = false;
-                    StatusMessage = "Disconnected";
-                    _logger.LogInformation("✅ Disconnected successfully");
-                    
-                    // ✅ Use DialogHelper for disconnect success
-                    DialogHelper.ShowInformation("Đã ngắt kết nối thiết bị thành công", "Ngắt kết nối");
-                }
-                else
-                {
-                    StatusMessage = "Disconnect failed";
-                    _logger.LogWarning("❌ Disconnect failed");
-                    
-                    // ✅ Use DialogHelper for disconnect warning
-                    DialogHelper.ShowWarning("Không thể ngắt kết nối đúng cách", "Vui lòng thử lại hoặc khởi động lại ứng dụng");
-                }
+                ConnectionModel.IsConnected = false;
+                StatusMessage = "Disconnected";
+                _logger.LogInformation("✅ Disconnected successfully");
+                
+                // ✅ Use DialogHelper for disconnect success
+                DialogHelper.ShowInformation("Đã ngắt kết nối thiết bị thành công", "Ngắt kết nối");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Exception during disconnection");
-                StatusMessage = "Disconnect error";
+                StatusMessage = "Disconnect failed";
+                _logger.LogError(ex, "Disconnect error");
                 
-                // ✅ Use DialogHelper for disconnect error
-                DialogHelper.ShowError("Lỗi khi ngắt kết nối", ex.Message, "Lỗi ngắt kết nối");
+                // ✅ Use DialogHelper for error
+                DialogHelper.ShowError("Không thể ngắt kết nối thiết bị", "Lỗi");
             }
             finally
             {

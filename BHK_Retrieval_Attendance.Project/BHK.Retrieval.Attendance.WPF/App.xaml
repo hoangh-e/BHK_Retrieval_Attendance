@@ -17,6 +17,12 @@
             <!-- Converters -->
             <converters:BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
             <converters:InverseBooleanConverter x:Key="InverseBooleanConverter"/>
+            <converters:InitialConverter x:Key="InitialConverter"/>
+            <converters:RowNumberConverter x:Key="RowNumberConverter"/>
+            <converters:InverseBooleanToVisibilityConverter x:Key="InverseBoolToVisibility"/>
+            <BooleanToVisibilityConverter x:Key="BoolToVisibility"/>
+            <converters:SexToTextConverter x:Key="SexToTextConverter"/>
+            <converters:EnrollTypeToTextConverter x:Key="EnrollTypeToTextConverter"/>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

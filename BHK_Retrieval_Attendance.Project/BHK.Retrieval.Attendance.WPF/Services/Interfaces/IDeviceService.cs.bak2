@@ -1,0 +1,373 @@
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using BHK.Retrieval.Attendance.Core.DTOs.Responses;
+
+namespace BHK.Retrieval.Attendance.WPF.Services.Interfaces
+{
+    /// <summary>
+    /// Interface cho Device Service - quản lý kết nối và thao tác với thiết bị chấm công
+    /// Clean Architecture - WPF Service sử dụng DTOs, không trực tiếp dùng Riss.Devices
+    /// </summary>
+    public interface IDeviceService : IDisposable
+    {
+        #region Connection Management
+
+        /// <summary>
+        /// Kết nối với thiết bị thông qua TCP/IP
+        /// </summary>
+        Task<bool> ConnectAsync(int deviceNumber, string ipAddress, int port, string password);
+
+        /// <summary>
+        /// Kết nối tới thiết bị qua TCP/IP (legacy method)
+        /// </summary>
+        Task<bool> ConnectTcpAsync(string ipAddress, int port, int deviceNumber, string password);
+
+        /// <summary>
+        /// Ngắt kết nối với thiết bị
+        /// </summary>
+        Task DisconnectAsync();
+
+        /// <summary>
+        /// Kiểm tra trạng thái kết nối
+        /// </summary>
+        bool IsConnected { get; }
+
+        /// <summary>
+        /// Test kết nối với thiết bị
+        /// </summary>
+        Task<bool> TestConnectionAsync();
+
+        /// <summary>
+        /// Kiểm tra kết nối tới thiết bị (test connection không lưu state)
+        /// </summary>
+        Task<bool> TestConnectionAsync(string ipAddress, int port, int deviceNumber, string password);
+
+        #endregion
+
+        #region Employee Management
+
+        /// <summary>
+        /// Lấy danh sách tất cả nhân viên từ thiết bị
+        /// </summary>
+        Task<List<EmployeeDto>> GetAllUsersAsync();
+
+        /// <summary>
+        /// Lấy thông tin chi tiết một nhân viên theo DIN
+        /// </summary>
+        Task<EmployeeDto?> GetUserByIdAsync(ulong din);
+
+        /// <summary>
+        /// Lấy số lượng nhân viên trong thiết bị
+        /// </summary>
+        Task<int> GetUserCountAsync();
+
+        /// <summary>
+        /// Thêm nhân viên mới vào thiết bị
+        /// </summary>
+        Task<bool> AddUserAsync(EmployeeDto user);
+
+        /// <summary>
+        /// Cập nhật thông tin nhân viên
+        /// </summary>
+        Task<bool> UpdateUserAsync(EmployeeDto user);
+
+        /// <summary>
+        /// Xóa nhân viên khỏi thiết bị
+        /// </summary>
+        Task<bool> DeleteUserAsync(ulong din);
+
+        /// <summary>
+        /// Xóa tất cả nhân viên khỏi thiết bị (NGUY HIỂM)
+        /// </summary>
+        Task<bool> ClearAllUsersAsync();
+
+        #endregion
+
+        #region Enrollment Management
+
+        /// <summary>
+        /// Lấy thông tin enrollment (vân tay, mật khẩu, thẻ) của nhân viên
+        /// </summary>
+        Task<List<EnrollmentDto>> GetUserEnrollmentsAsync(ulong din);
+
+        /// <summary>
+        /// Đăng ký vân tay cho nhân viên
+        /// </summary>
+        Task<bool> EnrollFingerprintAsync(ulong din, int fingerprintIndex, byte[] fingerprintData);
+
+        /// <summary>
+        /// Đăng ký mật khẩu cho nhân viên
+        /// </summary>
+        Task<bool> EnrollPasswordAsync(ulong din, string password);
+
+        /// <summary>
+        /// Đăng ký thẻ từ cho nhân viên
+        /// </summary>
+        Task<bool> EnrollCardAsync(ulong din, string cardId);
+
+        /// <summary>
+        /// Xóa vân tay của nhân viên
+        /// </summary>
+        Task<bool> ClearFingerprintAsync(ulong din, int fingerprintIndex);
+
+        /// <summary>
+        /// Xóa mật khẩu của nhân viên
+        /// </summary>
+        Task<bool> ClearPasswordAsync(ulong din);
+
+        /// <summary>
+        /// Xóa thẻ từ của nhân viên
+        /// </summary>
+        Task<bool> ClearCardAsync(ulong din);
+
+        #endregion
+
+        #region Attendance Records
+
+        /// <summary>
+        /// Lấy bản ghi chấm công trong khoảng thời gian
+        /// </summary>
+        Task<List<AttendanceRecordDto>> GetAttendanceRecordsAsync(DateTime startDate, DateTime endDate);
+
+        /// <summary>
+        /// Lấy số lượng bản ghi chấm công
+        /// </summary>
+        Task<int> GetAttendanceRecordCountAsync(DateTime startDate, DateTime endDate);
+
+        /// <summary>
+        /// Xóa bản ghi chấm công
+        /// </summary>
+        Task<bool> ClearAttendanceRecordsAsync();
+
+        #endregion
+
+        #region Device Information
+
+        /// <summary>
+        /// Lấy thông tin thiết bị
+        /// </summary>
+        Task<string> GetDeviceInfoAsync();
+
+        /// <summary>
+        /// Lấy Serial Number của thiết bị
+        /// </summary>
+        Task<string> GetSerialNumberAsync();
+
+        /// <summary>
+        /// Lấy model của thiết bị
+        /// </summary>
+        Task<string> GetDeviceModelAsync();
+
+        /// <summary>
+        /// Lấy thời gian hiện tại của thiết bị
+        /// </summary>
+        Task<DateTime> GetDeviceTimeAsync();
+
+        /// <summary>
+        /// Đồng bộ thời gian thiết bị với máy tính
+        /// </summary>
+        Task<bool> SyncDeviceTimeAsync();
+
+        #endregion
+
+        #region Utility Methods
+
+        /// <summary>
+        /// Lấy danh sách tên nhân viên (legacy method)
+        /// </summary>
+        Task<IEnumerable<string>> GetEmployeeListAsync();
+
+        /// <summary>
+        /// Lấy thông tin Device hiện tại
+        /// </summary>
+        object? CurrentDevice { get; }
+
+        #endregion
+    }
+}
+
+{
+    /// <summary>
+    /// Interface cho Device Service - quản lý kết nối và thao tác với thiết bị chấm công
+    /// </summary>
+    public interface IDeviceService : IDisposable
+    {
+        #region Connection Management
+
+        /// <summary>
+        /// Kết nối với thiết bị thông qua TCP/IP
+        /// </summary>
+        Task<bool> ConnectAsync(int deviceNumber, string ipAddress, int port, string password);
+
+        /// <summary>
+        /// Kết nối tới thiết bị qua TCP/IP (legacy method)
+        /// </summary>
+        Task<bool> ConnectTcpAsync(string ipAddress, int port, int deviceNumber, string password);
+
+        /// <summary>
+        /// Ngắt kết nối với thiết bị
+        /// </summary>
+        Task DisconnectAsync();
+
+        /// <summary>
+        /// Kiểm tra trạng thái kết nối
+        /// </summary>
+        bool IsConnected { get; }
+
+        /// <summary>
+        /// Test kết nối với thiết bị
+        /// </summary>
+        Task<bool> TestConnectionAsync();
+
+        /// <summary>
+        /// Kiểm tra kết nối tới thiết bị (test connection không lưu state)
+        /// </summary>
+        Task<bool> TestConnectionAsync(string ipAddress, int port, int deviceNumber, string password);
+
+        #endregion
+
+        #region Employee Management
+
+        /// <summary>
+        /// Lấy danh sách tất cả nhân viên từ thiết bị
+        /// </summary>
+        /// <returns>Danh sách User từ Riss.Devices</returns>
+        Task<List<User>> GetAllUsersAsync();
+
+        /// <summary>
+        /// Lấy thông tin chi tiết một nhân viên theo DIN
+        /// </summary>
+        /// <param name="din">Device ID Number của nhân viên</param>
+        /// <returns>Thông tin User đầy đủ</returns>
+        Task<User> GetUserByIdAsync(ulong din);
+
+        /// <summary>
+        /// Lấy số lượng nhân viên trong thiết bị
+        /// </summary>
+        Task<int> GetUserCountAsync();
+
+        /// <summary>
+        /// Thêm nhân viên mới vào thiết bị
+        /// </summary>
+        Task<bool> AddUserAsync(User user);
+
+        /// <summary>
+        /// Cập nhật thông tin nhân viên
+        /// </summary>
+        Task<bool> UpdateUserAsync(User user);
+
+        /// <summary>
+        /// Xóa nhân viên khỏi thiết bị
+        /// </summary>
+        Task<bool> DeleteUserAsync(ulong din);
+
+        /// <summary>
+        /// Xóa tất cả nhân viên khỏi thiết bị (NGUY HIỂM)
+        /// </summary>
+        Task<bool> ClearAllUsersAsync();
+
+        #endregion
+
+        #region Enrollment Management
+
+        /// <summary>
+        /// Lấy thông tin enrollment (vân tay, mật khẩu, thẻ) của nhân viên
+        /// </summary>
+        Task<List<Enroll>> GetUserEnrollmentsAsync(ulong din);
+
+        /// <summary>
+        /// Đăng ký vân tay cho nhân viên
+        /// </summary>
+        Task<bool> EnrollFingerprintAsync(ulong din, int fingerprintIndex, byte[] fingerprintData);
+
+        /// <summary>
+        /// Đăng ký mật khẩu cho nhân viên
+        /// </summary>
+        Task<bool> EnrollPasswordAsync(ulong din, string password);
+
+        /// <summary>
+        /// Đăng ký thẻ từ cho nhân viên
+        /// </summary>
+        Task<bool> EnrollCardAsync(ulong din, string cardId);
+
+        /// <summary>
+        /// Xóa vân tay của nhân viên
+        /// </summary>
+        Task<bool> ClearFingerprintAsync(ulong din, int fingerprintIndex);
+
+        /// <summary>
+        /// Xóa mật khẩu của nhân viên
+        /// </summary>
+        Task<bool> ClearPasswordAsync(ulong din);
+
+        /// <summary>
+        /// Xóa thẻ từ của nhân viên
+        /// </summary>
+        Task<bool> ClearCardAsync(ulong din);
+
+        #endregion
+
+        #region Attendance Records
+
+        /// <summary>
+        /// Lấy bản ghi chấm công trong khoảng thời gian
+        /// </summary>
+        Task<List<Record>> GetAttendanceRecordsAsync(DateTime startDate, DateTime endDate);
+
+        /// <summary>
+        /// Lấy số lượng bản ghi chấm công
+        /// </summary>
+        Task<int> GetAttendanceRecordCountAsync(DateTime startDate, DateTime endDate);
+
+        /// <summary>
+        /// Xóa bản ghi chấm công
+        /// </summary>
+        Task<bool> ClearAttendanceRecordsAsync();
+
+        #endregion
+
+        #region Device Information
+
+        /// <summary>
+        /// Lấy thông tin thiết bị
+        /// </summary>
+        Task<string> GetDeviceInfoAsync();
+
+        /// <summary>
+        /// Lấy Serial Number của thiết bị
+        /// </summary>
+        Task<string> GetSerialNumberAsync();
+
+        /// <summary>
+        /// Lấy model của thiết bị
+        /// </summary>
+        Task<string> GetDeviceModelAsync();
+
+        /// <summary>
+        /// Lấy thời gian hiện tại của thiết bị
+        /// </summary>
+        Task<DateTime> GetDeviceTimeAsync();
+
+        /// <summary>
+        /// Đồng bộ thời gian thiết bị với máy tính
+        /// </summary>
+        Task<bool> SyncDeviceTimeAsync();
+
+        #endregion
+
+        #region Utility Methods
+
+        /// <summary>
+        /// Lấy danh sách tên nhân viên (legacy method)
+        /// </summary>
+        Task<IEnumerable<string>> GetEmployeeListAsync();
+
+        /// <summary>
+        /// Lấy thông tin Device hiện tại
+        /// </summary>
+        object? CurrentDevice { get; }
+
+        #endregion
+    }
+}

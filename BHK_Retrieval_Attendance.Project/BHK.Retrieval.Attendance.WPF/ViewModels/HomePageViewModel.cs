@@ -22,15 +22,20 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
         private string _deviceModel;
         private DateTime _connectionTime;
         private bool _isTestMode;
+        private EmployeeViewModel _employeeViewModel;
 
         public HomePageViewModel(
             IDeviceService deviceService,
             ILogger<HomePageViewModel> logger,
-            IOptions<DeviceOptions> deviceOptions)
+            IOptions<DeviceOptions> deviceOptions,
+            EmployeeViewModel employeeViewModel)
         {
             _deviceService = deviceService ?? throw new ArgumentNullException(nameof(deviceService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _deviceOptions = deviceOptions?.Value ?? throw new ArgumentNullException(nameof(deviceOptions));
+            
+            // ✅ THÊM: Khởi tạo EmployeeViewModel
+            _employeeViewModel = employeeViewModel ?? throw new ArgumentNullException(nameof(employeeViewModel));
 
             // Initialize properties with device connection info
             _ipAddress = _deviceOptions.DefaultIpAddress;
@@ -79,6 +84,15 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
         {
             get => _isTestMode;
             set => SetProperty(ref _isTestMode, value);
+        }
+
+        /// <summary>
+        /// ViewModel cho trang quản lý nhân viên
+        /// </summary>
+        public EmployeeViewModel EmployeeViewModel
+        {
+            get => _employeeViewModel;
+            set => SetProperty(ref _employeeViewModel, value);
         }
 
         #endregion

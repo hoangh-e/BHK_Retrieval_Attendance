@@ -4,6 +4,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+             xmlns:views="clr-namespace:BHK.Retrieval.Attendance.WPF.Views.Pages"
              mc:Ignorable="d"
              d:DesignHeight="600" d:DesignWidth="1000"
              Background="{DynamicResource MaterialDesignPaper}">
@@ -43,19 +44,23 @@
             <TabControl x:Name="MainTabControl"
                        Style="{StaticResource MaterialDesignNavigationRailTabControl}"
                        materialDesign:ColorZoneAssist.Mode="PrimaryMid"
-                       SelectionChanged="MainTabControl_SelectionChanged">
+                       SelectionChanged="MainTabControl_SelectionChanged"
+                       TabStripPlacement="Left">
 
                 <!-- Tab: Thông tin thiết bị -->
                 <TabItem x:Name="DeviceInfoTab">
                     <TabItem.Header>
-                        <StackPanel Width="100" Margin="8">
+                        <StackPanel Width="120" Height="80" Margin="4">
                             <materialDesign:PackIcon Kind="Monitor" 
-                                                    Width="24" Height="24" 
-                                                    HorizontalAlignment="Center"/>
+                                                    Width="32" Height="32" 
+                                                    HorizontalAlignment="Center"
+                                                    Margin="0,8,0,4"/>
                             <TextBlock Text="Thông tin thiết bị" 
                                       TextWrapping="Wrap"
                                       TextAlignment="Center"
-                                      Margin="0,4,0,0"/>
+                                      FontSize="11"
+                                      LineHeight="14"
+                                      MaxWidth="110"/>
                         </StackPanel>
                     </TabItem.Header>
                     <ScrollViewer VerticalScrollBarVisibility="Auto">
@@ -162,14 +167,17 @@
                 <!-- Tab: Quản lý chấm công -->
                 <TabItem x:Name="AttendanceTab">
                     <TabItem.Header>
-                        <StackPanel Width="100" Margin="8">
+                        <StackPanel Width="120" Height="80" Margin="4">
                             <materialDesign:PackIcon Kind="ClockOutline" 
-                                                    Width="24" Height="24" 
-                                                    HorizontalAlignment="Center"/>
+                                                    Width="32" Height="32" 
+                                                    HorizontalAlignment="Center"
+                                                    Margin="0,8,0,4"/>
                             <TextBlock Text="Quản lý chấm công" 
                                       TextWrapping="Wrap"
                                       TextAlignment="Center"
-                                      Margin="0,4,0,0"/>
+                                      FontSize="11"
+                                      LineHeight="14"
+                                      MaxWidth="110"/>
                         </StackPanel>
                     </TabItem.Header>
                     <StackPanel Margin="24">
@@ -185,37 +193,37 @@
                 <!-- Tab: Quản lý nhân viên -->
                 <TabItem x:Name="EmployeeTab">
                     <TabItem.Header>
-                        <StackPanel Width="100" Margin="8">
+                        <StackPanel Width="120" Height="80" Margin="4">
                             <materialDesign:PackIcon Kind="AccountGroup" 
-                                                    Width="24" Height="24" 
-                                                    HorizontalAlignment="Center"/>
+                                                    Width="32" Height="32" 
+                                                    HorizontalAlignment="Center"
+                                                    Margin="0,8,0,4"/>
                             <TextBlock Text="Quản lý nhân viên" 
                                       TextWrapping="Wrap"
                                       TextAlignment="Center"
-                                      Margin="0,4,0,0"/>
+                                      FontSize="11"
+                                      LineHeight="14"
+                                      MaxWidth="110"/>
                         </StackPanel>
                     </TabItem.Header>
-                    <StackPanel Margin="24">
-                        <TextBlock Text="QUẢN LÝ NHÂN VIÊN" 
-                                  FontSize="20" 
-                                  FontWeight="Bold"/>
-                        <TextBlock Text="Tính năng đang phát triển..." 
-                                  Margin="0,16,0,0" 
-                                  FontStyle="Italic"/>
-                    </StackPanel>
+                    <!-- ✅ THAY ĐỔI: Sử dụng EmployeeView thay vì placeholder -->
+                    <views:EmployeeView DataContext="{Binding EmployeeViewModel}"/>
                 </TabItem>
 
                 <!-- Tab: Cài đặt -->
                 <TabItem x:Name="SettingsTab">
                     <TabItem.Header>
-                        <StackPanel Width="100" Margin="8">
+                        <StackPanel Width="120" Height="80" Margin="4">
                             <materialDesign:PackIcon Kind="Settings" 
-                                                    Width="24" Height="24" 
-                                                    HorizontalAlignment="Center"/>
+                                                    Width="32" Height="32" 
+                                                    HorizontalAlignment="Center"
+                                                    Margin="0,8,0,4"/>
                             <TextBlock Text="Cài đặt" 
                                       TextWrapping="Wrap"
                                       TextAlignment="Center"
-                                      Margin="0,4,0,0"/>
+                                      FontSize="11"
+                                      LineHeight="14"
+                                      MaxWidth="110"/>
                         </StackPanel>
                     </TabItem.Header>
                     <StackPanel Margin="24">
@@ -231,14 +239,17 @@
                 <!-- Tab: Lịch sử -->
                 <TabItem x:Name="HistoryTab">
                     <TabItem.Header>
-                        <StackPanel Width="100" Margin="8">
+                        <StackPanel Width="120" Height="80" Margin="4">
                             <materialDesign:PackIcon Kind="History" 
-                                                    Width="24" Height="24" 
-                                                    HorizontalAlignment="Center"/>
+                                                    Width="32" Height="32" 
+                                                    HorizontalAlignment="Center"
+                                                    Margin="0,8,0,4"/>
                             <TextBlock Text="Lịch sử" 
                                       TextWrapping="Wrap"
                                       TextAlignment="Center"
-                                      Margin="0,4,0,0"/>
+                                      FontSize="11"
+                                      LineHeight="14"
+                                      MaxWidth="110"/>
                         </StackPanel>
                     </TabItem.Header>
                     <StackPanel Margin="24">

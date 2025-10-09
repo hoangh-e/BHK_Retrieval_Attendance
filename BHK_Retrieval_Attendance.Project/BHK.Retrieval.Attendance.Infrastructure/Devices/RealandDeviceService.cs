@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using BHK.Retrieval.Attendance.Core.Interfaces.Services;
+using BHK.Retrieval.Attendance.Core.DTOs.Responses;
 using Microsoft.Extensions.Logging;
 using Riss.Devices; // ✅ CHỈ Infrastructure mới được dùng
 
@@ -186,6 +187,447 @@ namespace BHK.Retrieval.Attendance.Infrastructure.Devices
                     _device = null;
                 }
             });
+        }
+
+        /// <summary>
+        /// Property check connection status
+        /// </summary>
+        public bool IsConnected => _isConnected;
+
+        /// <summary>
+        /// Lấy tất cả nhân viên từ thiết bị
+        /// </summary>
+        public async Task<List<EmployeeDto>> GetAllEmployeesAsync()
+        {
+            if (_device == null || _deviceConnection == null || !_isConnected)
+                throw new InvalidOperationException("Not connected to device. Call ConnectAsync first.");
+
+            return await Task.Run(() =>
+            {
+                try
+                {
+                    _logger?.LogInformation("Infrastructure: Getting all employees from device");
+
+                    // TODO: Implement theo ZD2911 User Guide
+                    // _deviceConnection.GetProperty(DeviceProperty.AllUser, ...) 
+                    
+                    // TẠM THỜI: Mock data
+                    var employees = new List<EmployeeDto>();
+                    for (int i = 1; i <= 50; i++)
+                    {
+                        employees.Add(new EmployeeDto
+                        {
+                            DIN = (ulong)i,
+                            UserName = $"Nhân viên {i}",
+                            IDNumber = $"NV{i:D4}",
+                            DeptId = (i % 3 + 1).ToString(),
+                            Privilege = i % 4,
+                            Enable = true,
+                            Sex = i % 2, // 0=Male, 1=Female
+                            Birthday = DateTime.Now.AddYears(-25 - i % 10),
+                            Enrollments = new List<EnrollmentDto>()
+                        });
+                    }
+
+                    _logger?.LogInformation("Infrastructure: Retrieved {count} employees", employees.Count);
+                    return employees;
+                }
+                catch (Exception ex)
+                {
+                    _logger?.LogError(ex, "Infrastructure: Failed to get all employees");
+                    throw;
+                }
+            });
+        }
+
+        /// <summary>
+        /// Lấy thông tin nhân viên theo DIN
+        /// </summary>
+        public async Task<EmployeeDto?> GetEmployeeByIdAsync(ulong din)
+        {
+            if (_device == null || _deviceConnection == null || !_isConnected)
+                throw new InvalidOperationException("Not connected to device. Call ConnectAsync first.");
+
+            return await Task.Run(() =>
+            {
+                try
+                {
+                    _logger?.LogInformation("Infrastructure: Getting employee by DIN: {din}", din);
+
+                    // TODO: Implement theo ZD2911 User Guide
+                    // _deviceConnection.GetProperty(DeviceProperty.UserByDIN, ...)
+
+                    // TẠM THỜI: Mock data
+                    return new EmployeeDto
+                    {
+                        DIN = din,
+                        UserName = $"Nhân viên {din}",
+                        IDNumber = $"NV{din:D4}",
+                        DeptId = "1",
+                        Privilege = 0,
+                        Enable = true,
+                        Sex = 0, // 0=Male
+                        Birthday = DateTime.Now.AddYears(-30),
+                        Enrollments = new List<EnrollmentDto>
+                        {
+                            new EnrollmentDto { EnrollType = 0, Data = string.Empty, DataLength = 0 }
+                        }
+                    };
+                }
+                catch (Exception ex)
+                {
+                    _logger?.LogError(ex, "Infrastructure: Failed to get employee by DIN: {din}", din);
+                    throw;
+                }
+            });
+        }
+
+        /// <summary>
+        /// Lấy số lượng nhân viên trong thiết bị
+        /// </summary>
+        public async Task<int> GetEmployeeCountAsync()
+        {
+            if (_device == null || _deviceConnection == null || !_isConnected)
+                throw new InvalidOperationException("Not connected to device. Call ConnectAsync first.");
+
+            return await Task.Run(() =>
+            {
+                try
+                {
+                    _logger?.LogInformation("Infrastructure: Getting employee count");
+
+                    // TODO: Implement theo ZD2911 User Guide
+                    // _deviceConnection.GetProperty(DeviceProperty.UserCount, ...)
+
+                    return 50; // Mock data
+                }
+                catch (Exception ex)
+                {
+                    _logger?.LogError(ex, "Infrastructure: Failed to get employee count");
+                    throw;
+                }
+            });
+        }
+
+        /// <summary>
+        /// Thêm nhân viên mới
+        /// </summary>
+        public async Task<bool> AddEmployeeAsync(EmployeeDto employee)
+        {
+            if (_device == null || _deviceConnection == null || !_isConnected)
+                throw new InvalidOperationException("Not connected to device. Call ConnectAsync first.");
+
+            return await Task.Run(() =>
+            {
+                try
+                {
+                    _logger?.LogInformation("Infrastructure: Adding employee: {din}", employee.DIN);
+
+                    // Convert DTO to Riss.Devices.User
+                    var user = MapEmployeeDtoToUser(employee);
+
+                    // TODO: Implement theo ZD2911 User Guide
+                    // _deviceConnection.SetProperty(DeviceProperty.AddUser, user, ...)
+
+                    _logger?.LogInformation("Infrastructure: Successfully added employee: {din}", employee.DIN);
+                    return true;
+                }
+                catch (Exception ex)
+                {
+                    _logger?.LogError(ex, "Infrastructure: Failed to add employee: {din}", employee.DIN);
+                    throw;
+                }
+            });
+        }
+
+        /// <summary>
+        /// Cập nhật thông tin nhân viên
+        /// </summary>
+        public async Task<bool> UpdateEmployeeAsync(EmployeeDto employee)
+        {
+            if (_device == null || _deviceConnection == null || !_isConnected)
+                throw new InvalidOperationException("Not connected to device. Call ConnectAsync first.");
+
+            return await Task.Run(() =>
+            {
+                try
+                {
+                    _logger?.LogInformation("Infrastructure: Updating employee: {din}", employee.DIN);
+
+                    var user = MapEmployeeDtoToUser(employee);
+
+                    // TODO: Implement
+                    // _deviceConnection.SetProperty(DeviceProperty.UpdateUser, user, ...)
+
+                    _logger?.LogInformation("Infrastructure: Successfully updated employee: {din}", employee.DIN);
+                    return true;
+                }
+                catch (Exception ex)
+                {
+                    _logger?.LogError(ex, "Infrastructure: Failed to update employee: {din}", employee.DIN);
+                    throw;
+                }
+            });
+        }
+
+        /// <summary>
+        /// Xóa nhân viên
+        /// </summary>
+        public async Task<bool> DeleteEmployeeAsync(ulong din)
+        {
+            if (_device == null || _deviceConnection == null || !_isConnected)
+                throw new InvalidOperationException("Not connected to device. Call ConnectAsync first.");
+
+            return await Task.Run(() =>
+            {
+                try
+                {
+                    _logger?.LogInformation("Infrastructure: Deleting employee: {din}", din);
+
+                    // TODO: Implement
+                    // _deviceConnection.SetProperty(DeviceProperty.DeleteUser, din, ...)
+
+                    _logger?.LogInformation("Infrastructure: Successfully deleted employee: {din}", din);
+                    return true;
+                }
+                catch (Exception ex)
+                {
+                    _logger?.LogError(ex, "Infrastructure: Failed to delete employee: {din}", din);
+                    throw;
+                }
+            });
+        }
+
+        /// <summary>
+        /// Xóa tất cả nhân viên
+        /// </summary>
+        public async Task<bool> ClearAllEmployeesAsync()
+        {
+            if (_device == null || _deviceConnection == null || !_isConnected)
+                throw new InvalidOperationException("Not connected to device. Call ConnectAsync first.");
+
+            return await Task.Run(() =>
+            {
+                try
+                {
+                    _logger?.LogInformation("Infrastructure: Clearing all employees");
+
+                    // TODO: Implement
+                    // _deviceConnection.SetProperty(DeviceProperty.ClearAllUsers, ...)
+
+                    _logger?.LogInformation("Infrastructure: Successfully cleared all employees");
+                    return true;
+                }
+                catch (Exception ex)
+                {
+                    _logger?.LogError(ex, "Infrastructure: Failed to clear all employees");
+                    throw;
+                }
+            });
+        }
+
+        /// <summary>
+        /// Lấy dữ liệu chấm công theo khoảng thời gian
+        /// </summary>
+        public async Task<List<AttendanceRecordDto>> GetAttendanceRecordsAsync(DateTime startDate, DateTime endDate)
+        {
+            if (_device == null || _deviceConnection == null || !_isConnected)
+                throw new InvalidOperationException("Not connected to device. Call ConnectAsync first.");
+
+            return await Task.Run(() =>
+            {
+                try
+                {
+                    _logger?.LogInformation("Infrastructure: Getting attendance records from {start} to {end}", startDate, endDate);
+
+                    // TODO: Implement
+                    // _deviceConnection.GetProperty(DeviceProperty.AttendanceRecords, ...)
+
+                    // Mock data
+                    return new List<AttendanceRecordDto>();
+                }
+                catch (Exception ex)
+                {
+                    _logger?.LogError(ex, "Infrastructure: Failed to get attendance records");
+                    throw;
+                }
+            });
+        }
+
+        /// <summary>
+        /// Lấy số lượng bản ghi chấm công
+        /// </summary>
+        public async Task<int> GetAttendanceRecordCountAsync(DateTime startDate, DateTime endDate)
+        {
+            if (_device == null || _deviceConnection == null || !_isConnected)
+                throw new InvalidOperationException("Not connected to device. Call ConnectAsync first.");
+
+            return await Task.Run(() =>
+            {
+                try
+                {
+                    _logger?.LogInformation("Infrastructure: Getting attendance record count");
+                    
+                    // TODO: Implement
+                    return 0;
+                }
+                catch (Exception ex)
+                {
+                    _logger?.LogError(ex, "Infrastructure: Failed to get attendance record count");
+                    throw;
+                }
+            });
+        }
+
+        /// <summary>
+        /// Xóa dữ liệu chấm công
+        /// </summary>
+        public async Task<bool> ClearAttendanceRecordsAsync()
+        {
+            if (_device == null || _deviceConnection == null || !_isConnected)
+                throw new InvalidOperationException("Not connected to device. Call ConnectAsync first.");
+
+            return await Task.Run(() =>
+            {
+                try
+                {
+                    _logger?.LogInformation("Infrastructure: Clearing attendance records");
+
+                    // TODO: Implement
+                    return true;
+                }
+                catch (Exception ex)
+                {
+                    _logger?.LogError(ex, "Infrastructure: Failed to clear attendance records");
+                    throw;
+                }
+            });
+        }
+
+        /// <summary>
+        /// Lấy serial number thiết bị
+        /// </summary>
+        public async Task<string> GetSerialNumberAsync()
+        {
+            if (_device == null || _deviceConnection == null || !_isConnected)
+                throw new InvalidOperationException("Not connected to device. Call ConnectAsync first.");
+
+            return await Task.Run(() =>
+            {
+                try
+                {
+                    _logger?.LogInformation("Infrastructure: Getting device serial number");
+
+                    // TODO: Implement
+                    return "ZDC2911-001";
+                }
+                catch (Exception ex)
+                {
+                    _logger?.LogError(ex, "Infrastructure: Failed to get serial number");
+                    throw;
+                }
+            });
+        }
+
+        /// <summary>
+        /// Lấy thời gian hiện tại của thiết bị
+        /// </summary>
+        public async Task<DateTime> GetDeviceTimeAsync()
+        {
+            if (_device == null || _deviceConnection == null || !_isConnected)
+                throw new InvalidOperationException("Not connected to device. Call ConnectAsync first.");
+
+            return await Task.Run(() =>
+            {
+                try
+                {
+                    _logger?.LogInformation("Infrastructure: Getting device time");
+
+                    // TODO: Implement
+                    return DateTime.Now;
+                }
+                catch (Exception ex)
+                {
+                    _logger?.LogError(ex, "Infrastructure: Failed to get device time");
+                    throw;
+                }
+            });
+        }
+
+        /// <summary>
+        /// Đồng bộ thời gian thiết bị với máy tính
+        /// </summary>
+        public async Task<bool> SyncDeviceTimeAsync()
+        {
+            if (_device == null || _deviceConnection == null || !_isConnected)
+                throw new InvalidOperationException("Not connected to device. Call ConnectAsync first.");
+
+            return await Task.Run(() =>
+            {
+                try
+                {
+                    _logger?.LogInformation("Infrastructure: Syncing device time");
+
+                    // TODO: Implement
+                    return true;
+                }
+                catch (Exception ex)
+                {
+                    _logger?.LogError(ex, "Infrastructure: Failed to sync device time");
+                    throw;
+                }
+            });
+        }
+
+        /// <summary>
+        /// Mapper: EmployeeDto -> Riss.Devices.User
+        /// </summary>
+        private User MapEmployeeDtoToUser(EmployeeDto dto)
+        {
+            var user = new User
+            {
+                DIN = dto.DIN,
+                UserName = dto.UserName,
+                IDNumber = dto.IDNumber,
+                DeptId = dto.DeptId,
+                Privilege = dto.Privilege,
+                Enable = dto.Enable,
+                // Sex mapping: dto.Sex is int (0=Male, 1=Female)
+                // TODO: Map to correct Riss.Devices.Sex type when structure is known
+                Birthday = dto.Birthday,
+                Comment = dto.Comment,
+                AccessControl = dto.AccessControl,
+                ValidityPeriod = dto.ValidityPeriod,
+                ValidDate = dto.ValidDate,
+                InvalidDate = dto.InvalidDate,
+                UserGroup = dto.UserGroup,
+                AccessTimeZone = dto.AccessTimeZone,
+                AttType = dto.AttType
+            };
+
+            // Set Sex property using reflection to avoid compile-time dependency
+            var sexProperty = user.GetType().GetProperty("Sex");
+            if (sexProperty != null)
+            {
+                var sexType = sexProperty.PropertyType;
+                if (sexType.IsEnum)
+                {
+                    // Assume 0=Male, 1=Female
+                    var enumValue = Enum.ToObject(sexType, dto.Sex);
+                    sexProperty.SetValue(user, enumValue);
+                }
+            }
+
+            // Map enrollments if needed
+            // Note: Riss.Devices.Enroll structure may differ from EnrollmentDto
+            // Implement based on actual Riss.Devices API documentation
+            if (dto.Enrollments != null && dto.Enrollments.Any())
+            {
+                // TODO: Implement enrollment mapping based on Riss.Devices.Enroll structure
+                // user.Enrolls = dto.Enrollments.Select(e => new Enroll { ... }).ToList();
+            }
+
+            return user;
         }
 
         public void Dispose()

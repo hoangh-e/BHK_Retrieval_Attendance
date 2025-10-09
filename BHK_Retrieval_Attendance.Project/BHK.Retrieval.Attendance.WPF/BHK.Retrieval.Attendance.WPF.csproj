@@ -45,6 +45,13 @@
   </ItemGroup>
 
   <ItemGroup>
+    <!-- Third-party Device Library -->
+    <Reference Include="Riss.Devices">
+      <HintPath>..\packages\Riss.Devices\Riss.Devices.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+
+  <ItemGroup>
     <!-- Project References - Clean Architecture Dependencies -->
     <ProjectReference Include="..\BHK.Retrieval.Attendance.Core\BHK.Retrieval.Attendance.Core.csproj" />
     <ProjectReference Include="..\BHK.Retrieval.Attendance.Infrastructure\BHK.Retrieval.Attendance.Infrastructure.csproj" />

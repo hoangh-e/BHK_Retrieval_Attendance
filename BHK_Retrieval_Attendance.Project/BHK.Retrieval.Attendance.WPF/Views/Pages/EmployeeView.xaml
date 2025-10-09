@@ -1,0 +1,757 @@
+<UserControl x:Class="BHK.Retrieval.Attendance.WPF.Views.Pages.EmployeeView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+             mc:Ignorable="d"
+             d:DesignHeight="700" d:DesignWidth="1200"
+             Background="{DynamicResource MaterialDesignPaper}">
+
+    <UserControl.Resources>
+        <!-- Converter cho Boolean sang Visibility -->
+        <BooleanToVisibilityConverter x:Key="BoolToVisibility"/>
+    </UserControl.Resources>
+
+    <Grid Margin="16">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="2*"/>
+            <ColumnDefinition Width="8"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- PHẦN DANH SÁCH NHÂN VIÊN -->
+        <materialDesign:Card Grid.Column="0">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <!-- Header -->
+                <Grid Grid.Row="0" Background="{DynamicResource PrimaryHueMidBrush}" Margin="0,0,0,8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0" Orientation="Horizontal" Margin="16">
+                        <materialDesign:PackIcon Kind="AccountGroup" 
+                                               Width="32" Height="32" 
+                                               VerticalAlignment="Center"
+                                               Foreground="White"/>
+                        <TextBlock Text="DANH SÁCH NHÂN VIÊN" 
+                                 FontSize="20" 
+                                 FontWeight="Bold"
+                                 VerticalAlignment="Center"
+                                 Margin="12,0,0,0"
+                                 Foreground="White"/>
+                    </StackPanel>
+
+                    <Button Grid.Column="2"
+                            Style="{StaticResource MaterialDesignIconButton}"
+                            Command="{Binding RefreshCommand}"
+                            ToolTip="Làm mới"
+                            Margin="0,0,8,0">
+                        <materialDesign:PackIcon Kind="Refresh" 
+                                               Width="24" Height="24"
+                                               Foreground="White"/>
+                    </Button>
+                </Grid>
+
+                <!-- Thanh tìm kiếm -->
+                <Grid Grid.Row="1" Margin="16,8">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <TextBox Grid.Column="0"
+                             Text="{Binding SearchKeyword, UpdateSourceTrigger=PropertyChanged}"
+                             materialDesign:HintAssist.Hint="Tìm kiếm theo ID, tên, hoặc số CMND..."
+                             Style="{StaticResource MaterialDesignOutlinedTextBox}"
+                             Margin="0,0,8,0"/>
+
+                    <Button Grid.Column="1"
+                            Style="{StaticResource MaterialDesignRaisedButton}"
+                            Command="{Binding SearchCommand}"
+                            Height="40"
+                            Padding="16,0">
+                        <StackPanel Orientation="Horizontal">
+                            <materialDesign:PackIcon Kind="Magnify" 
+                                                   Width="20" Height="20"
+                                                   VerticalAlignment="Center"/>
+                            <TextBlock Text="Tìm" 
+                                     Margin="8,0,0,0"
+                                     VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+                </Grid>
+
+                <!-- Danh sách nhân viên -->
+                <DataGrid Grid.Row="2" 
+                         ItemsSource="{Binding Employees}"
+                         AutoGenerateColumns="False"
+                         CanUserAddRows="False"
+                         CanUserDeleteRows="False"
+                         SelectionMode="Single"
+                         IsReadOnly="True"
+                         materialDesign:DataGridAssist.CellPadding="8"
+                         materialDesign:DataGridAssist.ColumnHeaderPadding="8"
+                         Margin="16,0,16,8">
+                    
+                    <DataGrid.Columns>
+                        <!-- STT -->
+                        <DataGridTextColumn Header="STT" 
+                                          Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, 
+                                                    Converter={StaticResource RowNumberConverter}}"
+                                          Width="60"
+                                          ElementStyle="{StaticResource CenterAlignedTextBlock}"/>
+                        
+                        <!-- ID -->
+                        <DataGridTextColumn Header="ID (DIN)" 
+                                          Binding="{Binding DIN}"
+                                          Width="120"
+                                          FontWeight="Bold"/>
+                        
+                        <!-- Tên -->
+                        <DataGridTextColumn Header="Họ và tên" 
+                                          Binding="{Binding UserName}"
+                                          Width="*"
+                                          MinWidth="150"/>
+                        
+                        <!-- CMND/CCCD -->
+                        <DataGridTextColumn Header="CMND/CCCD" 
+                                          Binding="{Binding IDNumber}"
+                                          Width="120"/>
+                        
+                        <!-- Phòng ban -->
+                        <DataGridTextColumn Header="Phòng ban" 
+                                          Binding="{Binding Department}"
+                                          Width="120"/>
+                        
+                        <!-- Ngày tạo -->
+                        <DataGridTextColumn Header="Ngày tạo" 
+                                          Binding="{Binding CreatedDate, StringFormat='{}{0:dd/MM/yyyy}'}"
+                                          Width="110"/>
+                        
+                        <!-- Trạng thái -->
+                        <DataGridTemplateColumn Header="Trạng thái" Width="120">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Border CornerRadius="12"
+                                           Padding="8,4"
+                                           HorizontalAlignment="Center">
+                                        <Border.Style>
+                                            <Style TargetType="Border">
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding Enable}" Value="True">
+                                                        <Setter Property="Background" Value="#4CAF50"/>
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding Enable}" Value="False">
+                                                        <Setter Property="Background" Value="#F44336"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Border.Style>
+                                        <TextBlock Text="{Binding StatusText}"
+                                                 Foreground="White"
+                                                 FontSize="11"
+                                                 FontWeight="Bold"/>
+                                    </Border>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        
+                        <!-- Action -->
+                        <DataGridTemplateColumn Header="Hành động" Width="100">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Button Style="{StaticResource MaterialDesignFlatButton}"
+                                           Command="{Binding DataContext.ViewEmployeeDetailCommand, 
+                                                    RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                           CommandParameter="{Binding}"
+                                           ToolTip="Xem chi tiết">
+                                        <StackPanel Orientation="Horizontal">
+                                            <materialDesign:PackIcon Kind="Eye" 
+                                                                   Width="16" Height="16"/>
+                                            <TextBlock Text="Chi tiết" 
+                                                     Margin="4,0,0,0"
+                                                     FontSize="11"/>
+                                        </StackPanel>
+                                    </Button>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                    </DataGrid.Columns>
+                </DataGrid>
+
+                <!-- Phân trang -->
+                <Grid Grid.Row="3" Margin="16,8,16,16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Thông tin tổng số -->
+                    <TextBlock Grid.Column="0" 
+                             Text="{Binding TotalEmployeesDisplay}"
+                             VerticalAlignment="Center"
+                             FontWeight="Bold"
+                             Foreground="{DynamicResource PrimaryHueMidBrush}"/>
+
+                    <!-- Nút phân trang -->
+                    <StackPanel Grid.Column="2" Orientation="Horizontal">
+                        <!-- First Page -->
+                        <Button Style="{StaticResource MaterialDesignIconButton}"
+                               Command="{Binding FirstPageCommand}"
+                               ToolTip="Trang đầu"
+                               Width="32" Height="32"
+                               Margin="0,0,4,0">
+                            <materialDesign:PackIcon Kind="PageFirst" Width="20" Height="20"/>
+                        </Button>
+
+                        <!-- Previous Page -->
+                        <Button Style="{StaticResource MaterialDesignIconButton}"
+                               Command="{Binding PreviousPageCommand}"
+                               ToolTip="Trang trước"
+                               Width="32" Height="32"
+                               Margin="0,0,4,0">
+                            <materialDesign:PackIcon Kind="ChevronLeft" Width="20" Height="20"/>
+                        </Button>
+
+                        <!-- Page Info -->
+                        <Border Background="{DynamicResource PrimaryHueLightBrush}"
+                               CornerRadius="4"
+                               Padding="12,6"
+                               Margin="0,0,4,0">
+                            <TextBlock Text="{Binding CurrentPageDisplay}"
+                                     FontWeight="Bold"
+                                     Foreground="White"
+                                     VerticalAlignment="Center"/>
+                        </Border>
+
+                        <!-- Next Page -->
+                        <Button Style="{StaticResource MaterialDesignIconButton}"
+                               Command="{Binding NextPageCommand}"
+                               ToolTip="Trang sau"
+                               Width="32" Height="32"
+                               Margin="0,0,4,0">
+                            <materialDesign:PackIcon Kind="ChevronRight" Width="20" Height="20"/>
+                        </Button>
+
+                        <!-- Last Page -->
+                        <Button Style="{StaticResource MaterialDesignIconButton}"
+                               Command="{Binding LastPageCommand}"
+                               ToolTip="Trang cuối"
+                               Width="32" Height="32">
+                            <materialDesign:PackIcon Kind="PageLast" Width="20" Height="20"/>
+                        </Button>
+                    </StackPanel>
+                </Grid>
+
+                <!-- Loading Overlay -->
+                <Grid Grid.RowSpan="4" 
+                     Background="#80000000"
+                     Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisibility}}">
+                    <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                        <ProgressBar Style="{StaticResource MaterialDesignCircularProgressBar}"
+                                   Value="0"
+                                   IsIndeterminate="True"
+                                   Width="48" Height="48"/>
+                        <TextBlock Text="Đang tải dữ liệu..."
+                                 Foreground="White"
+                                 FontSize="14"
+                                 FontWeight="Bold"
+                                 Margin="0,16,0,0"
+                                 HorizontalAlignment="Center"/>
+                    </StackPanel>
+                </Grid>
+            </Grid>
+        </materialDesign:Card>
+
+        <!-- PHẦN CHI TIẾT NHÂN VIÊN -->
+        <materialDesign:Card Grid.Column="2">
+            <Grid>
+                <!-- Empty State -->
+                <StackPanel HorizontalAlignment="Center" 
+                          VerticalAlignment="Center"
+                          Visibility="{Binding IsEmployeeSelected, Converter={StaticResource InverseBoolToVisibility}}">
+                    <materialDesign:PackIcon Kind="AccountCircleOutline" 
+                                           Width="64" Height="64"
+                                           Foreground="{DynamicResource MaterialDesignBodyLight}"
+                                           HorizontalAlignment="Center"/>
+                    <TextBlock Text="Chọn một nhân viên"
+                             FontSize="16"
+                             Foreground="{DynamicResource MaterialDesignBodyLight}"
+                             TextAlignment="Center"
+                             Margin="0,16,0,4"/>
+                    <TextBlock Text="để xem thông tin chi tiết"
+                             FontSize="12"
+                             Foreground="{DynamicResource MaterialDesignBodyLight}"
+                             TextAlignment="Center"/>
+                </StackPanel>
+
+                <!-- Detail View -->
+                <ScrollViewer VerticalScrollBarVisibility="Auto"
+                            Visibility="{Binding IsEmployeeSelected, Converter={StaticResource BoolToVisibility}}">
+                    <StackPanel Margin="16">
+                        <!-- Header -->
+                        <Grid Background="{DynamicResource PrimaryHueMidBrush}" 
+                             Margin="-16,-16,-16,16">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <StackPanel Grid.Column="0" Margin="16">
+                                <TextBlock Text="THÔNG TIN CHI TIẾT" 
+                                         FontSize="16" 
+                                         FontWeight="Bold"
+                                         Foreground="White"/>
+                                <TextBlock Text="{Binding SelectedEmployee.UserName}"
+                                         FontSize="20"
+                                         FontWeight="Bold"
+                                         Foreground="White"
+                                         Margin="0,4,0,0"/>
+                            </StackPanel>
+
+                            <Button Grid.Column="1"
+                                   Style="{StaticResource MaterialDesignIconButton}"
+                                   Command="{Binding ClearSelectionCommand}"
+                                   ToolTip="Đóng"
+                                   Margin="0,0,8,0">
+                                <materialDesign:PackIcon Kind="Close" 
+                                                       Width="24" Height="24"
+                                                       Foreground="White"/>
+                            </Button>
+                        </Grid>
+
+                        <!-- Avatar và trạng thái -->
+                        <Grid Margin="0,0,0,16">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <Border Grid.Column="0"
+                                   Width="80" Height="80"
+                                   CornerRadius="40"
+                                   Background="{DynamicResource PrimaryHueLightBrush}">
+                                <TextBlock Text="{Binding SelectedEmployee.UserName, Converter={StaticResource InitialConverter}}"
+                                         FontSize="32"
+                                         FontWeight="Bold"
+                                         Foreground="White"
+                                         HorizontalAlignment="Center"
+                                         VerticalAlignment="Center"/>
+                            </Border>
+
+                            <StackPanel Grid.Column="1" 
+                                      VerticalAlignment="Center"
+                                      Margin="16,0,0,0">
+                                <TextBlock Text="{Binding SelectedEmployee.DIN}"
+                                         FontSize="16"
+                                         FontWeight="Bold"
+                                         Foreground="{DynamicResource PrimaryHueMidBrush}"/>
+                                <Border CornerRadius="12"
+                                       Padding="12,4"
+                                       HorizontalAlignment="Left"
+                                       Margin="0,8,0,0">
+                                    <Border.Style>
+                                        <Style TargetType="Border">
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding SelectedEmployee.Enable}" Value="True">
+                                                    <Setter Property="Background" Value="#4CAF50"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding SelectedEmployee.Enable}" Value="False">
+                                                    <Setter Property="Background" Value="#F44336"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Border.Style>
+                                    <TextBlock Text="{Binding SelectedEmployee.StatusText}"
+                                             Foreground="White"
+                                             FontSize="12"
+                                             FontWeight="Bold"/>
+                                </Border>
+                            </StackPanel>
+                        </Grid>
+
+                        <!-- Thông tin cơ bản -->
+                        <TextBlock Text="THÔNG TIN CƠ BẢN"
+                                 FontSize="14"
+                                 FontWeight="Bold"
+                                 Foreground="{DynamicResource PrimaryHueMidBrush}"
+                                 Margin="0,0,0,8"/>
+
+                        <Border BorderBrush="{DynamicResource MaterialDesignDivider}"
+                               BorderThickness="1"
+                               CornerRadius="4"
+                               Padding="12"
+                               Margin="0,0,0,16">
+                            <StackPanel>
+                                <!-- CMND/CCCD -->
+                                <Grid Margin="0,0,0,8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <materialDesign:PackIcon Grid.Column="0" 
+                                                           Kind="CardAccountDetails"
+                                                           Width="20" Height="20"
+                                                           VerticalAlignment="Center"
+                                                           Margin="0,0,8,0"/>
+                                    <StackPanel Grid.Column="1">
+                                        <TextBlock Text="CMND/CCCD"
+                                                 FontSize="10"
+                                                 Foreground="{DynamicResource MaterialDesignBodyLight}"/>
+                                        <TextBlock Text="{Binding SelectedEmployee.IDNumber}"
+                                                 FontSize="13"
+                                                 FontWeight="Bold"/>
+                                    </StackPanel>
+                                </Grid>
+
+                                <!-- Giới tính -->
+                                <Grid Margin="0,0,0,8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <materialDesign:PackIcon Grid.Column="0" 
+                                                           Kind="GenderMaleFemale"
+                                                           Width="20" Height="20"
+                                                           VerticalAlignment="Center"
+                                                           Margin="0,0,8,0"/>
+                                    <StackPanel Grid.Column="1">
+                                        <TextBlock Text="Giới tính"
+                                                 FontSize="10"
+                                                 Foreground="{DynamicResource MaterialDesignBodyLight}"/>
+                                        <TextBlock Text="{Binding SelectedEmployee.Sex}"
+                                                 FontSize="13"
+                                                 FontWeight="Bold"/>
+                                    </StackPanel>
+                                </Grid>
+
+                                <!-- Ngày sinh -->
+                                <Grid Margin="0,0,0,8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <materialDesign:PackIcon Grid.Column="0" 
+                                                           Kind="Calendar"
+                                                           Width="20" Height="20"
+                                                           VerticalAlignment="Center"
+                                                           Margin="0,0,8,0"/>
+                                    <StackPanel Grid.Column="1">
+                                        <TextBlock Text="Ngày sinh"
+                                                 FontSize="10"
+                                                 Foreground="{DynamicResource MaterialDesignBodyLight}"/>
+                                        <TextBlock Text="{Binding SelectedEmployee.BirthdayDisplay}"
+                                                 FontSize="13"
+                                                 FontWeight="Bold"/>
+                                    </StackPanel>
+                                </Grid>
+
+                                <!-- Phòng ban -->
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <materialDesign:PackIcon Grid.Column="0" 
+                                                           Kind="Domain"
+                                                           Width="20" Height="20"
+                                                           VerticalAlignment="Center"
+                                                           Margin="0,0,8,0"/>
+                                    <StackPanel Grid.Column="1">
+                                        <TextBlock Text="Phòng ban"
+                                                 FontSize="10"
+                                                 Foreground="{DynamicResource MaterialDesignBodyLight}"/>
+                                        <TextBlock Text="{Binding SelectedEmployee.Department}"
+                                                 FontSize="13"
+                                                 FontWeight="Bold"/>
+                                    </StackPanel>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Quyền và phân quyền -->
+                        <TextBlock Text="QUYỀN VÀ PHÂN QUYỀN"
+                                 FontSize="14"
+                                 FontWeight="Bold"
+                                 Foreground="{DynamicResource PrimaryHueMidBrush}"
+                                 Margin="0,0,0,8"/>
+
+                        <Border BorderBrush="{DynamicResource MaterialDesignDivider}"
+                               BorderThickness="1"
+                               CornerRadius="4"
+                               Padding="12"
+                               Margin="0,0,0,16">
+                            <StackPanel>
+                                <!-- Quyền -->
+                                <Grid Margin="0,0,0,8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <materialDesign:PackIcon Grid.Column="0" 
+                                                           Kind="ShieldAccount"
+                                                           Width="20" Height="20"
+                                                           VerticalAlignment="Center"
+                                                           Margin="0,0,8,0"/>
+                                    <StackPanel Grid.Column="1">
+                                        <TextBlock Text="Quyền hạn"
+                                                 FontSize="10"
+                                                 Foreground="{DynamicResource MaterialDesignBodyLight}"/>
+                                        <TextBlock Text="{Binding SelectedEmployee.Privilege}"
+                                                 FontSize="13"
+                                                 FontWeight="Bold"/>
+                                    </StackPanel>
+                                </Grid>
+
+                                <!-- User Group -->
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <materialDesign:PackIcon Grid.Column="0" 
+                                                           Kind="AccountGroup"
+                                                           Width="20" Height="20"
+                                                           VerticalAlignment="Center"
+                                                           Margin="0,0,8,0"/>
+                                    <StackPanel Grid.Column="1">
+                                        <TextBlock Text="Nhóm người dùng"
+                                                 FontSize="10"
+                                                 Foreground="{DynamicResource MaterialDesignBodyLight}"/>
+                                        <TextBlock Text="{Binding SelectedEmployee.UserGroup}"
+                                                 FontSize="13"
+                                                 FontWeight="Bold"/>
+                                    </StackPanel>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Kiểm soát truy cập -->
+                        <TextBlock Text="KIỂM SOÁT TRUY CẬP"
+                                 FontSize="14"
+                                 FontWeight="Bold"
+                                 Foreground="{DynamicResource PrimaryHueMidBrush}"
+                                 Margin="0,0,0,8"/>
+
+                        <Border BorderBrush="{DynamicResource MaterialDesignDivider}"
+                               BorderThickness="1"
+                               CornerRadius="4"
+                               Padding="12"
+                               Margin="0,0,0,16">
+                            <StackPanel>
+                                <!-- Access Control -->
+                                <Grid Margin="0,0,0,8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <materialDesign:PackIcon Grid.Column="0" 
+                                                           Kind="LockOutline"
+                                                           Width="20" Height="20"
+                                                           VerticalAlignment="Center"
+                                                           Margin="0,0,8,0"/>
+                                    <StackPanel Grid.Column="1">
+                                        <TextBlock Text="Kiểm soát khóa"
+                                                 FontSize="10"
+                                                 Foreground="{DynamicResource MaterialDesignBodyLight}"/>
+                                        <TextBlock Text="{Binding SelectedEmployee.AccessControl}"
+                                                 FontSize="13"
+                                                 FontWeight="Bold"/>
+                                    </StackPanel>
+                                </Grid>
+
+                                <!-- Valid Date -->
+                                <Grid Margin="0,0,0,8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <materialDesign:PackIcon Grid.Column="0" 
+                                                           Kind="CalendarCheck"
+                                                           Width="20" Height="20"
+                                                           VerticalAlignment="Center"
+                                                           Margin="0,0,8,0"/>
+                                    <StackPanel Grid.Column="1">
+                                        <TextBlock Text="Ngày hiệu lực"
+                                                 FontSize="10"
+                                                 Foreground="{DynamicResource MaterialDesignBodyLight}"/>
+                                        <TextBlock Text="{Binding SelectedEmployee.ValidDateDisplay}"
+                                                 FontSize="13"
+                                                 FontWeight="Bold"/>
+                                    </StackPanel>
+                                </Grid>
+
+                                <!-- Invalid Date -->
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <materialDesign:PackIcon Grid.Column="0" 
+                                                           Kind="CalendarRemove"
+                                                           Width="20" Height="20"
+                                                           VerticalAlignment="Center"
+                                                           Margin="0,0,8,0"/>
+                                    <StackPanel Grid.Column="1">
+                                        <TextBlock Text="Ngày hết hạn"
+                                                 FontSize="10"
+                                                 Foreground="{DynamicResource MaterialDesignBodyLight}"/>
+                                        <TextBlock Text="{Binding SelectedEmployee.InvalidDateDisplay}"
+                                                 FontSize="13"
+                                                 FontWeight="Bold"/>
+                                    </StackPanel>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Thông tin đăng ký -->
+                        <TextBlock Text="THÔNG TIN ĐĂNG KÝ"
+                                 FontSize="14"
+                                 FontWeight="Bold"
+                                 Foreground="{DynamicResource PrimaryHueMidBrush}"
+                                 Margin="0,0,0,8"/>
+
+                        <Border BorderBrush="{DynamicResource MaterialDesignDivider}"
+                               BorderThickness="1"
+                               CornerRadius="4"
+                               Padding="12"
+                               Margin="0,0,0,16">
+                            <StackPanel>
+                                <!-- Enrollment Summary -->
+                                <TextBlock Text="{Binding SelectedEmployee.EnrollmentStatus}"
+                                         FontSize="12"
+                                         TextWrapping="Wrap"
+                                         Margin="0,0,0,12"/>
+
+                                <!-- Fingerprint -->
+                                <Grid Margin="0,0,0,8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <materialDesign:PackIcon Grid.Column="0" 
+                                                           Kind="Fingerprint"
+                                                           Width="24" Height="24"
+                                                           VerticalAlignment="Center"
+                                                           Margin="0,0,8,0"/>
+                                    <TextBlock Grid.Column="1"
+                                             Text="Vân tay"
+                                             FontSize="13"
+                                             VerticalAlignment="Center"/>
+                                    <Border Grid.Column="2"
+                                           Background="{DynamicResource PrimaryHueLightBrush}"
+                                           CornerRadius="12"
+                                           Padding="8,4">
+                                        <TextBlock Text="{Binding SelectedEmployee.FingerprintCount}"
+                                                 Foreground="White"
+                                                 FontSize="12"
+                                                 FontWeight="Bold"/>
+                                    </Border>
+                                </Grid>
+
+                                <!-- Password -->
+                                <Grid Margin="0,0,0,8">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <materialDesign:PackIcon Grid.Column="0" 
+                                                           Kind="LockOutline"
+                                                           Width="24" Height="24"
+                                                           VerticalAlignment="Center"
+                                                           Margin="0,0,8,0"/>
+                                    <TextBlock Grid.Column="1"
+                                             Text="Mật khẩu"
+                                             FontSize="13"
+                                             VerticalAlignment="Center"/>
+                                    <materialDesign:PackIcon Grid.Column="2"
+                                                           Width="20" Height="20">
+                                        <materialDesign:PackIcon.Style>
+                                            <Style TargetType="materialDesign:PackIcon">
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding SelectedEmployee.HasPassword}" Value="True">
+                                                        <Setter Property="Kind" Value="CheckCircle"/>
+                                                        <Setter Property="Foreground" Value="#4CAF50"/>
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding SelectedEmployee.HasPassword}" Value="False">
+                                                        <Setter Property="Kind" Value="CloseCircle"/>
+                                                        <Setter Property="Foreground" Value="#F44336"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </materialDesign:PackIcon.Style>
+                                    </materialDesign:PackIcon>
+                                </Grid>
+
+                                <!-- Card -->
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <materialDesign:PackIcon Grid.Column="0" 
+                                                           Kind="CardAccountDetails"
+                                                           Width="24" Height="24"
+                                                           VerticalAlignment="Center"
+                                                           Margin="0,0,8,0"/>
+                                    <TextBlock Grid.Column="1"
+                                             Text="Thẻ từ"
+                                             FontSize="13"
+                                             VerticalAlignment="Center"/>
+                                    <materialDesign:PackIcon Grid.Column="2"
+                                                           Width="20" Height="20">
+                                        <materialDesign:PackIcon.Style>
+                                            <Style TargetType="materialDesign:PackIcon">
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding SelectedEmployee.HasCard}" Value="True">
+                                                        <Setter Property="Kind" Value="CheckCircle"/>
+                                                        <Setter Property="Foreground" Value="#4CAF50"/>
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding SelectedEmployee.HasCard}" Value="False">
+                                                        <Setter Property="Kind" Value="CloseCircle"/>
+                                                        <Setter Property="Foreground" Value="#F44336"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </materialDesign:PackIcon.Style>
+                                    </materialDesign:PackIcon>
+                                </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Ghi chú -->
+                        <TextBlock Text="GHI CHÚ"
+                                 FontSize="14"
+                                 FontWeight="Bold"
+                                 Foreground="{DynamicResource PrimaryHueMidBrush}"
+                                 Margin="0,0,0,8"/>
+
+                        <Border BorderBrush="{DynamicResource MaterialDesignDivider}"
+                               BorderThickness="1"
+                               CornerRadius="4"
+                               Padding="12">
+                            <TextBlock Text="{Binding SelectedEmployee.Comment}"
+                                     FontSize="12"
+                                     TextWrapping="Wrap"
+                                     FontStyle="Italic"/>
+                        </Border>
+                    </StackPanel>
+                </ScrollViewer>
+            </Grid>
+        </materialDesign:Card>
+    </Grid>
+</UserControl>

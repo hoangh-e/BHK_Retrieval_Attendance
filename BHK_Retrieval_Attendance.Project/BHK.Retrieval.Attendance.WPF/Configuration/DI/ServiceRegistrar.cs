@@ -91,6 +91,7 @@ namespace BHK.Retrieval.Attendance.WPF.Configuration.DI
             // ViewModels khác - Transient
             services.AddTransient<HomePageViewModel>();
             services.AddTransient<DeviceViewModel>();
+            services.AddTransient<EmployeeViewModel>();
             
             // TODO: Thêm các ViewModels khác khi implement
         }
