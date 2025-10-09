@@ -1,3 +1,5 @@
+using BHK.Retrieval.Attendance.Core.DTOs.Responses;
+
 namespace BHK.Retrieval.Attendance.Core.DTOs.Requests
 {
     /// <summary>

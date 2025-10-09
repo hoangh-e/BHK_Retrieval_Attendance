@@ -119,8 +119,7 @@
 
                         <!-- Action Buttons -->
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                            <Button Content="LÀM MỚI"
-                                  Style="{StaticResource MaterialDesignOutlinedButton}"
+                            <Button Style="{StaticResource MaterialDesignOutlinedButton}"
                                   Command="{Binding RefreshCommand}"
                                   Margin="0,0,10,0">
                                 <Button.Content>
@@ -131,8 +130,7 @@
                                 </Button.Content>
                             </Button>
 
-                            <Button Content="XUẤT FILE"
-                                  Style="{StaticResource MaterialDesignRaisedButton}"
+                            <Button Style="{StaticResource MaterialDesignRaisedButton}"
                                   Command="{Binding OpenExportDialogCommand}">
                                 <Button.Content>
                                     <StackPanel Orientation="Horizontal">
