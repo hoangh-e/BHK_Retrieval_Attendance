@@ -23,6 +23,14 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
         private DateTime _connectionTime;
         private bool _isTestMode;
         private EmployeeViewModel _employeeViewModel;
+        
+        // ✅ Bổ sung thêm thông tin thiết bị
+        private string _serialNumber;
+        private string _firmwareVersion;
+        private int _userCount;
+        private int _attendanceRecordCount;
+        private string _memoryUsage;
+        private string _connectionStatus;
 
         public HomePageViewModel(
             IDeviceService deviceService,
@@ -44,6 +52,14 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
             _deviceModel = _deviceOptions.DeviceModel;
             _connectionTime = DateTime.Now;
             _isTestMode = _deviceOptions.Test;
+            
+            // ✅ Khởi tạo thông tin mở rộng
+            _serialNumber = "N/A";
+            _firmwareVersion = "N/A";
+            _userCount = 0;
+            _attendanceRecordCount = 0;
+            _memoryUsage = "N/A";
+            _connectionStatus = "Connected";
 
             _logger.LogInformation("HomePageViewModel initialized");
         }
@@ -87,6 +103,60 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
         }
 
         /// <summary>
+        /// Serial number của thiết bị
+        /// </summary>
+        public string SerialNumber
+        {
+            get => _serialNumber;
+            set => SetProperty(ref _serialNumber, value);
+        }
+
+        /// <summary>
+        /// Phiên bản firmware của thiết bị
+        /// </summary>
+        public string FirmwareVersion
+        {
+            get => _firmwareVersion;
+            set => SetProperty(ref _firmwareVersion, value);
+        }
+
+        /// <summary>
+        /// Số lượng nhân viên trong thiết bị
+        /// </summary>
+        public int UserCount
+        {
+            get => _userCount;
+            set => SetProperty(ref _userCount, value);
+        }
+
+        /// <summary>
+        /// Số lượng bản ghi chấm công
+        /// </summary>
+        public int AttendanceRecordCount
+        {
+            get => _attendanceRecordCount;
+            set => SetProperty(ref _attendanceRecordCount, value);
+        }
+
+        /// <summary>
+        /// Thông tin sử dụng bộ nhớ
+        /// </summary>
+        public string MemoryUsage
+        {
+            get => _memoryUsage;
+            set => SetProperty(ref _memoryUsage, value);
+        }
+
+        /// <summary>
+        /// Trạng thái kết nối
+        /// </summary>
+        public string ConnectionStatus
+        {
+            get => _connectionStatus;
+            set => SetProperty(ref _connectionStatus, value);
+        }
+
+        /// <summary>
         /// ViewModel cho trang quản lý nhân viên
         /// </summary>
         public EmployeeViewModel EmployeeViewModel
@@ -102,16 +172,86 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
         /// <summary>
         /// Load device info - được gọi khi cần refresh thông tin thiết bị
         /// </summary>
-        public void LoadDeviceInfo()
+        public async Task LoadDeviceInfoAsync()
         {
             _logger.LogInformation("Loading device information");
             
-            // TODO: Lấy thông tin thực tế từ DeviceService khi có API
-            // Hiện tại sử dụng thông tin từ Options
-            
-            ConnectionTime = DateTime.Now;
-            
-            _logger.LogInformation($"Device info loaded - IP: {IpAddress}, Port: {Port}");
+            try
+            {
+                ConnectionTime = DateTime.Now;
+                ConnectionStatus = _deviceService.IsConnected ? "Connected ✅" : "Disconnected ❌";
+                
+                if (_deviceService.IsConnected)
+                {
+                    // ✅ Lấy số lượng nhân viên từ thiết bị
+                    try
+                    {
+                        UserCount = await _deviceService.GetUserCountAsync();
+                        _logger.LogInformation("User count loaded: {UserCount}", UserCount);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Failed to get user count");
+                        UserCount = 0;
+                    }
+                    
+                    // ✅ Lấy số lượng bản ghi chấm công (30 ngày gần nhất)
+                    try
+                    {
+                        var endDate = DateTime.Now;
+                        var startDate = endDate.AddDays(-30);
+                        AttendanceRecordCount = await _deviceService.GetAttendanceRecordCountAsync(startDate, endDate);
+                        _logger.LogInformation("Attendance record count loaded: {Count} (last 30 days)", AttendanceRecordCount);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Failed to get attendance record count");
+                        AttendanceRecordCount = 0;
+                    }
+                    
+                    // ✅ Lấy serial number (nếu có)
+                    try
+                    {
+                        if (_isTestMode)
+                        {
+                            SerialNumber = "TEST-SN-12345678";
+                            FirmwareVersion = "v2.5.0 (TEST)";
+                            MemoryUsage = "25% (TEST)";
+                        }
+                        else
+                        {
+                            // TODO: Implement GetSerialNumberAsync, GetFirmwareVersionAsync trong DeviceService
+                            SerialNumber = "N/A";
+                            FirmwareVersion = "N/A";
+                            MemoryUsage = "N/A";
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Failed to get additional device info");
+                        SerialNumber = "N/A";
+                        FirmwareVersion = "N/A";
+                        MemoryUsage = "N/A";
+                    }
+                }
+                else
+                {
+                    // Không kết nối - reset về giá trị mặc định
+                    UserCount = 0;
+                    AttendanceRecordCount = 0;
+                    SerialNumber = "N/A";
+                    FirmwareVersion = "N/A";
+                    MemoryUsage = "N/A";
+                }
+                
+                _logger.LogInformation("Device info loaded - IP: {IpAddress}, Port: {Port}, Users: {UserCount}", 
+                    IpAddress, Port, UserCount);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading device information");
+                ConnectionStatus = "Error ⚠️";
+            }
         }
 
         #endregion

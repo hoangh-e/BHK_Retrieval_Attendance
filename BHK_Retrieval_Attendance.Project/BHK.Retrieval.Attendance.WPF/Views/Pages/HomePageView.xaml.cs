@@ -27,14 +27,18 @@ namespace BHK.Retrieval.Attendance.WPF.Views.Pages
             DataContext = viewModel;
         }
 
-        private void MainTabControl_SelectionChanged(object sender, SelectionChangedEventArgs e)    
+        private async void MainTabControl_SelectionChanged(object sender, SelectionChangedEventArgs e)    
         {
             if (e.Source is TabControl tabControl)
             {
                 var selectedTab = tabControl.SelectedItem as TabItem;
-                if (selectedTab != null)
+                if (selectedTab != null && selectedTab.Name == "DeviceInfoTab")
                 {
-                    // Tab selection changed - logging removed for simplified version
+                    // ✅ Load device info khi chọn tab thông tin thiết bị
+                    if (DataContext is HomePageViewModel viewModel)
+                    {
+                        await viewModel.LoadDeviceInfoAsync();
+                    }
                 }
             }
         }

@@ -12,11 +12,10 @@ namespace BHK.Retrieval.Attendance.Infrastructure.Configuration
     {
         public static IServiceCollection AddDeviceServices(this IServiceCollection services)
         {
-            // ✅ ĐÚNG theo Clean Architecture:
-            // - Interface trong Core project 
-            // - Implementation trong Infrastructure project
-            // - WPF project chỉ biết Interface, không biết Implementation
-            services.AddScoped<IDeviceCommunicationService, RealandDeviceService>();
+            // ✅ SINGLETON cho WPF Desktop Application
+            // Device connection phải được giữ trong toàn bộ vòng đời app
+            // Khác với Web App (request-scoped), WPF cần singleton để maintain connection state
+            services.AddSingleton<IDeviceCommunicationService, RealandDeviceService>();
             
             return services;
         }

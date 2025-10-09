@@ -231,6 +231,38 @@ namespace BHK.Retrieval.Attendance.WPF.Services.Implementations
         {
             try
             {
+                // ===== TEST MODE =====
+                if (_deviceOptions.Test)
+                {
+                    _logger.LogWarning("⚠️ [TEST MODE] Returning mock employee data");
+                    await Task.Delay(500); // Simulate delay
+                    
+                    // Mock 10 employees
+                    var mockEmployees = new List<EmployeeDto>();
+                    for (int i = 1; i <= 10; i++)
+                    {
+                        mockEmployees.Add(new EmployeeDto
+                        {
+                            DIN = (ulong)i,
+                            UserName = $"Nhân viên Test {i}",
+                            IDNumber = $"NV{i:D4}",
+                            DeptId = "1",
+                            Privilege = 0,
+                            Enable = true,
+                            Sex = i % 2, // 0=Male, 1=Female
+                            Birthday = DateTime.Now.AddYears(-25 - i),
+                            Comment = $"Mock user {i}",
+                            Enrollments = new List<EnrollmentDto>
+                            {
+                                new EnrollmentDto { EnrollType = 0, Data = string.Empty, DataLength = 0 }
+                            }
+                        });
+                    }
+                    
+                    return mockEmployees;
+                }
+
+                // ===== PRODUCTION MODE =====
                 if (!_isConnected)
                 {
                     throw new InvalidOperationException("Device is not connected");
@@ -258,6 +290,31 @@ namespace BHK.Retrieval.Attendance.WPF.Services.Implementations
         {
             try
             {
+                // ===== TEST MODE =====
+                if (_deviceOptions.Test)
+                {
+                    _logger.LogWarning("⚠️ [TEST MODE] Returning mock employee for DIN: {din}", din);
+                    await Task.Delay(200);
+                    
+                    return new EmployeeDto
+                    {
+                        DIN = din,
+                        UserName = $"Nhân viên Test {din}",
+                        IDNumber = $"NV{din:D4}",
+                        DeptId = "1",
+                        Privilege = 0,
+                        Enable = true,
+                        Sex = (int)(din % 2),
+                        Birthday = DateTime.Now.AddYears(-30),
+                        Comment = $"Mock user {din}",
+                        Enrollments = new List<EnrollmentDto>
+                        {
+                            new EnrollmentDto { EnrollType = 0, Data = string.Empty, DataLength = 0 }
+                        }
+                    };
+                }
+
+                // ===== PRODUCTION MODE =====
                 if (!_isConnected)
                 {
                     throw new InvalidOperationException("Device is not connected");
@@ -281,6 +338,15 @@ namespace BHK.Retrieval.Attendance.WPF.Services.Implementations
         {
             try
             {
+                // ===== TEST MODE =====
+                if (_deviceOptions.Test)
+                {
+                    _logger.LogWarning("⚠️ [TEST MODE] Returning mock user count");
+                    await Task.Delay(100);
+                    return 10; // Mock count
+                }
+
+                // ===== PRODUCTION MODE =====
                 if (!_isConnected)
                 {
                     throw new InvalidOperationException("Device is not connected");

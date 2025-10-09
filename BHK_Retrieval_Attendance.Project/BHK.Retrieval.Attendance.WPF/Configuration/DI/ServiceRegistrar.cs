@@ -60,8 +60,9 @@ namespace BHK.Retrieval.Attendance.WPF.Configuration.DI
         /// </summary>
         private static void RegisterApplicationServices(IServiceCollection services)
         {
-            // Device Service - Scoped
-            services.AddScoped<IDeviceService, DeviceService>();
+            // Device Service - Singleton (giữ connection state trong toàn bộ vòng đời app)
+            // ✅ WPF Desktop App cần Singleton, không phải Scoped như Web App
+            services.AddSingleton<IDeviceService, DeviceService>();
 
             // Dialog Service - Singleton
             services.AddSingleton<IDialogService, DialogService>();

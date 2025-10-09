@@ -296,7 +296,7 @@ namespace BHK.Retrieval.Attendance.Infrastructure.Devices
                     _logger?.LogInformation("Infrastructure: Getting employee by DIN: {din}", din);
 
                     // ✅ LẤY DỮ LIỆU THỰC từ thiết bị theo ZDC2911 User Guide
-                    // Lấy thông tin user cụ thể bằng cách lấy 1 user từ thiết bị
+                    // Khi lấy user theo DIN cụ thể, API trả về User object (không phải List)
                     object extraProperty = (UInt64)din; // DIN cụ thể
                     object? extraData = null;
                     
@@ -313,16 +313,23 @@ namespace BHK.Retrieval.Attendance.Infrastructure.Devices
                         return null;
                     }
 
-                    var users = (List<User>)extraData;
-                    
-                    if (users.Count == 0)
+                    // ✅ KHI DIN != 0: extraData là User object (không phải List<User>)
+                    User user;
+                    try
                     {
-                        _logger?.LogWarning("Infrastructure: No user found with DIN: {din}", din);
-                        return null;
+                        user = (User)extraData;
                     }
-
-                    // Lấy user đầu tiên (should only be one)
-                    User user = users[0];
+                    catch (InvalidCastException)
+                    {
+                        // Nếu cast thất bại, có thể API trả về List với 1 phần tử
+                        var userList = extraData as List<User>;
+                        if (userList == null || userList.Count == 0)
+                        {
+                            _logger?.LogWarning("Infrastructure: No user found with DIN: {din}", din);
+                            return null;
+                        }
+                        user = userList[0];
+                    }
 
                     // Lấy enrollment data
                     try
