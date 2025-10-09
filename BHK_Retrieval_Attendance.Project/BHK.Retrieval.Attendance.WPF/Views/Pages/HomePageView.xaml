@@ -50,7 +50,7 @@
                 <!-- Tab: Thông tin thiết bị -->
                 <TabItem x:Name="DeviceInfoTab">
                     <TabItem.Header>
-                        <StackPanel Width="120" Height="80" Margin="4">
+                        <StackPanel Width="68" Height="80">
                             <materialDesign:PackIcon Kind="Monitor" 
                                                     Width="32" Height="32" 
                                                     HorizontalAlignment="Center"
@@ -235,7 +235,7 @@
                 <!-- Tab: Quản lý chấm công -->
                 <TabItem x:Name="AttendanceTab">
                     <TabItem.Header>
-                        <StackPanel Width="120" Height="80" Margin="4">
+                        <StackPanel Width="68" Height="80">
                             <materialDesign:PackIcon Kind="ClockOutline" 
                                                     Width="32" Height="32" 
                                                     HorizontalAlignment="Center"
@@ -248,20 +248,14 @@
                                       MaxWidth="110"/>
                         </StackPanel>
                     </TabItem.Header>
-                    <StackPanel Margin="24">
-                        <TextBlock Text="QUẢN LÝ CHẤM CÔNG" 
-                                  FontSize="20" 
-                                  FontWeight="Bold"/>
-                        <TextBlock Text="Tính năng đang phát triển..." 
-                                  Margin="0,16,0,0" 
-                                  FontStyle="Italic"/>
-                    </StackPanel>
+                    <!-- ✅ THAY ĐỔI: Sử dụng AttendanceManagementView thay vì placeholder -->
+                    <views:AttendanceManagementView DataContext="{Binding AttendanceManagementViewModel}"/>
                 </TabItem>
 
                 <!-- Tab: Quản lý nhân viên -->
                 <TabItem x:Name="EmployeeTab">
                     <TabItem.Header>
-                        <StackPanel Width="120" Height="80" Margin="4">
+                        <StackPanel Width="68" Height="80">
                             <materialDesign:PackIcon Kind="AccountGroup" 
                                                     Width="32" Height="32" 
                                                     HorizontalAlignment="Center"
@@ -281,7 +275,7 @@
                 <!-- Tab: Cài đặt -->
                 <TabItem x:Name="SettingsTab">
                     <TabItem.Header>
-                        <StackPanel Width="120" Height="80" Margin="4">
+                        <StackPanel Width="58" Height="80">
                             <materialDesign:PackIcon Kind="Settings" 
                                                     Width="32" Height="32" 
                                                     HorizontalAlignment="Center"
@@ -307,7 +301,7 @@
                 <!-- Tab: Lịch sử -->
                 <TabItem x:Name="HistoryTab">
                     <TabItem.Header>
-                        <StackPanel Width="120" Height="80" Margin="4">
+                        <StackPanel Width="68" Height="80">
                             <materialDesign:PackIcon Kind="History" 
                                                     Width="32" Height="32" 
                                                     HorizontalAlignment="Center"

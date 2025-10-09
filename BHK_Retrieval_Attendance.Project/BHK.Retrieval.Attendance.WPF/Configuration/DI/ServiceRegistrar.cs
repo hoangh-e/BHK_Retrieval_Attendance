@@ -3,11 +3,14 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using BHK.Retrieval.Attendance.WPF.Services.Interfaces;
 using BHK.Retrieval.Attendance.WPF.Services.Implementations;
+using BHK.Retrieval.Attendance.WPF.Services;
 using BHK.Retrieval.Attendance.WPF.ViewModels;
 using BHK.Retrieval.Attendance.WPF.Views.Pages;
 using BHK.Retrieval.Attendance.WPF.Views.Windows;
 using BHK.Retrieval.Attendance.Shared.Options;
 using BHK.Retrieval.Attendance.Infrastructure.Configuration;
+using BHK.Retrieval.Attendance.Core.Interfaces.Services;
+using BHK.Retrieval.Attendance.Infrastructure.Services;
 
 namespace BHK.Retrieval.Attendance.WPF.Configuration.DI
 {
@@ -69,6 +72,12 @@ namespace BHK.Retrieval.Attendance.WPF.Configuration.DI
 
             // Configuration Service - Singleton
             services.AddSingleton<IConfigurationService, ConfigurationService>();
+            
+            // Notification Service - Singleton
+            services.AddSingleton<INotificationService, NotificationService>();
+            
+            // Attendance Service - Scoped
+            services.AddScoped<IAttendanceService, AttendanceService>();
 
             // ✅ NavigationService - Singleton (phụ thuộc MainWindowViewModel)
             services.AddSingleton<NavigationService>();
@@ -93,6 +102,8 @@ namespace BHK.Retrieval.Attendance.WPF.Configuration.DI
             services.AddTransient<HomePageViewModel>();
             services.AddTransient<DeviceViewModel>();
             services.AddTransient<EmployeeViewModel>();
+            services.AddTransient<AttendanceManagementViewModel>();
+            services.AddTransient<ExportConfigurationDialogViewModel>();
             
             // TODO: Thêm các ViewModels khác khi implement
         }

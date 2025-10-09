@@ -5,6 +5,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
              xmlns:vm="clr-namespace:BHK.Retrieval.Attendance.WPF.ViewModels"
+             xmlns:converters="clr-namespace:BHK.Retrieval.Attendance.WPF.Converters"
              xmlns:system="clr-namespace:System;assembly=mscorlib"
              mc:Ignorable="d" 
              d:DesignHeight="800" d:DesignWidth="1200"
@@ -12,6 +13,8 @@
 
     <UserControl.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVisConverter"/>
+        <converters:EnumToBooleanConverter x:Key="EnumToBooleanConverter"/>
+        <converters:InverseBooleanToVisibilityConverter x:Key="InverseBoolToVisConverter"/>
     </UserControl.Resources>
 
     <Grid Margin="20">
@@ -51,21 +54,11 @@
                         
                         <ComboBox materialDesign:HintAssist.Hint="Chọn khoảng thời gian"
                                 Style="{StaticResource MaterialDesignOutlinedComboBox}"
-                                SelectedItem="{Binding SelectedPredefinedRange}"
+                                ItemsSource="{Binding PredefinedDateRanges}"
+                                DisplayMemberPath="Display"
+                                SelectedItem="{Binding SelectedPredefinedRangeItem}"
                                 IsEnabled="{Binding SelectedFilterType, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=PredefinedRange}"
-                                Margin="20,0,0,15">
-                            <ComboBox.ItemsSource>
-                                <x:Array Type="{x:Type system:String}">
-                                    <system:String>Hôm nay</system:String>
-                                    <system:String>Hôm qua</system:String>
-                                    <system:String>3 ngày gần nhất</system:String>
-                                    <system:String>7 ngày gần nhất</system:String>
-                                    <system:String>30 ngày gần nhất</system:String>
-                                    <system:String>Tuần hiện tại</system:String>
-                                    <system:String>Tháng hiện tại</system:String>
-                                </x:Array>
-                            </ComboBox.ItemsSource>
-                        </ComboBox>
+                                Margin="20,0,0,15"/>
 
                         <!-- Option 2: Single Date -->
                         <RadioButton Content="Chọn ngày cụ thể"
@@ -106,16 +99,10 @@
                         
                         <ComboBox materialDesign:HintAssist.Hint="Chọn khung giờ"
                                 Style="{StaticResource MaterialDesignOutlinedComboBox}"
-                                SelectedItem="{Binding SelectedTimeFilter}"
-                                Margin="0,0,0,20">
-                            <ComboBox.ItemsSource>
-                                <x:Array Type="{x:Type system:String}">
-                                    <system:String>Tất cả</system:String>
-                                    <system:String>Check-in (4h - 11h)</system:String>
-                                    <system:String>Check-out (13h - 18h)</system:String>
-                                </x:Array>
-                            </ComboBox.ItemsSource>
-                        </ComboBox>
+                                ItemsSource="{Binding TimeFilters}"
+                                DisplayMemberPath="Display"
+                                SelectedItem="{Binding SelectedTimeFilterItem}"
+                                Margin="0,0,0,20"/>
 
                         <!-- Action Buttons -->
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">

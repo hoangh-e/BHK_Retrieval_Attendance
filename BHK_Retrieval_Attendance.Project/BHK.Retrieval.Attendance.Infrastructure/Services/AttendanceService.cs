@@ -24,48 +24,96 @@ namespace BHK.Retrieval.Attendance.Infrastructure.Services
 
         public async Task<List<AttendanceDisplayDto>> GetAttendanceRecordsAsync(AttendanceFilterDto filter)
         {
-            // TODO: Implement logic lấy từ database hoặc thiết bị
-            // Hiện tại return mock data
-            await Task.Delay(500); // Simulate async operation
-
-            var mockData = new List<AttendanceDisplayDto>();
-            
-            // Generate mock data based on filter
-            var random = new Random();
-            var startDate = filter.StartDate ?? DateTime.Today.AddDays(-7);
-            var endDate = filter.EndDate ?? DateTime.Today;
-
-            for (int i = 1; i <= 20; i++)
+            try
             {
-                var checkTime = startDate.AddHours(random.Next(0, (int)(endDate - startDate).TotalHours));
-                
-                // Apply time filter
-                if (filter.TimeFilter == TimeFilter.CheckIn && (checkTime.Hour < 4 || checkTime.Hour > 11))
-                    continue;
-                if (filter.TimeFilter == TimeFilter.CheckOut && (checkTime.Hour < 13 || checkTime.Hour > 18))
-                    continue;
+                var startDate = filter.StartDate ?? DateTime.Today.AddDays(-7);
+                var endDate = filter.EndDate ?? DateTime.Today;
 
-                mockData.Add(new AttendanceDisplayDto
+                _logger.LogInformation($"Getting attendance records from {startDate:yyyy-MM-dd} to {endDate:yyyy-MM-dd}");
+
+                // Lấy dữ liệu từ thiết bị
+                var attendanceRecords = await _deviceService.GetAttendanceRecordsAsync(startDate, endDate);
+
+                if (attendanceRecords == null || !attendanceRecords.Any())
                 {
-                    DIN = (ulong)i,
-                    EmployeeId = $"NV{i:D4}",
-                    EmployeeName = $"Nhân viên {i}",
-                    CheckTime = checkTime,
-                    Date = checkTime.ToString("dd/MM/yyyy"),
-                    Time = checkTime.ToString("HH:mm:ss"),
-                    VerifyMode = random.Next(0, 3) switch
-                    {
-                        0 => "Vân tay",
-                        1 => "Thẻ từ",
-                        _ => "Mật khẩu"
-                    },
-                    CheckType = checkTime.Hour < 12 ? "Check-in" : "Check-out",
-                    DeviceId = 1,
-                    Remark = ""
-                });
-            }
+                    _logger.LogWarning("No attendance records found");
+                    return new List<AttendanceDisplayDto>();
+                }
 
-            return mockData.OrderByDescending(x => x.CheckTime).ToList();
+                // Lấy danh sách nhân viên để map thông tin
+                var employees = await _deviceService.GetAllEmployeesAsync();
+                var employeeDict = employees?.ToDictionary(e => e.DIN, e => e) ?? new Dictionary<ulong, EmployeeDto>();
+
+                // Chuyển đổi sang DTO hiển thị
+                var displayRecords = attendanceRecords.Select(record =>
+                {
+                    // Tìm thông tin nhân viên
+                    var employee = employeeDict.ContainsKey(record.DIN) ? employeeDict[record.DIN] : null;
+
+                    return new AttendanceDisplayDto
+                    {
+                        DIN = record.DIN,
+                        EmployeeId = employee?.IDNumber ?? record.DIN.ToString(),
+                        EmployeeName = employee?.UserName ?? "Không xác định",
+                        CheckTime = record.Time,
+                        Date = record.Time.ToString("dd/MM/yyyy"),
+                        Time = record.Time.ToString("HH:mm:ss"),
+                        VerifyMode = GetVerifyModeText(record.VerifyMode),
+                        CheckType = GetCheckTypeText(record.State),
+                        DeviceId = 1, // TODO: Get from device config
+                        Remark = string.Empty
+                    };
+                }).ToList();
+
+                // Apply time filter
+                if (filter.TimeFilter == TimeFilter.CheckIn)
+                {
+                    displayRecords = displayRecords
+                        .Where(x => x.CheckTime.Hour >= 4 && x.CheckTime.Hour <= 11)
+                        .ToList();
+                }
+                else if (filter.TimeFilter == TimeFilter.CheckOut)
+                {
+                    displayRecords = displayRecords
+                        .Where(x => x.CheckTime.Hour >= 13 && x.CheckTime.Hour <= 18)
+                        .ToList();
+                }
+
+                _logger.LogInformation($"Retrieved {displayRecords.Count} attendance records");
+                
+                return displayRecords.OrderByDescending(x => x.CheckTime).ToList();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting attendance records");
+                return new List<AttendanceDisplayDto>();
+            }
+        }
+
+        private string GetVerifyModeText(int verifyMode)
+        {
+            return verifyMode switch
+            {
+                0 => "Mật khẩu",
+                1 => "Vân tay",
+                2 => "Thẻ từ",
+                3 => "Khuôn mặt",
+                4 => "Mống mắt",
+                _ => "Không xác định"
+            };
+        }
+
+        private string GetCheckTypeText(int state)
+        {
+            return state switch
+            {
+                0 => "Check-in",
+                1 => "Check-out",
+                2 => "Nghỉ giải lao",
+                3 => "Bắt đầu làm việc",
+                4 => "Kết thúc làm việc",
+                _ => "Khác"
+            };
         }
 
         public async Task<bool> ExportAttendanceAsync(ExportConfigDto config, string filePath)

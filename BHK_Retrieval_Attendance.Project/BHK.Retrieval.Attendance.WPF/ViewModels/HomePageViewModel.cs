@@ -23,6 +23,7 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
         private DateTime _connectionTime;
         private bool _isTestMode;
         private EmployeeViewModel _employeeViewModel;
+        private AttendanceManagementViewModel _attendanceManagementViewModel;
         
         // ✅ Bổ sung thêm thông tin thiết bị
         private string _serialNumber;
@@ -36,7 +37,8 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
             IDeviceService deviceService,
             ILogger<HomePageViewModel> logger,
             IOptions<DeviceOptions> deviceOptions,
-            EmployeeViewModel employeeViewModel)
+            EmployeeViewModel employeeViewModel,
+            AttendanceManagementViewModel attendanceManagementViewModel)
         {
             _deviceService = deviceService ?? throw new ArgumentNullException(nameof(deviceService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -44,6 +46,9 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
             
             // ✅ THÊM: Khởi tạo EmployeeViewModel
             _employeeViewModel = employeeViewModel ?? throw new ArgumentNullException(nameof(employeeViewModel));
+            
+            // ✅ THÊM: Khởi tạo AttendanceManagementViewModel
+            _attendanceManagementViewModel = attendanceManagementViewModel ?? throw new ArgumentNullException(nameof(attendanceManagementViewModel));
 
             // Initialize properties with device connection info
             _ipAddress = _deviceOptions.DefaultIpAddress;
@@ -163,6 +168,15 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
         {
             get => _employeeViewModel;
             set => SetProperty(ref _employeeViewModel, value);
+        }
+
+        /// <summary>
+        /// ViewModel cho trang quản lý chấm công
+        /// </summary>
+        public AttendanceManagementViewModel AttendanceManagementViewModel
+        {
+            get => _attendanceManagementViewModel;
+            set => SetProperty(ref _attendanceManagementViewModel, value);
         }
 
         #endregion

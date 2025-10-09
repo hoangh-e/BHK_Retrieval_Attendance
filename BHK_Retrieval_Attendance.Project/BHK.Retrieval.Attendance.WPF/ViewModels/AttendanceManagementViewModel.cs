@@ -3,12 +3,14 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Input;
+using System.Collections.Generic;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using BHK.Retrieval.Attendance.Core.DTOs.Requests;
 using BHK.Retrieval.Attendance.Core.DTOs.Responses;
 using BHK.Retrieval.Attendance.Core.Interfaces.Services;
 using BHK.Retrieval.Attendance.WPF.Services.Interfaces;
+using BHK.Retrieval.Attendance.WPF.Models;
 using Microsoft.Extensions.Logging;
 
 namespace BHK.Retrieval.Attendance.WPF.ViewModels
@@ -40,7 +42,7 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
 
         // Option 1: Predefined Range
         [ObservableProperty]
-        private PredefinedDateRange _selectedPredefinedRange = PredefinedDateRange.Today;
+        private ComboBoxItem<PredefinedDateRange>? _selectedPredefinedRangeItem;
 
         // Option 2: Single Date
         [ObservableProperty]
@@ -55,10 +57,14 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
 
         // Time Filter
         [ObservableProperty]
-        private TimeFilter _selectedTimeFilter = TimeFilter.All;
+        private ComboBoxItem<TimeFilter>? _selectedTimeFilterItem;
 
         [ObservableProperty]
         private int _totalRecords;
+
+        // ComboBox Items Sources
+        public List<ComboBoxItem<PredefinedDateRange>> PredefinedDateRanges { get; }
+        public List<ComboBoxItem<TimeFilter>> TimeFilters { get; }
 
         #endregion
 
@@ -81,6 +87,14 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
             _dialogService = dialogService;
             _notificationService = notificationService;
             _logger = logger;
+
+            // Initialize ComboBox items
+            PredefinedDateRanges = FilterItemsProvider.GetPredefinedDateRanges();
+            TimeFilters = FilterItemsProvider.GetTimeFilters();
+            
+            // Set default selections
+            SelectedPredefinedRangeItem = PredefinedDateRanges.First();
+            SelectedTimeFilterItem = TimeFilters.First();
 
             // Initialize Commands
             LoadDataCommand = new AsyncRelayCommand(LoadDataAsync);
@@ -128,8 +142,8 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
         {
             // Reset về mặc định
             SelectedFilterType = FilterType.PredefinedRange;
-            SelectedPredefinedRange = PredefinedDateRange.Today;
-            SelectedTimeFilter = TimeFilter.All;
+            SelectedPredefinedRangeItem = PredefinedDateRanges.First();
+            SelectedTimeFilterItem = TimeFilters.First();
             SingleDate = DateTime.Today;
             StartDate = DateTime.Today.AddDays(-7);
             EndDate = DateTime.Today;
@@ -154,6 +168,7 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
             // var result = await _dialogService.ShowExportDialogAsync(exportConfig);
             
             _logger.LogInformation("Export dialog opened");
+            await Task.CompletedTask;
         }
 
         private void OnApplyFilter(string? parameter)
@@ -171,14 +186,15 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
             var filter = new AttendanceFilterDto
             {
                 FilterType = SelectedFilterType,
-                TimeFilter = SelectedTimeFilter
+                TimeFilter = SelectedTimeFilterItem?.Value ?? TimeFilter.All
             };
 
             switch (SelectedFilterType)
             {
                 case FilterType.PredefinedRange:
-                    filter.PredefinedRange = SelectedPredefinedRange;
-                    filter.StartDate = GetStartDateFromPredefined(SelectedPredefinedRange);
+                    var predefinedRange = SelectedPredefinedRangeItem?.Value ?? PredefinedDateRange.Today;
+                    filter.PredefinedRange = predefinedRange;
+                    filter.StartDate = GetStartDateFromPredefined(predefinedRange);
                     filter.EndDate = DateTime.Now;
                     break;
 
