@@ -26,7 +26,7 @@ namespace BHK.Retrieval.Attendance.WPF.Services.Implementations
             _mainWindowViewModel = mainWindowViewModel ?? throw new ArgumentNullException(nameof(mainWindowViewModel));
         }
 
-        public BaseViewModel CurrentViewModel => _mainWindowViewModel.CurrentViewModel;
+        public BaseViewModel CurrentViewModel => _mainWindowViewModel.CurrentPage as BaseViewModel;
 
         public event EventHandler<BaseViewModel> Navigated;
 
@@ -39,8 +39,8 @@ namespace BHK.Retrieval.Attendance.WPF.Services.Implementations
                 // Resolve ViewModel từ DI container
                 var viewModel = _serviceProvider.GetRequiredService<TViewModel>();
 
-                // Thay đổi CurrentViewModel → WPF tự động render View tương ứng
-                _mainWindowViewModel.CurrentViewModel = viewModel;
+                // Thay đổi CurrentPage → WPF tự động render View tương ứng
+                _mainWindowViewModel.CurrentPage = viewModel;
 
                 // Trigger event
                 Navigated?.Invoke(this, viewModel);

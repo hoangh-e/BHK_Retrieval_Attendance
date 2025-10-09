@@ -42,8 +42,7 @@
         <materialDesign:Card Grid.Row="1" Margin="16,8,16,16">
             <TabControl x:Name="MainTabControl"
                        Style="{StaticResource MaterialDesignNavigationRailTabControl}"
-                       materialDesign:ColorZoneAssist.Mode="PrimaryMid"
-                       SelectionChanged="MainTabControl_SelectionChanged">
+                       materialDesign:ColorZoneAssist.Mode="PrimaryMid">
 
                 <!-- Tab: Thông tin thiết bị -->
                 <TabItem x:Name="DeviceInfoTab">

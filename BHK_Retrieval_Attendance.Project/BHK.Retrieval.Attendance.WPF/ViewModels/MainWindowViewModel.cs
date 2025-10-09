@@ -1,38 +1,33 @@
-using BHK.Retrieval.Attendance.WPF.ViewModels.Base;
-using Microsoft.Extensions.Logging;
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
+using BHK.Retrieval.Attendance.WPF.ViewModels.Pages;
 
 namespace BHK.Retrieval.Attendance.WPF.ViewModels
 {
-    /// <summary>
-    /// ViewModel cho MainWindow - quản lý navigation giữa các views
-    /// </summary>
-    public class MainWindowViewModel : BaseViewModel
+    public class MainWindowViewModel : INotifyPropertyChanged
     {
-        private readonly ILogger<MainWindowViewModel> _logger;
-        private BaseViewModel _currentViewModel;
-
-        public MainWindowViewModel(
-            ILogger<MainWindowViewModel> logger)
+        private object _currentPage = null!;
+        
+        public object CurrentPage
         {
-            _logger = logger;
-            _logger.LogInformation("MainWindowViewModel created");
-        }
-
-        /// <summary>
-        /// ViewModel hiện tại đang được hiển thị
-        /// Khi thay đổi property này, WPF tự động đổi View tương ứng
-        /// </summary>
-        public BaseViewModel CurrentViewModel
-        {
-            get => _currentViewModel;
+            get => _currentPage;
             set
             {
-                if (SetProperty(ref _currentViewModel, value))
-                {
-                    _logger.LogInformation("CurrentViewModel changed to: {ViewModelType}", 
-                        value?.GetType().Name ?? "null");
-                }
+                _currentPage = value;
+                OnPropertyChanged();
             }
+        }
+
+        public MainWindowViewModel(HomePageViewModel homePageViewModel)
+        {
+            // Set trang mặc định
+            CurrentPage = homePageViewModel;
+        }
+
+        public event PropertyChangedEventHandler? PropertyChanged;
+        protected void OnPropertyChanged([CallerMemberName] string? propertyName = null)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
         }
     }
 }
