@@ -219,9 +219,9 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
             {
                 PredefinedDateRange.Today => DateTime.Today,
                 PredefinedDateRange.Yesterday => DateTime.Today.AddDays(-1),
-                PredefinedDateRange.Last3Days => DateTime.Today.AddDays(-3),
-                PredefinedDateRange.Last7Days => DateTime.Today.AddDays(-7),
-                PredefinedDateRange.Last30Days => DateTime.Today.AddDays(-30),
+                PredefinedDateRange.Last3Days => DateTime.Today.AddDays(-2),   // 3 ngày: hôm nay + 2 ngày trước
+                PredefinedDateRange.Last7Days => DateTime.Today.AddDays(-6),   // 7 ngày: hôm nay + 6 ngày trước
+                PredefinedDateRange.Last30Days => DateTime.Today.AddDays(-29), // 30 ngày: hôm nay + 29 ngày trước
                 PredefinedDateRange.CurrentWeek => GetMondayOfCurrentWeek(),
                 PredefinedDateRange.CurrentMonth => new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1),
                 _ => DateTime.Today

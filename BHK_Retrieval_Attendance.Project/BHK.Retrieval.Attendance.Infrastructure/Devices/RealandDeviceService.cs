@@ -547,6 +547,7 @@ namespace BHK.Retrieval.Attendance.Infrastructure.Devices
 
         /// <summary>
         /// Lấy dữ liệu chấm công theo khoảng thời gian
+        /// Sử dụng DeviceProperty.AttRecords để lấy G.Log (General Log) từ thiết bị
         /// </summary>
         public async Task<List<AttendanceRecordDto>> GetAttendanceRecordsAsync(DateTime startDate, DateTime endDate)
         {
@@ -557,24 +558,73 @@ namespace BHK.Retrieval.Attendance.Infrastructure.Devices
             {
                 try
                 {
-                    _logger?.LogInformation("Infrastructure: Getting attendance records from {start} to {end}", startDate, endDate);
+                    _logger?.LogInformation("Infrastructure: Getting attendance records from {start} to {end}", 
+                        startDate.ToString("yyyy-MM-dd HH:mm:ss"), 
+                        endDate.ToString("yyyy-MM-dd HH:mm:ss"));
 
-                    // TODO: Implement
-                    // _deviceConnection.GetProperty(DeviceProperty.AttendanceRecords, ...)
+                    // ✅ BƯỚC 1: Chuẩn bị parameters theo Riss.Device_Guide.md
+                    // object để chứa kết quả (sẽ được gán thành List<Record>)
+                    object extraData = new List<DateTime> { startDate, endDate };
 
-                    // Mock data
-                    return new List<AttendanceRecordDto>();
+                    // boolList[0] = false: lấy TẤT CẢ log (không chỉ log mới)
+                    // boolList[1] = false: KHÔNG xóa cờ "new" (giữ nguyên trạng thái)
+                    List<bool> boolList = new List<bool> { false, false };
+
+                    // ✅ BƯỚC 2: Gọi GetProperty để lấy attendance records
+                    bool result = _deviceConnection.GetProperty(
+                        DeviceProperty.AttRecords,   // Property: G.Log (General Log)
+                        boolList,                     // Extra property: [lấy tất cả, không xóa cờ new]
+                        ref _device,                  // Device reference
+                        ref extraData                 // Kết quả sẽ được gán vào extraData
+                    );
+
+                    if (!result)
+                    {
+                        _logger?.LogWarning("Infrastructure: GetProperty returned false for AttRecords");
+                        return new List<AttendanceRecordDto>();
+                    }
+
+                    // ✅ BƯỚC 3: Parse kết quả
+                    // Theo SDK: extraData sau khi gọi GetProperty sẽ chứa List<Record>
+                    if (extraData == null)
+                    {
+                        _logger?.LogWarning("Infrastructure: extraData is null after GetProperty");
+                        return new List<AttendanceRecordDto>();
+                    }
+
+                    List<Record>? records = extraData as List<Record>;
+                    
+                    if (records == null || records.Count == 0)
+                    {
+                        _logger?.LogInformation("Infrastructure: No attendance records found in date range");
+                        return new List<AttendanceRecordDto>();
+                    }
+
+                    // ✅ BƯỚC 4: Convert Record (Riss.Devices) → AttendanceRecordDto (Core)
+                    var attendanceDtos = records.Select(record => new AttendanceRecordDto
+                    {
+                        DIN = record.DIN,              // Device Identification Number (mã nhân viên)
+                        Time = record.Clock,           // Thời gian chấm công
+                        State = record.Action,         // Trạng thái: Chi tiết vào/ra (Action field)
+                        VerifyMode = record.Verify,    // Phương thức: 0=Password, 1=Fingerprint, 2=Card, 3=Face, 4=Iris
+                        RecordId = record.DIN          // Tạm dùng DIN làm ID (không có RecId trong Record)
+                    }).ToList();
+
+                    _logger?.LogInformation("Infrastructure: ✅ Successfully retrieved {count} attendance records", attendanceDtos.Count);
+                    
+                    return attendanceDtos;
                 }
                 catch (Exception ex)
                 {
-                    _logger?.LogError(ex, "Infrastructure: Failed to get attendance records");
-                    throw;
+                    _logger?.LogError(ex, "Infrastructure: Failed to get attendance records from device");
+                    throw new Exception("Failed to retrieve attendance records from device. " + ex.Message, ex);
                 }
             });
         }
 
         /// <summary>
-        /// Lấy số lượng bản ghi chấm công
+        /// Lấy số lượng bản ghi chấm công trong khoảng thời gian
+        /// Sử dụng DeviceProperty.AttRecordsCount
         /// </summary>
         public async Task<int> GetAttendanceRecordCountAsync(DateTime startDate, DateTime endDate)
         {
@@ -585,10 +635,34 @@ namespace BHK.Retrieval.Attendance.Infrastructure.Devices
             {
                 try
                 {
-                    _logger?.LogInformation("Infrastructure: Getting attendance record count");
+                    _logger?.LogInformation("Infrastructure: Getting attendance record count from {start} to {end}", 
+                        startDate.ToString("yyyy-MM-dd"), endDate.ToString("yyyy-MM-dd"));
                     
-                    // TODO: Implement
-                    return 0;
+                    // ✅ Chuẩn bị parameters
+                    object extraData = new List<DateTime> { startDate, endDate };
+                    
+                    // extraProperty = false: đếm TẤT CẢ log (không chỉ log mới)
+                    object extraProperty = false;
+                    
+                    // ✅ Gọi GetProperty để lấy count
+                    bool result = _deviceConnection.GetProperty(
+                        DeviceProperty.AttRecordsCount,  // Property: Số lượng G.Log
+                        extraProperty,                    // false = tất cả
+                        ref _device,
+                        ref extraData
+                    );
+                    
+                    if (!result)
+                    {
+                        _logger?.LogWarning("Infrastructure: GetProperty returned false for AttRecordsCount");
+                        return 0;
+                    }
+                    
+                    // Kết quả là int
+                    int count = extraData != null ? (int)extraData : 0;
+                    
+                    _logger?.LogInformation("Infrastructure: Found {count} attendance records", count);
+                    return count;
                 }
                 catch (Exception ex)
                 {
@@ -599,7 +673,9 @@ namespace BHK.Retrieval.Attendance.Infrastructure.Devices
         }
 
         /// <summary>
-        /// Xóa dữ liệu chấm công
+        /// Xóa tất cả dữ liệu chấm công từ thiết bị
+        /// Sử dụng DeviceProperty.AttRecords với SetProperty
+        /// ⚠️ CẢNH BÁO: Thao tác này sẽ xóa TẤT CẢ lịch sử chấm công!
         /// </summary>
         public async Task<bool> ClearAttendanceRecordsAsync()
         {
@@ -610,14 +686,31 @@ namespace BHK.Retrieval.Attendance.Infrastructure.Devices
             {
                 try
                 {
-                    _logger?.LogInformation("Infrastructure: Clearing attendance records");
+                    _logger?.LogWarning("Infrastructure: ⚠️ Clearing ALL attendance records from device");
 
-                    // TODO: Implement
-                    return true;
+                    // ✅ Gọi SetProperty để xóa tất cả attendance records
+                    // Theo guide: SetProperty(DeviceProperty.AttRecords, null, device, null)
+                    bool result = _deviceConnection.SetProperty(
+                        DeviceProperty.AttRecords,  // Property: G.Log
+                        null,                        // extraProperty: null
+                        _device,                     // Device
+                        null                         // extraData: null
+                    );
+
+                    if (result)
+                    {
+                        _logger?.LogInformation("Infrastructure: ✅ Successfully cleared all attendance records");
+                    }
+                    else
+                    {
+                        _logger?.LogError("Infrastructure: ❌ Failed to clear attendance records");
+                    }
+
+                    return result;
                 }
                 catch (Exception ex)
                 {
-                    _logger?.LogError(ex, "Infrastructure: Failed to clear attendance records");
+                    _logger?.LogError(ex, "Infrastructure: Exception while clearing attendance records");
                     throw;
                 }
             });
