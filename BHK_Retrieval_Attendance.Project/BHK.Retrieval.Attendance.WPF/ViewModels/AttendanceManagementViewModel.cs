@@ -1,0 +1,224 @@
+using System;
+using System.Collections.ObjectModel;
+using System.Linq;
+using System.Threading.Tasks;
+using System.Windows.Input;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using BHK.Retrieval.Attendance.Core.DTOs.Requests;
+using BHK.Retrieval.Attendance.Core.DTOs.Responses;
+using BHK.Retrieval.Attendance.Core.Interfaces.Services;
+using BHK.Retrieval.Attendance.WPF.Services.Interfaces;
+using Microsoft.Extensions.Logging;
+
+namespace BHK.Retrieval.Attendance.WPF.ViewModels
+{
+    /// <summary>
+    /// ViewModel cho trang Quản lý chấm công
+    /// </summary>
+    public partial class AttendanceManagementViewModel : ObservableObject
+    {
+        private readonly IAttendanceService _attendanceService;
+        private readonly IDialogService _dialogService;
+        private readonly INotificationService _notificationService;
+        private readonly ILogger<AttendanceManagementViewModel> _logger;
+
+        #region Properties
+
+        [ObservableProperty]
+        private ObservableCollection<AttendanceDisplayDto> _attendanceRecords = new();
+
+        [ObservableProperty]
+        private AttendanceDisplayDto? _selectedRecord;
+
+        [ObservableProperty]
+        private bool _isLoading;
+
+        // Filter Options
+        [ObservableProperty]
+        private FilterType _selectedFilterType = FilterType.PredefinedRange;
+
+        // Option 1: Predefined Range
+        [ObservableProperty]
+        private PredefinedDateRange _selectedPredefinedRange = PredefinedDateRange.Today;
+
+        // Option 2: Single Date
+        [ObservableProperty]
+        private DateTime _singleDate = DateTime.Today;
+
+        // Option 3: Date Range
+        [ObservableProperty]
+        private DateTime _startDate = DateTime.Today.AddDays(-7);
+
+        [ObservableProperty]
+        private DateTime _endDate = DateTime.Today;
+
+        // Time Filter
+        [ObservableProperty]
+        private TimeFilter _selectedTimeFilter = TimeFilter.All;
+
+        [ObservableProperty]
+        private int _totalRecords;
+
+        #endregion
+
+        #region Commands
+
+        public IAsyncRelayCommand LoadDataCommand { get; }
+        public IAsyncRelayCommand RefreshCommand { get; }
+        public IAsyncRelayCommand OpenExportDialogCommand { get; }
+        public IRelayCommand<string> ApplyFilterCommand { get; }
+
+        #endregion
+
+        public AttendanceManagementViewModel(
+            IAttendanceService attendanceService,
+            IDialogService dialogService,
+            INotificationService notificationService,
+            ILogger<AttendanceManagementViewModel> logger)
+        {
+            _attendanceService = attendanceService;
+            _dialogService = dialogService;
+            _notificationService = notificationService;
+            _logger = logger;
+
+            // Initialize Commands
+            LoadDataCommand = new AsyncRelayCommand(LoadDataAsync);
+            RefreshCommand = new AsyncRelayCommand(RefreshAsync);
+            OpenExportDialogCommand = new AsyncRelayCommand(OpenExportDialogAsync);
+            ApplyFilterCommand = new RelayCommand<string>(OnApplyFilter);
+
+            // Load initial data
+            _ = LoadDataAsync();
+        }
+
+        #region Command Implementations
+
+        private async Task LoadDataAsync()
+        {
+            try
+            {
+                IsLoading = true;
+                
+                var filter = BuildFilterDto();
+                var records = await _attendanceService.GetAttendanceRecordsAsync(filter);
+                
+                AttendanceRecords.Clear();
+                foreach (var record in records)
+                {
+                    AttendanceRecords.Add(record);
+                }
+                
+                TotalRecords = AttendanceRecords.Count;
+                
+                _logger.LogInformation($"Loaded {TotalRecords} attendance records");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error loading attendance records");
+                await _notificationService.ShowErrorAsync("Lỗi", "Không thể tải dữ liệu chấm công");
+            }
+            finally
+            {
+                IsLoading = false;
+            }
+        }
+
+        private async Task RefreshAsync()
+        {
+            // Reset về mặc định
+            SelectedFilterType = FilterType.PredefinedRange;
+            SelectedPredefinedRange = PredefinedDateRange.Today;
+            SelectedTimeFilter = TimeFilter.All;
+            SingleDate = DateTime.Today;
+            StartDate = DateTime.Today.AddDays(-7);
+            EndDate = DateTime.Today;
+
+            await LoadDataAsync();
+            
+            await _notificationService.ShowSuccessAsync("Thành công", "Đã làm mới dữ liệu");
+        }
+
+        private async Task OpenExportDialogAsync()
+        {
+            // TODO: Mở dialog xuất file với dữ liệu hiện tại
+            var exportConfig = new ExportConfigDto
+            {
+                FileType = ExportFileType.Excel,
+                FileName = $"attendance_{DateTime.Now:yyyy-MM-dd}.xlsx",
+                RecordCount = AttendanceRecords.Count,
+                Data = AttendanceRecords.ToList()
+            };
+
+            // Mở dialog (sẽ implement sau)
+            // var result = await _dialogService.ShowExportDialogAsync(exportConfig);
+            
+            _logger.LogInformation("Export dialog opened");
+        }
+
+        private void OnApplyFilter(string? parameter)
+        {
+            // Apply filter khi user thay đổi options
+            _ = LoadDataAsync();
+        }
+
+        #endregion
+
+        #region Helper Methods
+
+        private AttendanceFilterDto BuildFilterDto()
+        {
+            var filter = new AttendanceFilterDto
+            {
+                FilterType = SelectedFilterType,
+                TimeFilter = SelectedTimeFilter
+            };
+
+            switch (SelectedFilterType)
+            {
+                case FilterType.PredefinedRange:
+                    filter.PredefinedRange = SelectedPredefinedRange;
+                    filter.StartDate = GetStartDateFromPredefined(SelectedPredefinedRange);
+                    filter.EndDate = DateTime.Now;
+                    break;
+
+                case FilterType.SingleDate:
+                    filter.SingleDate = SingleDate;
+                    filter.StartDate = SingleDate.Date;
+                    filter.EndDate = SingleDate.Date.AddDays(1).AddSeconds(-1);
+                    break;
+
+                case FilterType.DateRange:
+                    filter.StartDate = StartDate.Date;
+                    filter.EndDate = EndDate.Date.AddDays(1).AddSeconds(-1);
+                    break;
+            }
+
+            return filter;
+        }
+
+        private DateTime GetStartDateFromPredefined(PredefinedDateRange range)
+        {
+            return range switch
+            {
+                PredefinedDateRange.Today => DateTime.Today,
+                PredefinedDateRange.Yesterday => DateTime.Today.AddDays(-1),
+                PredefinedDateRange.Last3Days => DateTime.Today.AddDays(-3),
+                PredefinedDateRange.Last7Days => DateTime.Today.AddDays(-7),
+                PredefinedDateRange.Last30Days => DateTime.Today.AddDays(-30),
+                PredefinedDateRange.CurrentWeek => GetMondayOfCurrentWeek(),
+                PredefinedDateRange.CurrentMonth => new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1),
+                _ => DateTime.Today
+            };
+        }
+
+        private DateTime GetMondayOfCurrentWeek()
+        {
+            var today = DateTime.Today;
+            int daysToSubtract = ((int)today.DayOfWeek - (int)DayOfWeek.Monday + 7) % 7;
+            return today.AddDays(-daysToSubtract);
+        }
+
+        #endregion
+    }
+}
