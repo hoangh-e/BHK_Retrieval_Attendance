@@ -734,7 +734,8 @@ namespace BHK.Retrieval.Attendance.Infrastructure.Devices
 
         /// <summary>
         /// Lấy serial number thiết bị
-        /// Theo hướng dẫn: SerialNumber được SDK tự động điền sau khi gọi GetProperty(DeviceProperty.Model)
+        /// ✅ CÁCH ĐÚNG từ SystemSettingForm.cs (Realand source code)
+        /// Sử dụng DeviceProperty.SerialNo với Zd2911Utils.DeviceSerialNo
         /// </summary>
         public async Task<string> GetSerialNumberAsync()
         {
@@ -752,58 +753,35 @@ namespace BHK.Retrieval.Attendance.Infrastructure.Devices
                     _logger?.LogInformation("DEBUG: _device = {status}", (_device == null ? "null" : "ok"));
                     _logger?.LogInformation("DEBUG: _isConnected = {status}", _isConnected);
 
-                    // ✅ PHƯƠNG PHÁP 1: Kiểm tra xem SerialNumber đã được điền sau khi Open() chưa
-                    if (!string.IsNullOrEmpty(_device.SerialNumber))
-                    {
-                        _logger?.LogInformation("Infrastructure: SerialNumber already populated: {SerialNumber}", _device.SerialNumber);
-                        return _device.SerialNumber;
-                    }
-
-                    // ✅ PHƯƠNG PHÁP 2: Gọi GetProperty(DeviceProperty.Model) để SDK tự động điền SerialNumber
-                    // 🔥 QUAN TRỌNG: extraData phải là null để SDK tự khởi tạo và điền kết quả
-                    _logger?.LogInformation("Infrastructure: Calling GetProperty(DeviceProperty.Model) to populate SerialNumber");
+                    // ✅ CÁCH CHUẨN từ Realand SystemSettingForm.cs
+                    // Sử dụng DeviceProperty.SerialNo (không phải Model hay Status)
+                    object extraProperty = new object();
+                    object extraData = Zd2911Utils.DeviceSerialNo; // 🔥 Khởi tạo với DeviceSerialNo
                     
-                    object? extraData = null; // 🔥 Phải null - không dùng Zd2911Utils.DeviceModel
+                    _logger?.LogInformation("Infrastructure: Calling GetProperty(DeviceProperty.SerialNo)");
+                    
                     bool result = _deviceConnection.GetProperty(
-                        DeviceProperty.Model,
-                        null,
+                        DeviceProperty.SerialNo,  // 🔥 Sử dụng SerialNo property
+                        extraProperty,
                         ref _device,
                         ref extraData);
 
                     if (result)
                     {
-                        // Sau khi gọi thành công, SDK đã tự động điền device.SerialNumber
-                        string model = extraData?.ToString() ?? "(unknown)";
-                        string serialNumber = _device.SerialNumber ?? "N/A";
-                        _logger?.LogInformation("Infrastructure: Model: {Model}, SerialNumber: {SerialNumber}", model, serialNumber);
+                        // extraData chứa Serial Number string
+                        string serialNumber = (string)extraData;
+                        _logger?.LogInformation("Infrastructure: ✅ Serial Number: {SerialNumber}", serialNumber);
                         return serialNumber;
                     }
                     else
                     {
-                        _logger?.LogWarning("Infrastructure: GetProperty(DeviceProperty.Model) failed, trying Status method");
-                        
-                        // ✅ PHƯƠNG PHÁP 3: Fallback - thử gọi GetProperty(DeviceProperty.Status)
-                        // Một số model cũ (ZD2911, RL86) gán SerialNumber qua Status
-                        object? statusData = null;
-                        bool statusResult = _deviceConnection.GetProperty(
-                            DeviceProperty.Status,
-                            null,
-                            ref _device,
-                            ref statusData);
-
-                        if (statusResult && !string.IsNullOrEmpty(_device.SerialNumber))
-                        {
-                            _logger?.LogInformation("Infrastructure: SerialNumber from Status: {SerialNumber}", _device.SerialNumber);
-                            return _device.SerialNumber;
-                        }
-
-                        _logger?.LogWarning("Infrastructure: Could not get serial number from device");
+                        _logger?.LogWarning("Infrastructure: ❌ GetProperty(DeviceProperty.SerialNo) failed");
                         return "N/A";
                     }
                 }
                 catch (Exception ex)
                 {
-                    _logger?.LogError(ex, "Infrastructure: Failed to get serial number");
+                    _logger?.LogError(ex, "Infrastructure: ❌ Failed to get serial number");
                     return "N/A"; // Return N/A instead of throwing to prevent breaking the UI
                 }
             });
@@ -824,11 +802,13 @@ namespace BHK.Retrieval.Attendance.Infrastructure.Devices
                 {
                     _logger?.LogInformation("Infrastructure: Getting device time");
 
-                    // ✅ LẤY THỰC TỪ THIẾT BỊ theo Riss.Device_Guide
-                    object? extraData = null;
+                    // ✅ CÁCH ĐÚNG: extraProperty và extraData phải được khởi tạo
+                    object extraProperty = new object();
+                    object extraData = new object();
+                    
                     bool result = _deviceConnection.GetProperty(
                         DeviceProperty.DeviceTime,
-                        null,
+                        extraProperty,  // ✅ Không được truyền null
                         ref _device,
                         ref extraData);
 
@@ -872,12 +852,13 @@ namespace BHK.Retrieval.Attendance.Infrastructure.Devices
                     _logger?.LogInformation("DEBUG: _device = {status}", (_device == null ? "null" : "ok"));
                     _logger?.LogInformation("DEBUG: _isConnected = {status}", _isConnected);
 
-                    // ✅ LẤY THỰC TỪ THIẾT BỊ theo Riss.Device_Guide
-                    // 🔥 QUAN TRỌNG: extraData phải là null để SDK tự khởi tạo
-                    object? extraData = null;
+                    // ✅ CÁCH ĐÚNG: extraProperty và extraData phải được khởi tạo
+                    object extraProperty = new object();
+                    object extraData = new object();
+                    
                     bool result = _deviceConnection.GetProperty(
                         DeviceProperty.FirmwareVersion,
-                        null,
+                        extraProperty,  // ✅ Không được truyền null
                         ref _device,
                         ref extraData);
 
@@ -921,12 +902,13 @@ namespace BHK.Retrieval.Attendance.Infrastructure.Devices
                     _logger?.LogInformation("DEBUG: _device = {status}", (_device == null ? "null" : "ok"));
                     _logger?.LogInformation("DEBUG: _isConnected = {status}", _isConnected);
 
-                    // ✅ LẤY THỰC TỪ THIẾT BỊ theo Riss.Device_Guide
-                    // 🔥 QUAN TRỌNG: extraData phải là null để SDK tự khởi tạo
-                    object? extraData = null;
+                    // ✅ CÁCH ĐÚNG: extraProperty và extraData phải được khởi tạo
+                    object extraProperty = new object();
+                    object extraData = new object();
+                    
                     bool result = _deviceConnection.GetProperty(
                         DeviceProperty.Model,
-                        null,
+                        extraProperty,  // ✅ Không được truyền null
                         ref _device,
                         ref extraData);
 
