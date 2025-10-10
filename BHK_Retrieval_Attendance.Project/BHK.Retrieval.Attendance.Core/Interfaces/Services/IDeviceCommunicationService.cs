@@ -100,6 +100,16 @@ namespace BHK.Retrieval.Attendance.Core.Interfaces.Services
         Task<string> GetSerialNumberAsync();
 
         /// <summary>
+        /// Lấy Firmware Version của thiết bị
+        /// </summary>
+        Task<string> GetFirmwareVersionAsync();
+
+        /// <summary>
+        /// Lấy Model của thiết bị
+        /// </summary>
+        Task<string> GetDeviceModelAsync();
+
+        /// <summary>
         /// Lấy thời gian hiện tại của thiết bị
         /// </summary>
         Task<DateTime> GetDeviceTimeAsync();

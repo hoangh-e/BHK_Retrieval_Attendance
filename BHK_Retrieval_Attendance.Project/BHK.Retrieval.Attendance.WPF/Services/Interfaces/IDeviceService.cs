@@ -45,6 +45,7 @@ namespace BHK.Retrieval.Attendance.WPF.Services.Interfaces
         #region Device Information
         Task<string> GetDeviceInfoAsync();
         Task<string> GetSerialNumberAsync();
+        Task<string> GetFirmwareVersionAsync();
         Task<string> GetDeviceModelAsync();
         Task<DateTime> GetDeviceTimeAsync();
         Task<bool> SyncDeviceTimeAsync();

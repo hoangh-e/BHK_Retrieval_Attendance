@@ -734,6 +734,7 @@ namespace BHK.Retrieval.Attendance.Infrastructure.Devices
 
         /// <summary>
         /// Lấy serial number thiết bị
+        /// Theo hướng dẫn: SerialNumber được SDK tự động điền sau khi gọi GetProperty(DeviceProperty.Model)
         /// </summary>
         public async Task<string> GetSerialNumberAsync()
         {
@@ -746,19 +747,71 @@ namespace BHK.Retrieval.Attendance.Infrastructure.Devices
                 {
                     _logger?.LogInformation("Infrastructure: Getting device serial number");
 
-                    // TODO: Implement
-                    return "ZDC2911-001";
+                    // 🧠 DEBUG: Kiểm tra trạng thái kết nối
+                    _logger?.LogInformation("DEBUG: _deviceConnection = {status}", (_deviceConnection == null ? "null" : "ok"));
+                    _logger?.LogInformation("DEBUG: _device = {status}", (_device == null ? "null" : "ok"));
+                    _logger?.LogInformation("DEBUG: _isConnected = {status}", _isConnected);
+
+                    // ✅ PHƯƠNG PHÁP 1: Kiểm tra xem SerialNumber đã được điền sau khi Open() chưa
+                    if (!string.IsNullOrEmpty(_device.SerialNumber))
+                    {
+                        _logger?.LogInformation("Infrastructure: SerialNumber already populated: {SerialNumber}", _device.SerialNumber);
+                        return _device.SerialNumber;
+                    }
+
+                    // ✅ PHƯƠNG PHÁP 2: Gọi GetProperty(DeviceProperty.Model) để SDK tự động điền SerialNumber
+                    // 🔥 QUAN TRỌNG: extraData phải là null để SDK tự khởi tạo và điền kết quả
+                    _logger?.LogInformation("Infrastructure: Calling GetProperty(DeviceProperty.Model) to populate SerialNumber");
+                    
+                    object? extraData = null; // 🔥 Phải null - không dùng Zd2911Utils.DeviceModel
+                    bool result = _deviceConnection.GetProperty(
+                        DeviceProperty.Model,
+                        null,
+                        ref _device,
+                        ref extraData);
+
+                    if (result)
+                    {
+                        // Sau khi gọi thành công, SDK đã tự động điền device.SerialNumber
+                        string model = extraData?.ToString() ?? "(unknown)";
+                        string serialNumber = _device.SerialNumber ?? "N/A";
+                        _logger?.LogInformation("Infrastructure: Model: {Model}, SerialNumber: {SerialNumber}", model, serialNumber);
+                        return serialNumber;
+                    }
+                    else
+                    {
+                        _logger?.LogWarning("Infrastructure: GetProperty(DeviceProperty.Model) failed, trying Status method");
+                        
+                        // ✅ PHƯƠNG PHÁP 3: Fallback - thử gọi GetProperty(DeviceProperty.Status)
+                        // Một số model cũ (ZD2911, RL86) gán SerialNumber qua Status
+                        object? statusData = null;
+                        bool statusResult = _deviceConnection.GetProperty(
+                            DeviceProperty.Status,
+                            null,
+                            ref _device,
+                            ref statusData);
+
+                        if (statusResult && !string.IsNullOrEmpty(_device.SerialNumber))
+                        {
+                            _logger?.LogInformation("Infrastructure: SerialNumber from Status: {SerialNumber}", _device.SerialNumber);
+                            return _device.SerialNumber;
+                        }
+
+                        _logger?.LogWarning("Infrastructure: Could not get serial number from device");
+                        return "N/A";
+                    }
                 }
                 catch (Exception ex)
                 {
                     _logger?.LogError(ex, "Infrastructure: Failed to get serial number");
-                    throw;
+                    return "N/A"; // Return N/A instead of throwing to prevent breaking the UI
                 }
             });
         }
 
         /// <summary>
         /// Lấy thời gian hiện tại của thiết bị
+        /// Theo hướng dẫn: GetProperty(DeviceProperty.DeviceTime, ...)
         /// </summary>
         public async Task<DateTime> GetDeviceTimeAsync()
         {
@@ -771,13 +824,128 @@ namespace BHK.Retrieval.Attendance.Infrastructure.Devices
                 {
                     _logger?.LogInformation("Infrastructure: Getting device time");
 
-                    // TODO: Implement
-                    return DateTime.Now;
+                    // ✅ LẤY THỰC TỪ THIẾT BỊ theo Riss.Device_Guide
+                    object? extraData = null;
+                    bool result = _deviceConnection.GetProperty(
+                        DeviceProperty.DeviceTime,
+                        null,
+                        ref _device,
+                        ref extraData);
+
+                    if (result && extraData != null)
+                    {
+                        DateTime deviceTime = (DateTime)extraData;
+                        _logger?.LogInformation("Infrastructure: Device time: {DeviceTime}", deviceTime);
+                        return deviceTime;
+                    }
+                    else
+                    {
+                        _logger?.LogWarning("Infrastructure: Failed to get device time, using current time");
+                        return DateTime.Now;
+                    }
                 }
                 catch (Exception ex)
                 {
                     _logger?.LogError(ex, "Infrastructure: Failed to get device time");
-                    throw;
+                    return DateTime.Now; // Fallback to current time
+                }
+            });
+        }
+
+        /// <summary>
+        /// Lấy firmware version của thiết bị
+        /// Theo hướng dẫn: GetProperty(DeviceProperty.FirmwareVersion, ...)
+        /// </summary>
+        public async Task<string> GetFirmwareVersionAsync()
+        {
+            if (_device == null || _deviceConnection == null || !_isConnected)
+                throw new InvalidOperationException("Not connected to device. Call ConnectAsync first.");
+
+            return await Task.Run(() =>
+            {
+                try
+                {
+                    _logger?.LogInformation("Infrastructure: Getting firmware version");
+
+                    // 🧠 DEBUG: Kiểm tra trạng thái kết nối
+                    _logger?.LogInformation("DEBUG: _deviceConnection = {status}", (_deviceConnection == null ? "null" : "ok"));
+                    _logger?.LogInformation("DEBUG: _device = {status}", (_device == null ? "null" : "ok"));
+                    _logger?.LogInformation("DEBUG: _isConnected = {status}", _isConnected);
+
+                    // ✅ LẤY THỰC TỪ THIẾT BỊ theo Riss.Device_Guide
+                    // 🔥 QUAN TRỌNG: extraData phải là null để SDK tự khởi tạo
+                    object? extraData = null;
+                    bool result = _deviceConnection.GetProperty(
+                        DeviceProperty.FirmwareVersion,
+                        null,
+                        ref _device,
+                        ref extraData);
+
+                    if (result && extraData != null)
+                    {
+                        string firmwareVersion = extraData.ToString() ?? "N/A";
+                        _logger?.LogInformation("Infrastructure: Firmware version: {FirmwareVersion}", firmwareVersion);
+                        return firmwareVersion;
+                    }
+                    else
+                    {
+                        _logger?.LogWarning("Infrastructure: Failed to get firmware version");
+                        return "N/A";
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger?.LogError(ex, "Infrastructure: Failed to get firmware version");
+                    return "N/A";
+                }
+            });
+        }
+
+        /// <summary>
+        /// Lấy model của thiết bị
+        /// Theo hướng dẫn: GetProperty(DeviceProperty.Model, ...)
+        /// </summary>
+        public async Task<string> GetDeviceModelAsync()
+        {
+            if (_device == null || _deviceConnection == null || !_isConnected)
+                throw new InvalidOperationException("Not connected to device. Call ConnectAsync first.");
+
+            return await Task.Run(() =>
+            {
+                try
+                {
+                    _logger?.LogInformation("Infrastructure: Getting device model");
+
+                    // 🧠 DEBUG: Kiểm tra trạng thái kết nối
+                    _logger?.LogInformation("DEBUG: _deviceConnection = {status}", (_deviceConnection == null ? "null" : "ok"));
+                    _logger?.LogInformation("DEBUG: _device = {status}", (_device == null ? "null" : "ok"));
+                    _logger?.LogInformation("DEBUG: _isConnected = {status}", _isConnected);
+
+                    // ✅ LẤY THỰC TỪ THIẾT BỊ theo Riss.Device_Guide
+                    // 🔥 QUAN TRỌNG: extraData phải là null để SDK tự khởi tạo
+                    object? extraData = null;
+                    bool result = _deviceConnection.GetProperty(
+                        DeviceProperty.Model,
+                        null,
+                        ref _device,
+                        ref extraData);
+
+                    if (result && extraData != null)
+                    {
+                        string model = extraData.ToString() ?? _device.Model ?? "N/A";
+                        _logger?.LogInformation("Infrastructure: Device model: {Model}", model);
+                        return model;
+                    }
+                    else
+                    {
+                        _logger?.LogWarning("Infrastructure: Failed to get device model, using device.Model");
+                        return _device.Model ?? "N/A";
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger?.LogError(ex, "Infrastructure: Failed to get device model");
+                    return _device.Model ?? "N/A";
                 }
             });
         }

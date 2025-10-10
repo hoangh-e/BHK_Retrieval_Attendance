@@ -226,27 +226,42 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
                     // ✅ Lấy serial number (nếu có)
                     try
                     {
-                        if (_isTestMode)
-                        {
-                            SerialNumber = "TEST-SN-12345678";
-                            FirmwareVersion = "v2.5.0 (TEST)";
-                            MemoryUsage = "25% (TEST)";
-                        }
-                        else
-                        {
-                            // TODO: Implement GetSerialNumberAsync, GetFirmwareVersionAsync trong DeviceService
-                            SerialNumber = "N/A";
-                            FirmwareVersion = "N/A";
-                            MemoryUsage = "N/A";
-                        }
+                        SerialNumber = await _deviceService.GetSerialNumberAsync();
+                        _logger.LogInformation("Serial number loaded: {SerialNumber}", SerialNumber);
                     }
                     catch (Exception ex)
                     {
-                        _logger.LogWarning(ex, "Failed to get additional device info");
+                        _logger.LogWarning(ex, "Failed to get serial number");
                         SerialNumber = "N/A";
-                        FirmwareVersion = "N/A";
-                        MemoryUsage = "N/A";
                     }
+
+                    // ✅ Lấy firmware version từ thiết bị
+                    try
+                    {
+                        FirmwareVersion = await _deviceService.GetFirmwareVersionAsync();
+                        _logger.LogInformation("Firmware version loaded: {FirmwareVersion}", FirmwareVersion);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Failed to get firmware version");
+                        FirmwareVersion = "N/A";
+                    }
+
+                    // ✅ Lấy device model từ thiết bị
+                    try
+                    {
+                        DeviceModel = await _deviceService.GetDeviceModelAsync();
+                        _logger.LogInformation("Device model loaded: {DeviceModel}", DeviceModel);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogWarning(ex, "Failed to get device model");
+                        DeviceModel = _deviceOptions.DeviceModel;
+                    }
+
+                    // ✅ TODO: Implement memory usage calculation
+                    // Tạm thời không có API để lấy memory usage
+                    MemoryUsage = "N/A";
                 }
                 else
                 {

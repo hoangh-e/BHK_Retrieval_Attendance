@@ -613,9 +613,42 @@ namespace BHK.Retrieval.Attendance.WPF.Services.Implementations
             }
         }
 
+        public async Task<string> GetFirmwareVersionAsync()
+        {
+            try
+            {
+                if (!_isConnected)
+                {
+                    throw new InvalidOperationException("Device is not connected");
+                }
+
+                return await _deviceCommunicationService.GetFirmwareVersionAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to get firmware version");
+                throw;
+            }
+        }
+
         public async Task<string> GetDeviceModelAsync()
         {
-            return await Task.FromResult(_deviceInfo?.Model ?? "Unknown");
+            try
+            {
+                if (!_isConnected)
+                {
+                    throw new InvalidOperationException("Device is not connected");
+                }
+
+                // ✅ LẤY THỰC TỪ THIẾT BỊ thay vì dùng cached _deviceInfo
+                return await _deviceCommunicationService.GetDeviceModelAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to get device model");
+                // Fallback to cached info
+                return _deviceInfo?.Model ?? "Unknown";
+            }
         }
 
         public async Task<DateTime> GetDeviceTimeAsync()
