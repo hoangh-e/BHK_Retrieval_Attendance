@@ -548,6 +548,7 @@ namespace BHK.Retrieval.Attendance.Infrastructure.Devices
         /// <summary>
         /// Lấy dữ liệu chấm công theo khoảng thời gian
         /// Sử dụng DeviceProperty.AttRecords để lấy G.Log (General Log) từ thiết bị
+        /// CẢNH BÁO: SDK có thể lấy toàn bộ records rồi mới filter theo date range ở client-side
         /// </summary>
         public async Task<List<AttendanceRecordDto>> GetAttendanceRecordsAsync(DateTime startDate, DateTime endDate)
         {
@@ -556,9 +557,10 @@ namespace BHK.Retrieval.Attendance.Infrastructure.Devices
 
             return await Task.Run(() =>
             {
+                var stopwatch = System.Diagnostics.Stopwatch.StartNew();
                 try
                 {
-                    _logger?.LogInformation("Infrastructure: Getting attendance records from {start} to {end}", 
+                    _logger?.LogInformation("Infrastructure: ⏱️ START Getting attendance records from {start} to {end}", 
                         startDate.ToString("yyyy-MM-dd HH:mm:ss"), 
                         endDate.ToString("yyyy-MM-dd HH:mm:ss"));
 
@@ -571,12 +573,15 @@ namespace BHK.Retrieval.Attendance.Infrastructure.Devices
                     List<bool> boolList = new List<bool> { false, false };
 
                     // ✅ BƯỚC 2: Gọi GetProperty để lấy attendance records
+                    var apiStopwatch = System.Diagnostics.Stopwatch.StartNew();
                     bool result = _deviceConnection.GetProperty(
                         DeviceProperty.AttRecords,   // Property: G.Log (General Log)
                         boolList,                     // Extra property: [lấy tất cả, không xóa cờ new]
                         ref _device,                  // Device reference
                         ref extraData                 // Kết quả sẽ được gán vào extraData
                     );
+                    apiStopwatch.Stop();
+                    _logger?.LogInformation("Infrastructure: ⏱️ SDK GetProperty took {ms}ms", apiStopwatch.ElapsedMilliseconds);
 
                     if (!result)
                     {
@@ -600,7 +605,10 @@ namespace BHK.Retrieval.Attendance.Infrastructure.Devices
                         return new List<AttendanceRecordDto>();
                     }
 
+                    _logger?.LogInformation("Infrastructure: 📊 Received {count} records from device", records.Count);
+
                     // ✅ BƯỚC 4: Convert Record (Riss.Devices) → AttendanceRecordDto (Core)
+                    var convertStopwatch = System.Diagnostics.Stopwatch.StartNew();
                     var attendanceDtos = records.Select(record => new AttendanceRecordDto
                     {
                         DIN = record.DIN,              // Device Identification Number (mã nhân viên)
@@ -609,14 +617,22 @@ namespace BHK.Retrieval.Attendance.Infrastructure.Devices
                         VerifyMode = record.Verify,    // Phương thức: 0=Password, 1=Fingerprint, 2=Card, 3=Face, 4=Iris
                         RecordId = record.DIN          // Tạm dùng DIN làm ID (không có RecId trong Record)
                     }).ToList();
+                    convertStopwatch.Stop();
 
-                    _logger?.LogInformation("Infrastructure: ✅ Successfully retrieved {count} attendance records", attendanceDtos.Count);
+                    stopwatch.Stop();
+                    _logger?.LogInformation(
+                        "Infrastructure: ✅ Successfully retrieved {count} attendance records in {totalMs}ms (API: {apiMs}ms, Convert: {convertMs}ms)", 
+                        attendanceDtos.Count, 
+                        stopwatch.ElapsedMilliseconds,
+                        apiStopwatch.ElapsedMilliseconds,
+                        convertStopwatch.ElapsedMilliseconds);
                     
                     return attendanceDtos;
                 }
                 catch (Exception ex)
                 {
-                    _logger?.LogError(ex, "Infrastructure: Failed to get attendance records from device");
+                    stopwatch.Stop();
+                    _logger?.LogError(ex, "Infrastructure: ❌ Failed to get attendance records from device after {ms}ms", stopwatch.ElapsedMilliseconds);
                     throw new Exception("Failed to retrieve attendance records from device. " + ex.Message, ex);
                 }
             });

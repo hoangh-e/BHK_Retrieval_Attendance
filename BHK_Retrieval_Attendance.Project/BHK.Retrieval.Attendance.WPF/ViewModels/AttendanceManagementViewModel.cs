@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using System.Collections.Generic;
+using System.Diagnostics;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using BHK.Retrieval.Attendance.Core.DTOs.Requests;
@@ -62,6 +63,9 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
         [ObservableProperty]
         private int _totalRecords;
 
+        [ObservableProperty]
+        private long _loadTimeMs;
+
         // ComboBox Items Sources
         public List<ComboBoxItem<PredefinedDateRange>> PredefinedDateRanges { get; }
         public List<ComboBoxItem<TimeFilter>> TimeFilters { get; }
@@ -102,17 +106,20 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
             OpenExportDialogCommand = new AsyncRelayCommand(OpenExportDialogAsync);
             ApplyFilterCommand = new RelayCommand<string>(OnApplyFilter);
 
-            // Load initial data
-            _ = LoadDataAsync();
+            // Không tự động load dữ liệu
+            // User sẽ click nút "Lọc" để load dữ liệu theo điều kiện
         }
 
         #region Command Implementations
 
-        private async Task LoadDataAsync()
+        public async Task LoadDataAsync()
         {
+            var stopwatch = Stopwatch.StartNew();
+            
             try
             {
                 IsLoading = true;
+                LoadTimeMs = 0; // Reset load time
                 
                 var filter = BuildFilterDto();
                 var records = await _attendanceService.GetAttendanceRecordsAsync(filter);
@@ -125,10 +132,15 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
                 
                 TotalRecords = AttendanceRecords.Count;
                 
-                _logger.LogInformation($"Loaded {TotalRecords} attendance records");
+                stopwatch.Stop();
+                LoadTimeMs = stopwatch.ElapsedMilliseconds;
+                
+                _logger.LogInformation($"Loaded {TotalRecords} attendance records in {LoadTimeMs}ms");
             }
             catch (Exception ex)
             {
+                stopwatch.Stop();
+                LoadTimeMs = 0;
                 _logger.LogError(ex, "Error loading attendance records");
                 await _notificationService.ShowErrorAsync("Lỗi", "Không thể tải dữ liệu chấm công");
             }
@@ -195,7 +207,7 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
                     var predefinedRange = SelectedPredefinedRangeItem?.Value ?? PredefinedDateRange.Today;
                     filter.PredefinedRange = predefinedRange;
                     filter.StartDate = GetStartDateFromPredefined(predefinedRange);
-                    filter.EndDate = DateTime.Now;
+                    filter.EndDate = GetEndDateFromPredefined(predefinedRange);
                     break;
 
                 case FilterType.SingleDate:
@@ -218,12 +230,23 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
             return range switch
             {
                 PredefinedDateRange.Today => DateTime.Today,
-                PredefinedDateRange.Yesterday => DateTime.Today.AddDays(-1),
+                PredefinedDateRange.Yesterday => DateTime.Today.AddDays(-1), // Chỉ lấy hôm qua
                 PredefinedDateRange.Last3Days => DateTime.Today.AddDays(-2),   // 3 ngày: hôm nay + 2 ngày trước
                 PredefinedDateRange.Last7Days => DateTime.Today.AddDays(-6),   // 7 ngày: hôm nay + 6 ngày trước
                 PredefinedDateRange.Last30Days => DateTime.Today.AddDays(-29), // 30 ngày: hôm nay + 29 ngày trước
                 PredefinedDateRange.CurrentWeek => GetMondayOfCurrentWeek(),
                 PredefinedDateRange.CurrentMonth => new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1),
+                _ => DateTime.Today
+            };
+        }
+
+        private DateTime GetEndDateFromPredefined(PredefinedDateRange range)
+        {
+            return range switch
+            {
+                // Hôm qua: Chỉ lấy 1 ngày duy nhất (không bao gồm hôm nay)
+                PredefinedDateRange.Yesterday => DateTime.Today.AddDays(-1),
+                // Tất cả các lựa chọn khác: lấy đến hôm nay
                 _ => DateTime.Today
             };
         }

@@ -24,15 +24,19 @@ namespace BHK.Retrieval.Attendance.Infrastructure.Services
 
         public async Task<List<AttendanceDisplayDto>> GetAttendanceRecordsAsync(AttendanceFilterDto filter)
         {
+            var stopwatch = System.Diagnostics.Stopwatch.StartNew();
             try
             {
                 var startDate = filter.StartDate ?? DateTime.Today.AddDays(-7);
                 var endDate = filter.EndDate ?? DateTime.Today;
 
-                _logger.LogInformation($"Getting attendance records from {startDate:yyyy-MM-dd} to {endDate:yyyy-MM-dd}");
+                _logger.LogInformation($"⏱️ START Getting attendance records from {startDate:yyyy-MM-dd} to {endDate:yyyy-MM-dd}");
 
-                // Lấy dữ liệu từ thiết bị
+                // BƯỚC 1: Lấy dữ liệu từ thiết bị (thường chậm nhất)
+                var deviceStopwatch = System.Diagnostics.Stopwatch.StartNew();
                 var attendanceRecords = await _deviceService.GetAttendanceRecordsAsync(startDate, endDate);
+                deviceStopwatch.Stop();
+                _logger.LogInformation($"⏱️ Device GetAttendanceRecords took {deviceStopwatch.ElapsedMilliseconds}ms");
 
                 if (attendanceRecords == null || !attendanceRecords.Any())
                 {
@@ -40,11 +44,15 @@ namespace BHK.Retrieval.Attendance.Infrastructure.Services
                     return new List<AttendanceDisplayDto>();
                 }
 
-                // Lấy danh sách nhân viên để map thông tin
+                // BƯỚC 2: Lấy danh sách nhân viên để map thông tin
+                var employeeStopwatch = System.Diagnostics.Stopwatch.StartNew();
                 var employees = await _deviceService.GetAllEmployeesAsync();
                 var employeeDict = employees?.ToDictionary(e => e.DIN, e => e) ?? new Dictionary<ulong, EmployeeDto>();
+                employeeStopwatch.Stop();
+                _logger.LogInformation($"⏱️ Get {employeeDict.Count} employees took {employeeStopwatch.ElapsedMilliseconds}ms");
 
-                // Chuyển đổi sang DTO hiển thị
+                // BƯỚC 3: Chuyển đổi sang DTO hiển thị
+                var mappingStopwatch = System.Diagnostics.Stopwatch.StartNew();
                 var displayRecords = attendanceRecords.Select(record =>
                 {
                     // Tìm thông tin nhân viên
@@ -64,8 +72,11 @@ namespace BHK.Retrieval.Attendance.Infrastructure.Services
                         Remark = string.Empty
                     };
                 }).ToList();
+                mappingStopwatch.Stop();
+                _logger.LogInformation($"⏱️ Mapping {displayRecords.Count} records took {mappingStopwatch.ElapsedMilliseconds}ms");
 
-                // Apply time filter
+                // BƯỚC 4: Apply time filter
+                var filterStopwatch = System.Diagnostics.Stopwatch.StartNew();
                 if (filter.TimeFilter == TimeFilter.CheckIn)
                 {
                     displayRecords = displayRecords
@@ -78,14 +89,23 @@ namespace BHK.Retrieval.Attendance.Infrastructure.Services
                         .Where(x => x.CheckTime.Hour >= 13 && x.CheckTime.Hour <= 18)
                         .ToList();
                 }
+                filterStopwatch.Stop();
 
-                _logger.LogInformation($"Retrieved {displayRecords.Count} attendance records");
+                // BƯỚC 5: Sort
+                var sortedRecords = displayRecords.OrderByDescending(x => x.CheckTime).ToList();
                 
-                return displayRecords.OrderByDescending(x => x.CheckTime).ToList();
+                stopwatch.Stop();
+                _logger.LogInformation(
+                    $"✅ TOTAL Retrieved {sortedRecords.Count} attendance records in {stopwatch.ElapsedMilliseconds}ms " +
+                    $"(Device: {deviceStopwatch.ElapsedMilliseconds}ms, Employees: {employeeStopwatch.ElapsedMilliseconds}ms, " +
+                    $"Mapping: {mappingStopwatch.ElapsedMilliseconds}ms, Filter: {filterStopwatch.ElapsedMilliseconds}ms)");
+                
+                return sortedRecords;
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error getting attendance records");
+                stopwatch.Stop();
+                _logger.LogError(ex, $"❌ Error getting attendance records after {stopwatch.ElapsedMilliseconds}ms");
                 return new List<AttendanceDisplayDto>();
             }
         }

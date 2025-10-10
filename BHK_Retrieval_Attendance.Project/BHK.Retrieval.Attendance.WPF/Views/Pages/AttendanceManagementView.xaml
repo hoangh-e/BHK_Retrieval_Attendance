@@ -9,7 +9,8 @@
              xmlns:system="clr-namespace:System;assembly=mscorlib"
              mc:Ignorable="d" 
              d:DesignHeight="800" d:DesignWidth="1200"
-             d:DataContext="{d:DesignInstance Type=vm:AttendanceManagementViewModel}">
+             d:DataContext="{d:DesignInstance Type=vm:AttendanceManagementViewModel}"
+             Loaded="UserControl_Loaded">
 
     <UserControl.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVisConverter"/>
@@ -34,10 +35,6 @@
         <!-- Filter Panel -->
         <materialDesign:Card Grid.Row="1" Padding="20" Margin="0,0,0,20">
             <StackPanel>
-                <TextBlock Text="Bộ lọc" 
-                          Style="{StaticResource MaterialDesignHeadline6TextBlock}"
-                          Margin="0,0,0,15"/>
-
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="2*"/>
@@ -46,6 +43,9 @@
 
                     <!-- Left: Date Filter Options -->
                     <StackPanel Grid.Column="0" Margin="0,0,20,0">
+                        <TextBlock Text="Lọc theo ngày" 
+                                  Style="{StaticResource MaterialDesignHeadline6TextBlock}"
+                                  Margin="0,0,0,15"/>
                         
                         <!-- Option 1: Predefined Range -->
                         <RadioButton Content="Chọn khoảng thời gian có sẵn"
@@ -94,8 +94,8 @@
                     <!-- Right: Time Filter & Actions -->
                     <StackPanel Grid.Column="1">
                         <TextBlock Text="Lọc theo giờ"
-                                 Style="{StaticResource MaterialDesignBody1TextBlock}"
-                                 Margin="0,0,0,10"/>
+                                 Style="{StaticResource MaterialDesignHeadline6TextBlock}"
+                                 Margin="0,0,0,15"/>
                         
                         <ComboBox materialDesign:HintAssist.Hint="Chọn khung giờ"
                                 Style="{StaticResource MaterialDesignOutlinedComboBox}"
@@ -103,75 +103,112 @@
                                 DisplayMemberPath="Display"
                                 SelectedItem="{Binding SelectedTimeFilterItem}"
                                 Margin="0,0,0,20"/>
-
-                        <!-- Action Buttons -->
-                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                            <Button Style="{StaticResource MaterialDesignOutlinedButton}"
-                                  Command="{Binding RefreshCommand}"
-                                  Margin="0,0,10,0">
-                                <Button.Content>
-                                    <StackPanel Orientation="Horizontal">
-                                        <materialDesign:PackIcon Kind="Refresh" VerticalAlignment="Center" Margin="0,0,5,0"/>
-                                        <TextBlock Text="Làm mới" VerticalAlignment="Center"/>
-                                    </StackPanel>
-                                </Button.Content>
-                            </Button>
-
-                            <Button Style="{StaticResource MaterialDesignRaisedButton}"
-                                  Command="{Binding OpenExportDialogCommand}">
-                                <Button.Content>
-                                    <StackPanel Orientation="Horizontal">
-                                        <materialDesign:PackIcon Kind="FileExport" VerticalAlignment="Center" Margin="0,0,5,0"/>
-                                        <TextBlock Text="Xuất file" VerticalAlignment="Center"/>
-                                    </StackPanel>
-                                </Button.Content>
-                            </Button>
-                        </StackPanel>
                     </StackPanel>
                 </Grid>
+
+                <!-- Action Buttons - Moved below for better visibility -->
+                <Separator Margin="0,10,0,10"/>
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                    <!-- Nút Lọc - Load dữ liệu theo điều kiện -->
+                    <Button Style="{StaticResource MaterialDesignRaisedButton}"
+                          Command="{Binding LoadDataCommand}"
+                          Margin="0,0,10,0"
+                          Height="36"
+                          materialDesign:ButtonProgressAssist.IsIndicatorVisible="{Binding IsLoading}"
+                          materialDesign:ButtonProgressAssist.IsIndeterminate="True">
+                        <Button.Content>
+                            <StackPanel Orientation="Horizontal">
+                                <materialDesign:PackIcon Kind="Filter" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                                <TextBlock Text="Lọc" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button.Content>
+                    </Button>
+                    
+                    <Button Style="{StaticResource MaterialDesignOutlinedButton}"
+                          Command="{Binding RefreshCommand}"
+                          Margin="0,0,10,0"
+                          Height="36">
+                        <Button.Content>
+                            <StackPanel Orientation="Horizontal">
+                                <materialDesign:PackIcon Kind="Refresh" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                                <TextBlock Text="Làm mới" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button.Content>
+                    </Button>
+
+                    <Button Style="{StaticResource MaterialDesignOutlinedButton}"
+                          Command="{Binding OpenExportDialogCommand}"
+                          Height="36">
+                        <Button.Content>
+                            <StackPanel Orientation="Horizontal">
+                                <materialDesign:PackIcon Kind="FileExport" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                                <TextBlock Text="Xuất file" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button.Content>
+                    </Button>
+                </StackPanel>
             </StackPanel>
         </materialDesign:Card>
 
-        <!-- Data Grid -->
-        <materialDesign:Card Grid.Row="2">
-            <Grid>
+        <!-- Data Grid with ScrollViewer for responsiveness -->
+        <materialDesign:Card Grid.Row="2" Padding="0">
+            <Grid MinHeight="300">
                 <!-- Loading Overlay -->
                 <ProgressBar Style="{StaticResource MaterialDesignCircularProgressBar}"
                            IsIndeterminate="True"
                            Visibility="{Binding IsLoading, Converter={StaticResource BoolToVisConverter}}"
                            HorizontalAlignment="Center"
-                           VerticalAlignment="Center"/>
+                           VerticalAlignment="Center"
+                           Width="50"
+                           Height="50"/>
 
-                <!-- Data Grid -->
-                <DataGrid ItemsSource="{Binding AttendanceRecords}"
-                        SelectedItem="{Binding SelectedRecord}"
-                        AutoGenerateColumns="False"
-                        CanUserAddRows="False"
-                        IsReadOnly="True"
-                        SelectionMode="Single"
-                        Visibility="{Binding IsLoading, Converter={StaticResource InverseBoolToVisConverter}}">
-                    
-                    <DataGrid.Columns>
-                        <DataGridTextColumn Header="Mã NV" Binding="{Binding EmployeeId}" Width="100"/>
-                        <DataGridTextColumn Header="Tên nhân viên" Binding="{Binding EmployeeName}" Width="200"/>
-                        <DataGridTextColumn Header="Ngày" Binding="{Binding Date}" Width="120"/>
-                        <DataGridTextColumn Header="Giờ chấm" Binding="{Binding Time}" Width="100"/>
-                        <DataGridTextColumn Header="Loại" Binding="{Binding CheckType}" Width="100"/>
-                        <DataGridTextColumn Header="Phương thức" Binding="{Binding VerifyMode}" Width="120"/>
-                        <DataGridTextColumn Header="Thiết bị" Binding="{Binding DeviceId}" Width="80"/>
-                        <DataGridTextColumn Header="Ghi chú" Binding="{Binding Remark}" Width="*"/>
-                    </DataGrid.Columns>
-                </DataGrid>
+                <!-- Data Grid with ScrollViewer -->
+                <ScrollViewer HorizontalScrollBarVisibility="Auto" 
+                            VerticalScrollBarVisibility="Auto"
+                            Visibility="{Binding IsLoading, Converter={StaticResource InverseBoolToVisConverter}}">
+                    <DataGrid ItemsSource="{Binding AttendanceRecords}"
+                            SelectedItem="{Binding SelectedRecord}"
+                            AutoGenerateColumns="False"
+                            CanUserAddRows="False"
+                            IsReadOnly="True"
+                            SelectionMode="Single"
+                            MinWidth="800"
+                            HorizontalScrollBarVisibility="Disabled"
+                            VerticalScrollBarVisibility="Disabled">
+                        
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Mã NV" Binding="{Binding EmployeeId}" Width="100" MinWidth="80"/>
+                            <DataGridTextColumn Header="Tên nhân viên" Binding="{Binding EmployeeName}" Width="200" MinWidth="150"/>
+                            <DataGridTextColumn Header="Ngày" Binding="{Binding Date}" Width="120" MinWidth="100"/>
+                            <DataGridTextColumn Header="Giờ chấm" Binding="{Binding Time}" Width="100" MinWidth="80"/>
+                            <DataGridTextColumn Header="Loại" Binding="{Binding CheckType}" Width="100" MinWidth="80"/>
+                            <DataGridTextColumn Header="Phương thức" Binding="{Binding VerifyMode}" Width="120" MinWidth="100"/>
+                            <DataGridTextColumn Header="Thiết bị" Binding="{Binding DeviceId}" Width="80" MinWidth="60"/>
+                            <DataGridTextColumn Header="Ghi chú" Binding="{Binding Remark}" Width="*" MinWidth="100"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </ScrollViewer>
             </Grid>
         </materialDesign:Card>
 
-        <!-- Footer: Statistics -->
-        <StackPanel Grid.Row="3" Orientation="Horizontal" Margin="0,15,0,0">
+        <!-- Footer: Statistics with Load Time -->
+        <StackPanel Grid.Row="3" Orientation="Horizontal" Margin="0,15,0,0" FlowDirection="LeftToRight">
             <TextBlock Text="Tổng số bản ghi: " 
                      Style="{StaticResource MaterialDesignBody1TextBlock}"/>
             <TextBlock Text="{Binding TotalRecords}" 
                      Style="{StaticResource MaterialDesignBody1TextBlock}"
-                     FontWeight="Bold"/>
+                     FontWeight="Bold"
+                     Margin="0,0,20,0"/>
+            <TextBlock Text="(Thời gian: " 
+                     Style="{StaticResource MaterialDesignBody1TextBlock}"
+                     Visibility="{Binding LoadTimeMs, Converter={StaticResource BoolToVisConverter}}"/>
+            <TextBlock Text="{Binding LoadTimeMs}" 
+                     Style="{StaticResource MaterialDesignBody1TextBlock}"
+                     FontWeight="Bold"
+                     Visibility="{Binding LoadTimeMs, Converter={StaticResource BoolToVisConverter}}"/>
+            <TextBlock Text="ms)" 
+                     Style="{StaticResource MaterialDesignBody1TextBlock}"
+                     Visibility="{Binding LoadTimeMs, Converter={StaticResource BoolToVisConverter}}"/>
         </StackPanel>
     </Grid>
 </UserControl>
