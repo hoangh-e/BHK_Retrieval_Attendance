@@ -203,8 +203,8 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
                 IsLoading = true;
                 _logger.LogInformation($"Loading employees page {CurrentPage}");
 
-                // Lấy tổng số nhân viên từ thiết bị
-                var allUsers = await _deviceService.GetAllUsersAsync();
+                // ✅ Lấy thông tin cơ bản từ thiết bị (NHANH - không có enrollment data)
+                var allUsers = await _deviceService.GetBasicUsersAsync();
 
                 if (allUsers == null || !allUsers.Any())
                 {

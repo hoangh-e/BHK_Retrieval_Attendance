@@ -44,12 +44,12 @@ namespace BHK.Retrieval.Attendance.Infrastructure.Services
                     return new List<AttendanceDisplayDto>();
                 }
 
-                // BƯỚC 2: Lấy danh sách nhân viên để map thông tin
+                // BƯỚC 2: Lấy danh sách nhân viên cơ bản để map thông tin (NHANH - không có enrollment data)
                 var employeeStopwatch = System.Diagnostics.Stopwatch.StartNew();
-                var employees = await _deviceService.GetAllEmployeesAsync();
+                var employees = await _deviceService.GetBasicEmployeesAsync(); // ✅ SỬ DỤNG GetBasicEmployeesAsync thay vì GetAllEmployeesAsync
                 var employeeDict = employees?.ToDictionary(e => e.DIN, e => e) ?? new Dictionary<ulong, EmployeeDto>();
                 employeeStopwatch.Stop();
-                _logger.LogInformation($"⏱️ Get {employeeDict.Count} employees took {employeeStopwatch.ElapsedMilliseconds}ms");
+                _logger.LogInformation($"⏱️ Get {employeeDict.Count} basic employees took {employeeStopwatch.ElapsedMilliseconds}ms (FAST - no enrollments)");
 
                 // BƯỚC 3: Chuyển đổi sang DTO hiển thị
                 var mappingStopwatch = System.Diagnostics.Stopwatch.StartNew();

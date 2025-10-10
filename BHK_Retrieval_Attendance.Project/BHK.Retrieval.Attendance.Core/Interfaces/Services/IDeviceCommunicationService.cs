@@ -37,9 +37,14 @@ namespace BHK.Retrieval.Attendance.Core.Interfaces.Services
         #region Employee Management
 
         /// <summary>
-        /// Lấy danh sách tất cả nhân viên từ thiết bị
+        /// Lấy danh sách tất cả nhân viên từ thiết bị (bao gồm enrollment data)
         /// </summary>
         Task<List<EmployeeDto>> GetAllEmployeesAsync();
+
+        /// <summary>
+        /// Lấy danh sách nhân viên cơ bản từ thiết bị (không bao gồm enrollment data - nhanh hơn)
+        /// </summary>
+        Task<List<EmployeeDto>> GetBasicEmployeesAsync();
 
         /// <summary>
         /// Lấy thông tin chi tiết một nhân viên theo DIN

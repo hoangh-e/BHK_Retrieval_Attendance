@@ -195,7 +195,7 @@ namespace BHK.Retrieval.Attendance.Infrastructure.Devices
         public bool IsConnected => _isConnected;
 
         /// <summary>
-        /// Lấy tất cả nhân viên từ thiết bị
+        /// Lấy tất cả nhân viên từ thiết bị (bao gồm enrollment data - CHẬM)
         /// </summary>
         public async Task<List<EmployeeDto>> GetAllEmployeesAsync()
         {
@@ -277,6 +277,63 @@ namespace BHK.Retrieval.Attendance.Infrastructure.Devices
                 {
                     _logger?.LogError(ex, "Infrastructure: Failed to get all employees");
                     throw new InvalidOperationException("Failed to retrieve employees from device. Please check device connection.", ex);
+                }
+            });
+        }
+
+        /// <summary>
+        /// Lấy danh sách nhân viên cơ bản từ thiết bị (KHÔNG bao gồm enrollment data - NHANH)
+        /// Dùng cho Attendance Management để tối ưu performance
+        /// </summary>
+        public async Task<List<EmployeeDto>> GetBasicEmployeesAsync()
+        {
+            if (_device == null || _deviceConnection == null || !_isConnected)
+                throw new InvalidOperationException("Not connected to device. Call ConnectAsync first.");
+
+            return await Task.Run(() =>
+            {
+                try
+                {
+                    _logger?.LogInformation("Infrastructure: Getting basic employees from device (no enrollment data)");
+
+                    // ✅ Chỉ lấy thông tin cơ bản - KHÔNG lấy enrollment data
+                    object extraProperty = (UInt64)0; // 0 = lấy tất cả user
+                    object? extraData = null;
+                    
+                    bool result = _deviceConnection.GetProperty(
+                        DeviceProperty.Enrolls, 
+                        extraProperty, 
+                        ref _device, 
+                        ref extraData
+                    );
+
+                    if (!result || extraData == null)
+                    {
+                        _logger?.LogWarning("Infrastructure: Failed to get user list from device or no users found");
+                        return new List<EmployeeDto>();
+                    }
+
+                    var users = (List<User>)extraData;
+                    
+                    if (users.Count == 0)
+                    {
+                        _logger?.LogWarning("Infrastructure: No employees found on device");
+                        return new List<EmployeeDto>();
+                    }
+
+                    _logger?.LogInformation("Infrastructure: Retrieved {count} basic users from device (FAST - no enrollments)", users.Count);
+
+                    // ✅ BỎ QUA enrollment data để tăng tốc độ
+                    // Convert trực tiếp từ User sang EmployeeDto (chỉ thông tin cơ bản)
+                    var employees = users.Select(user => MapBasicUserToEmployeeDto(user)).ToList();
+                    
+                    _logger?.LogInformation("Infrastructure: Successfully converted {count} basic employees to DTOs", employees.Count);
+                    return employees;
+                }
+                catch (Exception ex)
+                {
+                    _logger?.LogError(ex, "Infrastructure: Failed to get basic employees");
+                    throw new InvalidOperationException("Failed to retrieve basic employees from device. Please check device connection.", ex);
                 }
             });
         }
@@ -558,47 +615,54 @@ namespace BHK.Retrieval.Attendance.Infrastructure.Devices
             return await Task.Run(() =>
             {
                 var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+
                 try
                 {
-                    _logger?.LogInformation("Infrastructure: ⏱️ START Getting attendance records from {start} to {end}", 
-                        startDate.ToString("yyyy-MM-dd HH:mm:ss"), 
+                    _logger?.LogInformation(
+                        "Infrastructure: ⏱️ START Getting attendance records from {start} to {end}",
+                        startDate.ToString("yyyy-MM-dd HH:mm:ss"),
                         endDate.ToString("yyyy-MM-dd HH:mm:ss"));
 
-                    // ✅ BƯỚC 1: Chuẩn bị parameters theo Riss.Device_Guide.md
-                    // object để chứa kết quả (sẽ được gán thành List<Record>)
-                    object extraData = new List<DateTime> { startDate, endDate };
+                    // ✅ BƯỚC 1: Tạo flags để chỉ định loại dữ liệu cần lấy
+                    var flags = new List<bool>();
+                    flags.Add(false); // Tham số thứ 1: lấy TẤT CẢ log (không chỉ log mới)
+                    flags.Add(false); // Tham số thứ 2: KHÔNG xóa cờ "new" (giữ nguyên trạng thái)
 
-                    // boolList[0] = false: lấy TẤT CẢ log (không chỉ log mới)
-                    // boolList[1] = false: KHÔNG xóa cờ "new" (giữ nguyên trạng thái)
-                    List<bool> boolList = new List<bool> { false, false };
+                    // ✅ BƯỚC 2: Tạo range thời gian
+                    var range = new List<DateTime>();
+                    range.Add(startDate);  // Ngày bắt đầu
+                    range.Add(endDate);    // Ngày kết thúc
 
-                    // ✅ BƯỚC 2: Gọi GetProperty để lấy attendance records
+                    // ✅ BƯỚC 3: Chuẩn bị tham số cho SDK
+                    object extraProperty = flags;       // Flags vào extraProperty
+                    object extraData = (object)range;   // Range vào extraData (sẽ bị SDK ghi đè thành List<Record>)
+
+                    // ✅ BƯỚC 4: Gọi GetProperty để lấy attendance records
                     var apiStopwatch = System.Diagnostics.Stopwatch.StartNew();
                     bool result = _deviceConnection.GetProperty(
-                        DeviceProperty.AttRecords,   // Property: G.Log (General Log)
-                        boolList,                     // Extra property: [lấy tất cả, không xóa cờ new]
-                        ref _device,                  // Device reference
-                        ref extraData                 // Kết quả sẽ được gán vào extraData
+                        DeviceProperty.AttRecords, // Property: G.Log (General Log)
+                        extraProperty,              // Extra property: flags [lấy tất cả, không xóa cờ new]
+                        ref _device,                // Device reference
+                        ref extraData               // INPUT: range, OUTPUT: List<Record> từ SDK
                     );
                     apiStopwatch.Stop();
+
                     _logger?.LogInformation("Infrastructure: ⏱️ SDK GetProperty took {ms}ms", apiStopwatch.ElapsedMilliseconds);
 
+                    // ✅ BƯỚC 5: Kiểm tra kết quả
                     if (!result)
                     {
                         _logger?.LogWarning("Infrastructure: GetProperty returned false for AttRecords");
                         return new List<AttendanceRecordDto>();
                     }
 
-                    // ✅ BƯỚC 3: Parse kết quả
-                    // Theo SDK: extraData sau khi gọi GetProperty sẽ chứa List<Record>
                     if (extraData == null)
                     {
                         _logger?.LogWarning("Infrastructure: extraData is null after GetProperty");
                         return new List<AttendanceRecordDto>();
                     }
 
-                    List<Record>? records = extraData as List<Record>;
-                    
+                    var records = extraData as List<Record>;
                     if (records == null || records.Count == 0)
                     {
                         _logger?.LogInformation("Infrastructure: No attendance records found in date range");
@@ -607,26 +671,26 @@ namespace BHK.Retrieval.Attendance.Infrastructure.Devices
 
                     _logger?.LogInformation("Infrastructure: 📊 Received {count} records from device", records.Count);
 
-                    // ✅ BƯỚC 4: Convert Record (Riss.Devices) → AttendanceRecordDto (Core)
+                    // ✅ BƯỚC 6: Convert Record (Riss.Devices) → AttendanceRecordDto (Core)
                     var convertStopwatch = System.Diagnostics.Stopwatch.StartNew();
                     var attendanceDtos = records.Select(record => new AttendanceRecordDto
                     {
-                        DIN = record.DIN,              // Device Identification Number (mã nhân viên)
-                        Time = record.Clock,           // Thời gian chấm công
-                        State = record.Action,         // Trạng thái: Chi tiết vào/ra (Action field)
-                        VerifyMode = record.Verify,    // Phương thức: 0=Password, 1=Fingerprint, 2=Card, 3=Face, 4=Iris
-                        RecordId = record.DIN          // Tạm dùng DIN làm ID (không có RecId trong Record)
+                        DIN = record.DIN,           // Device Identification Number (mã nhân viên)
+                        Time = record.Clock,        // Thời gian chấm công
+                        State = record.Action,      // Trạng thái: Chi tiết vào/ra (Action field)
+                        VerifyMode = record.Verify, // Phương thức: 0=Password, 1=Fingerprint, 2=Card, 3=Face, 4=Iris
+                        RecordId = record.DIN       // Tạm dùng DIN làm ID (không có RecId trong Record)
                     }).ToList();
                     convertStopwatch.Stop();
 
                     stopwatch.Stop();
                     _logger?.LogInformation(
-                        "Infrastructure: ✅ Successfully retrieved {count} attendance records in {totalMs}ms (API: {apiMs}ms, Convert: {convertMs}ms)", 
-                        attendanceDtos.Count, 
+                        "Infrastructure: ✅ Successfully retrieved {count} attendance records in {totalMs}ms (API: {apiMs}ms, Convert: {convertMs}ms)",
+                        attendanceDtos.Count,
                         stopwatch.ElapsedMilliseconds,
                         apiStopwatch.ElapsedMilliseconds,
                         convertStopwatch.ElapsedMilliseconds);
-                    
+
                     return attendanceDtos;
                 }
                 catch (Exception ex)
@@ -637,6 +701,7 @@ namespace BHK.Retrieval.Attendance.Infrastructure.Devices
                 }
             });
         }
+
 
         /// <summary>
         /// Lấy số lượng bản ghi chấm công trong khoảng thời gian
@@ -1007,6 +1072,48 @@ namespace BHK.Retrieval.Attendance.Infrastructure.Devices
             else
             {
                 dto.Enrollments = new List<EnrollmentDto>();
+            }
+
+            return dto;
+        }
+
+        /// <summary>
+        /// Mapper: Riss.Devices.User -> EmployeeDto (CHỈ THÔNG TIN CƠ BẢN - NHANH)
+        /// Không lấy enrollment data để tối ưu performance cho Attendance Management
+        /// </summary>
+        private EmployeeDto MapBasicUserToEmployeeDto(User rissUser)
+        {
+            var dto = new EmployeeDto
+            {
+                DIN = rissUser.DIN,
+                UserName = rissUser.UserName ?? string.Empty,
+                IDNumber = rissUser.IDNumber ?? string.Empty,
+                DeptId = rissUser.DeptId ?? string.Empty,
+                Privilege = rissUser.Privilege,
+                Enable = rissUser.Enable,
+                Birthday = rissUser.Birthday,
+                Comment = rissUser.Comment ?? string.Empty,
+                AccessControl = rissUser.AccessControl,
+                ValidityPeriod = rissUser.ValidityPeriod,
+                ValidDate = rissUser.ValidDate,
+                InvalidDate = rissUser.InvalidDate,
+                UserGroup = rissUser.UserGroup,
+                AccessTimeZone = rissUser.AccessTimeZone,
+                AttType = rissUser.AttType,
+                // ✅ BỎ QUA enrollment data để tăng tốc
+                Enrollments = new List<EnrollmentDto>()
+            };
+
+            // ✅ Map Sex property using reflection (Riss.Devices.Sex enum -> int)
+            var sexProperty = rissUser.GetType().GetProperty("Sex");
+            if (sexProperty != null)
+            {
+                var sexValue = sexProperty.GetValue(rissUser);
+                if (sexValue != null)
+                {
+                    // Convert enum to int: 0=Male, 1=Female
+                    dto.Sex = Convert.ToInt32(sexValue);
+                }
             }
 
             return dto;

@@ -284,6 +284,63 @@ namespace BHK.Retrieval.Attendance.WPF.Services.Implementations
         }
 
         /// <summary>
+        /// Lấy thông tin cơ bản của tất cả nhân viên (KHÔNG có enrollment data - NHANH)
+        /// Dùng cho danh sách nhân viên để tối ưu performance
+        /// </summary>
+        public async Task<List<EmployeeDto>> GetBasicUsersAsync()
+        {
+            try
+            {
+                // ===== TEST MODE =====
+                if (_deviceOptions.Test)
+                {
+                    _logger.LogWarning("⚠️ [TEST MODE] Returning mock basic employee data");
+                    await Task.Delay(200); // Simulate faster delay (no enrollment loading)
+                    
+                    // Mock 10 employees (basic info only)
+                    var mockEmployees = new List<EmployeeDto>();
+                    for (int i = 1; i <= 10; i++)
+                    {
+                        mockEmployees.Add(new EmployeeDto
+                        {
+                            DIN = (ulong)i,
+                            UserName = $"Nhân viên Test {i}",
+                            IDNumber = $"NV{i:D4}",
+                            DeptId = "1",
+                            Privilege = 0,
+                            Enable = true,
+                            Sex = i % 2, // 0=Male, 1=Female
+                            Birthday = DateTime.Now.AddYears(-25 - i),
+                            Comment = $"Mock user {i}",
+                            Enrollments = new List<EnrollmentDto>() // ✅ Empty - no enrollment data
+                        });
+                    }
+                    
+                    return mockEmployees;
+                }
+
+                // ===== PRODUCTION MODE =====
+                if (!_isConnected)
+                {
+                    throw new InvalidOperationException("Device is not connected");
+                }
+
+                _logger.LogInformation("Getting basic users from device (FAST - no enrollments)...");
+
+                // Gọi Infrastructure Service với method tối ưu
+                var employees = await _deviceCommunicationService.GetBasicEmployeesAsync();
+                
+                _logger.LogInformation("Retrieved {count} basic employees from device (FAST)", employees.Count);
+                return employees;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to get basic users");
+                throw;
+            }
+        }
+
+        /// <summary>
         /// Lấy thông tin nhân viên theo DIN
         /// </summary>
         public async Task<EmployeeDto?> GetUserByIdAsync(ulong din)

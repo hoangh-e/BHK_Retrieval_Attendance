@@ -18,6 +18,7 @@ namespace BHK.Retrieval.Attendance.WPF.Services.Interfaces
 
         #region Employee Management
         Task<List<EmployeeDto>> GetAllUsersAsync();
+        Task<List<EmployeeDto>> GetBasicUsersAsync(); // ✅ Lấy thông tin cơ bản (không có enrollment) - NHANH
         Task<EmployeeDto?> GetUserByIdAsync(ulong din);
         Task<int> GetUserCountAsync();
         Task<bool> AddUserAsync(EmployeeDto user);
