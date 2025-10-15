@@ -13,7 +13,10 @@ using BHK.Retrieval.Attendance.Core.DTOs.Responses;
 using BHK.Retrieval.Attendance.Core.Interfaces.Services;
 using BHK.Retrieval.Attendance.WPF.Services.Interfaces;
 using BHK.Retrieval.Attendance.WPF.Models;
+using BHK.Retrieval.Attendance.WPF.ViewModels.Dialogs;
+using BHK.Retrieval.Attendance.WPF.Views.Dialogs;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace BHK.Retrieval.Attendance.WPF.ViewModels
 {
@@ -26,6 +29,7 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
         private readonly IDialogService _dialogService;
         private readonly INotificationService _notificationService;
         private readonly ILogger<AttendanceManagementViewModel> _logger;
+        private readonly IServiceProvider _serviceProvider;
 
         #region Properties
 
@@ -86,12 +90,14 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
             IAttendanceService attendanceService,
             IDialogService dialogService,
             INotificationService notificationService,
-            ILogger<AttendanceManagementViewModel> logger)
+            ILogger<AttendanceManagementViewModel> logger,
+            IServiceProvider serviceProvider)
         {
             _attendanceService = attendanceService;
             _dialogService = dialogService;
             _notificationService = notificationService;
             _logger = logger;
+            _serviceProvider = serviceProvider;
 
             // Initialize ComboBox items
             PredefinedDateRanges = FilterItemsProvider.GetPredefinedDateRanges();
@@ -180,26 +186,26 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
 
                 _logger.LogInformation($"Opening export dialog with {AttendanceRecords.Count} real attendance records");
 
-                // ✅ Tạo dialog và ViewModel với dữ liệu THẬT từ danh sách đã lọc
-                var dialog = new Views.Dialogs.ExportConfigurationDialog();
-                var viewModel = new ViewModels.Dialogs.ExportConfigurationViewModel(
-                    dialog,
-                    $"attendance_{DateTime.Now:yyyy-MM-dd}",
-                    AttendanceRecords.Count,
-                    AttendanceRecords.ToList()  // ✅ Dữ liệu THẬT sau khi lọc
-                );
-                
-                dialog.DataContext = viewModel;
-                dialog.Owner = Application.Current.MainWindow;
-
-                // Hiển thị dialog
-                var result = dialog.ShowDialog();
-                
-                if (result == true)
+                // ✅ Map dữ liệu THẬT sang AttendanceExportDto
+                var exportData = AttendanceRecords.Select(x => new AttendanceExportDto
                 {
-                    _logger.LogInformation($"Export completed successfully - {AttendanceRecords.Count} records exported");
-                    await _notificationService.ShowSuccessAsync("Thành công", $"Đã xuất {AttendanceRecords.Count} bản ghi thành công");
-                }
+                    ID = x.DIN,
+                    Date = x.Date,
+                    Time = x.Time,
+                    Verify = x.Verify
+                }).ToList();
+
+                // ✅ Sử dụng dialog MỚI với dữ liệu THẬT
+                var dialog = new ExportAttendanceDialog();
+                var vm = _serviceProvider.GetRequiredService<ExportAttendanceDialogViewModel>();
+                vm.SetData(exportData);  // ✅ Dữ liệu THẬT - không fallback
+                vm.SetDialog(dialog);
+                
+                dialog.DataContext = vm;
+                dialog.Owner = Application.Current.MainWindow;
+                dialog.ShowDialog();
+                
+                _logger.LogInformation($"Export dialog opened with {exportData.Count} records");
             }
             catch (Exception ex)
             {

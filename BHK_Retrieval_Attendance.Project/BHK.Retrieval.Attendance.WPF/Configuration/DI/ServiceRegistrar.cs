@@ -5,6 +5,7 @@ using BHK.Retrieval.Attendance.WPF.Services.Interfaces;
 using BHK.Retrieval.Attendance.WPF.Services.Implementations;
 using BHK.Retrieval.Attendance.WPF.Services;
 using BHK.Retrieval.Attendance.WPF.ViewModels;
+using BHK.Retrieval.Attendance.WPF.ViewModels.Dialogs;
 using BHK.Retrieval.Attendance.WPF.Views.Pages;
 using BHK.Retrieval.Attendance.WPF.Views.Windows;
 using BHK.Retrieval.Attendance.Shared.Options;
@@ -56,6 +57,10 @@ namespace BHK.Retrieval.Attendance.WPF.Configuration.DI
             services.Configure<ReportOptions>(configuration.GetSection(ReportOptions.SectionName));
             services.Configure<UIOptions>(configuration.GetSection(UIOptions.SectionName));
             services.Configure<OneDriveOptions>(configuration.GetSection(OneDriveOptions.SectionName));
+            
+            // ✅ Settings mới cho Excel export
+            services.Configure<OneDriveSettings>(configuration.GetSection("OneDriveSettings"));
+            services.Configure<SharePointSettings>(configuration.GetSection("SharePointSettings"));
         }
 
         /// <summary>
@@ -86,6 +91,12 @@ namespace BHK.Retrieval.Attendance.WPF.Configuration.DI
             // Excel Service - Singleton
             services.AddSingleton<IExcelService, ExcelService>();
 
+            // ✅ Path Configuration Service - Singleton (Excel export paths)
+            services.AddSingleton<IPathConfigurationService, PathConfigurationService>();
+
+            // ✅ Excel Table Service - Singleton (Excel read/write operations)
+            services.AddSingleton<IExcelTableService, ExcelTableService>();
+
             // ✅ NavigationService - Singleton (phụ thuộc MainWindowViewModel)
             services.AddSingleton<NavigationService>();
             services.AddSingleton<INavigationService>(sp => sp.GetRequiredService<NavigationService>());
@@ -112,11 +123,15 @@ namespace BHK.Retrieval.Attendance.WPF.Configuration.DI
             services.AddTransient<AttendanceManagementViewModel>();
             services.AddTransient<ExportConfigurationDialogViewModel>();
             services.AddTransient<SettingsViewModel>();
-            services.AddTransient<ExportEmployeeViewModel>();
+            services.AddTransient<ViewModels.ExportEmployeeViewModel>();
+            
+            // ✅ Export Dialog ViewModels
+            services.AddTransient<ViewModels.Dialogs.ExportAttendanceDialogViewModel>();
+            services.AddTransient<ViewModels.Dialogs.ExportEmployeeDialogViewModel>();
             
             // ✅ Factory functions for ViewModels
-            services.AddTransient<Func<ExportEmployeeViewModel>>(provider => 
-                () => provider.GetRequiredService<ExportEmployeeViewModel>());
+            services.AddTransient<Func<ViewModels.ExportEmployeeViewModel>>(provider => 
+                () => provider.GetRequiredService<ViewModels.ExportEmployeeViewModel>());
             
             // TODO: Thêm các ViewModels khác khi implement
         }

@@ -1,11 +1,15 @@
 using System;
 using System.Windows.Input;
+using System.Windows.Forms;
+using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using BHK.Retrieval.Attendance.WPF.Services.Interfaces;
 using BHK.Retrieval.Attendance.WPF.Views.Dialogs;
+using BHK.Retrieval.Attendance.WPF.ViewModels.Dialogs;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Win32;
 using Ookii.Dialogs.Wpf;
 using System.IO;
 using System.Threading.Tasks;
@@ -17,10 +21,9 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels;
 public partial class SettingsViewModel : ObservableObject
 {
     private readonly ILogger<SettingsViewModel> _logger;
-    private readonly IPathSettingsService _pathSettingsService;
-    private readonly IExcelService _excelService;
-    private readonly IDialogService _dialogService;
-    private readonly Func<ExportEmployeeViewModel> _exportEmployeeViewModelFactory;
+    private readonly IPathConfigurationService _pathConfig;
+    private readonly IExcelTableService _excelService;
+    private readonly IServiceProvider _serviceProvider;
 
     [ObservableProperty]
     private string _attendanceExportFolder = string.Empty;
@@ -45,21 +48,19 @@ public partial class SettingsViewModel : ObservableObject
     public ICommand TestExportEmployeeCommand { get; }
 
     public SettingsViewModel(
+        IPathConfigurationService pathConfig,
+        IExcelTableService excelService,
         ILogger<SettingsViewModel> logger,
-        IPathSettingsService pathSettingsService,
-        IExcelService excelService,
-        IDialogService dialogService,
-        Func<ExportEmployeeViewModel> exportEmployeeViewModelFactory)
+        IServiceProvider serviceProvider)
     {
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        _pathSettingsService = pathSettingsService ?? throw new ArgumentNullException(nameof(pathSettingsService));
+        _pathConfig = pathConfig ?? throw new ArgumentNullException(nameof(pathConfig));
         _excelService = excelService ?? throw new ArgumentNullException(nameof(excelService));
-        _dialogService = dialogService ?? throw new ArgumentNullException(nameof(dialogService));
-        _exportEmployeeViewModelFactory = exportEmployeeViewModelFactory ?? throw new ArgumentNullException(nameof(exportEmployeeViewModelFactory));
+        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
 
-        BrowseAttendanceFolderCommand = new AsyncRelayCommand(BrowseAttendanceFolderAsync);
-        BrowseEmployeeFileCommand = new AsyncRelayCommand(BrowseEmployeeFileAsync);
-        SaveSettingsCommand = new AsyncRelayCommand(SaveSettingsAsync);
+        BrowseAttendanceFolderCommand = new RelayCommand(BrowseAttendanceFolder);
+        BrowseEmployeeFileCommand = new RelayCommand(BrowseEmployeeFile);
+        SaveSettingsCommand = new RelayCommand(SaveSettings);
         ResetSettingsCommand = new RelayCommand(ResetSettings);
         TestExportAttendanceCommand = new AsyncRelayCommand(TestExportAttendanceAsync);
         TestExportEmployeeCommand = new AsyncRelayCommand(TestExportEmployeeAsync);
@@ -69,303 +70,147 @@ public partial class SettingsViewModel : ObservableObject
 
     private void LoadSettings()
     {
-        AttendanceExportFolder = _pathSettingsService.GetAttendanceExportFolder();
-        EmployeeDataFilePath = _pathSettingsService.GetEmployeeDataFilePath();
-        AttendanceTableName = _pathSettingsService.GetAttendanceTableName();
-        EmployeeTableName = _pathSettingsService.GetEmployeeTableName();
+        AttendanceExportFolder = _pathConfig.GetAttendanceExportFolder();
+        EmployeeDataFilePath = _pathConfig.GetEmployeeDataFile();
+        AttendanceTableName = _pathConfig.GetAttendanceTableName();
+        EmployeeTableName = _pathConfig.GetEmployeeTableName();
     }
 
-    private async Task BrowseAttendanceFolderAsync()
+    private void BrowseAttendanceFolder()
     {
-        var dialog = new VistaFolderBrowserDialog
-        {
-            Description = "Chọn thư mục lưu file điểm danh",
-            UseDescriptionForTitle = true,
-            SelectedPath = AttendanceExportFolder
-        };
-
-        if (dialog.ShowDialog() == true)
+        var dialog = new FolderBrowserDialog();
+        if (dialog.ShowDialog() == DialogResult.OK)
         {
             AttendanceExportFolder = dialog.SelectedPath;
+            _pathConfig.SaveAttendanceExportFolder(dialog.SelectedPath);
         }
     }
 
-    private async Task BrowseEmployeeFileAsync()
+    private void BrowseEmployeeFile()
     {
-        var dialog = new VistaOpenFileDialog
-        {
-            Title = "Chọn file Excel dữ liệu nhân viên",
-            Filter = "Excel Files (*.xlsx;*.xls)|*.xlsx;*.xls",
-            CheckFileExists = false,
-            FileName = EmployeeDataFilePath
-        };
-
+        var dialog = new Microsoft.Win32.OpenFileDialog { Filter = "Excel Files|*.xlsx" };
         if (dialog.ShowDialog() == true)
         {
             EmployeeDataFilePath = dialog.FileName;
+            _pathConfig.SaveEmployeeDataFile(dialog.FileName);
         }
     }
 
-    private async Task SaveSettingsAsync()
+    private void SaveSettings()
     {
-        try
-        {
-            IsLoading = true;
-
-            // Validate inputs
-            if (string.IsNullOrWhiteSpace(AttendanceExportFolder))
-            {
-                await _dialogService.ShowWarningAsync("Cảnh báo", "Vui lòng chọn thư mục xuất file điểm danh");
-                return;
-            }
-
-            if (string.IsNullOrWhiteSpace(EmployeeDataFilePath))
-            {
-                await _dialogService.ShowWarningAsync("Cảnh báo", "Vui lòng chọn file dữ liệu nhân viên");
-                return;
-            }
-
-            if (string.IsNullOrWhiteSpace(AttendanceTableName))
-            {
-                await _dialogService.ShowWarningAsync("Cảnh báo", "Vui lòng nhập tên table điểm danh");
-                return;
-            }
-
-            // Tạo folder nếu chưa tồn tại
-            if (!Directory.Exists(AttendanceExportFolder))
-            {
-                Directory.CreateDirectory(AttendanceExportFolder);
-            }
-
-            // Save settings
-            _pathSettingsService.SetAttendanceExportFolder(AttendanceExportFolder);
-            _pathSettingsService.SetEmployeeDataFilePath(EmployeeDataFilePath);
-            _pathSettingsService.SetAttendanceTableName(AttendanceTableName);
-            _pathSettingsService.SetEmployeeTableName(EmployeeTableName);
-
-            await _dialogService.ShowMessageAsync("Thành công", "Lưu cài đặt thành công!");
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error saving settings");
-            await _dialogService.ShowErrorAsync("Lỗi", $"Lỗi khi lưu cài đặt: {ex.Message}");
-        }
-        finally
-        {
-            IsLoading = false;
-        }
+        // Lưu vào PathConfigurationService
+        _pathConfig.SaveAttendanceExportFolder(AttendanceExportFolder);
+        _pathConfig.SaveEmployeeDataFile(EmployeeDataFilePath);
+        _pathConfig.SaveAttendanceTableName(AttendanceTableName);
+        _pathConfig.SaveEmployeeTableName(EmployeeTableName);
+        
+        System.Windows.MessageBox.Show("Lưu cài đặt thành công!", "Thành công", MessageBoxButton.OK, MessageBoxImage.Information);
     }
 
     private void ResetSettings()
     {
-        _pathSettingsService.ResetToDefaults();
+        // Load lại default values
         LoadSettings();
     }
 
     private async Task TestExportAttendanceAsync()
     {
-        try
+        // ✅ Tạo 5 dữ liệu TEST
+        var testData = new List<AttendanceExportDto>
         {
-            IsLoading = true;
+            new() { ID = "001", Date = "2025-10-15", Time = "08:00", Verify = "FP" },
+            new() { ID = "002", Date = "2025-10-15", Time = "08:15", Verify = "Card" },
+            new() { ID = "003", Date = "2025-10-15", Time = "08:30", Verify = "Password" },
+            new() { ID = "004", Date = "2025-10-15", Time = "17:00", Verify = "FP" },
+            new() { ID = "005", Date = "2025-10-15", Time = "17:15", Verify = "Card" }
+        };
 
-            // Tạo dữ liệu test (5 records)
-            var testData = GenerateTestAttendanceData();
-
-            // ✅ SỬ DỤNG ExportConfigurationDialog (dialog đơn giản cho attendance)
-            var dialogViewModel = new ExportConfigurationDialogViewModel
-            {
-                RecordCount = testData.Count,
-                FileName = $"test_attendance_{DateTime.Now:yyyy-MM-dd_HHmmss}.xlsx"
-            };
-
-            var dialog = new ExportConfigurationDialog
-            {
-                DataContext = dialogViewModel,
-                Owner = System.Windows.Application.Current.MainWindow
-            };
-
-            // Set DialogWindow reference
-            dialogViewModel.DialogWindow = dialog;
-
-            // Hiển thị dialog và chờ user action
-            if (dialog.ShowDialog() == true)
-            {
-                // Export thực tế khi user click XUẤT FILE
-                var filePath = Path.Combine(AttendanceExportFolder, dialogViewModel.FileName);
-                
-                // Tạo table nếu chưa tồn tại
-                if (File.Exists(filePath))
-                {
-                    var tableExists = await _excelService.TableExistsAsync(filePath, AttendanceTableName);
-                    if (!tableExists)
-                    {
-                        await _excelService.CreateAttendanceTableAsync(filePath, AttendanceTableName);
-                    }
-                }
-                else
-                {
-                    // Tạo file và table mới
-                    var directory = Path.GetDirectoryName(filePath);
-                    if (!string.IsNullOrWhiteSpace(directory))
-                    {
-                        Directory.CreateDirectory(directory);
-                    }
-                    await _excelService.CreateAttendanceTableAsync(filePath, AttendanceTableName);
-                }
-                
-                await _excelService.ExportAttendanceDataAsync(filePath, AttendanceTableName, testData);
-
-                await _dialogService.ShowMessageAsync("Thành công", 
-                    $"Đã xuất {testData.Count} bản ghi test vào:\n{filePath}\nTable: {AttendanceTableName}");
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error testing attendance export");
-            await _dialogService.ShowErrorAsync("Lỗi", $"Lỗi khi test xuất điểm danh: {ex.Message}");
-        }
-        finally
-        {
-            IsLoading = false;
-        }
+        var dialog = new ExportAttendanceDialog();
+        var vm = _serviceProvider.GetRequiredService<ExportAttendanceDialogViewModel>();
+        vm.SetData(testData);
+        vm.SetDialog(dialog);
+        
+        dialog.DataContext = vm;
+        dialog.Owner = System.Windows.Application.Current.MainWindow;
+        dialog.ShowDialog();
     }
 
     private async Task TestExportEmployeeAsync()
     {
-        try
+        // ✅ Tạo 5 dữ liệu TEST với thông tin chi tiết
+        var testData = new List<EmployeeExportDto>
         {
-            IsLoading = true;
-
-            // Tạo dữ liệu test (5 employees)
-            var testData = GenerateTestEmployeeData();
-
-            // ✅ SỬ DỤNG ExportEmployeeDialog (dialog phức tạp cho employee)
-            // Tạo ViewModel từ factory
-            var dialogViewModel = _exportEmployeeViewModelFactory();
-            
-            // Set test data
-            dialogViewModel.SetTestData(testData);
-
-            // Tạo dialog
-            var dialog = new ExportEmployeeDialog
-            {
-                DataContext = dialogViewModel,
-                Owner = System.Windows.Application.Current.MainWindow
-            };
-
-            // Set DialogWindow reference
-            dialogViewModel.DialogWindow = dialog;
-
-            // Hiển thị dialog - ViewModel sẽ tự handle export
-            dialog.ShowDialog();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error testing employee export");
-            await _dialogService.ShowErrorAsync("Lỗi", $"Lỗi khi test xuất nhân viên: {ex.Message}");
-        }
-        finally
-        {
-            IsLoading = false;
-        }
-    }
-
-    private List<AttendanceDisplayDto> GenerateTestAttendanceData()
-    {
-        return new List<AttendanceDisplayDto>
-        {
-            new AttendanceDisplayDto
-            {
-                DN = "1",
-                DIN = "NV001",
-                Date = DateTime.Now.ToString("dd/MM/yyyy"),
-                Time = "08:30:00",
-                Type = "Check In",
-                Verify = "FP",
-                Action = "In",
-                Remark = string.Empty
-            },
-            new AttendanceDisplayDto
-            {
-                DN = "1",
-                DIN = "NV002",
-                Date = DateTime.Now.ToString("dd/MM/yyyy"),
-                Time = "08:45:00",
-                Type = "Check In",
-                Verify = "Card",
-                Action = "In",
-                Remark = string.Empty
-            },
-            new AttendanceDisplayDto
-            {
-                DN = "1",
-                DIN = "NV003",
-                Date = DateTime.Now.ToString("dd/MM/yyyy"),
-                Time = "09:00:00",
-                Type = "Check In",
-                Verify = "PW",
-                Action = "In",
-                Remark = string.Empty
-            },
-            new AttendanceDisplayDto
-            {
-                DN = "1",
-                DIN = "NV004",
-                Date = DateTime.Now.ToString("dd/MM/yyyy"),
-                Time = "09:15:00",
-                Type = "Check In",
-                Verify = "FP",
-                Action = "In",
-                Remark = string.Empty
-            },
-            new AttendanceDisplayDto
-            {
-                DN = "1",
-                DIN = "NV005",
-                Date = DateTime.Now.ToString("dd/MM/yyyy"),
-                Time = "09:30:00",
-                Type = "Check In",
-                Verify = "Face",
-                Action = "In",
-                Remark = string.Empty
-            }
-        };
-    }
-
-    private List<EmployeeDto> GenerateTestEmployeeData()
-    {
-        return new List<EmployeeDto>
-        {
-            new EmployeeDto
-            {
+            new() { 
+                ID = "E001", 
+                Name = "Nguyễn Văn A", 
                 IDNumber = "NV001",
-                UserName = "Nguyễn Văn A",
-                Enable = true
+                Department = "IT",
+                Sex = "Male",
+                Birthday = "1990-01-01",
+                Created = "2025-01-01", 
+                Status = "Active",
+                Comment = "Test Employee 1",
+                EnrollmentCount = 3
             },
-            new EmployeeDto
-            {
+            new() { 
+                ID = "E002", 
+                Name = "Trần Thị B", 
                 IDNumber = "NV002",
-                UserName = "Trần Thị B",
-                Enable = true
+                Department = "HR", 
+                Sex = "Female",
+                Birthday = "1992-05-15",
+                Created = "2025-01-02", 
+                Status = "Active",
+                Comment = "Test Employee 2",
+                EnrollmentCount = 2
             },
-            new EmployeeDto
-            {
+            new() { 
+                ID = "E003", 
+                Name = "Lê Văn C", 
                 IDNumber = "NV003",
-                UserName = "Lê Văn C",
-                Enable = false
+                Department = "Finance",
+                Sex = "Male",
+                Birthday = "1988-12-10", 
+                Created = "2025-01-03", 
+                Status = "Inactive",
+                Comment = "Test Employee 3",
+                EnrollmentCount = 1
             },
-            new EmployeeDto
-            {
+            new() { 
+                ID = "E004", 
+                Name = "Phạm Thị D", 
                 IDNumber = "NV004",
-                UserName = "Phạm Thị D",
-                Enable = true
+                Department = "Marketing",
+                Sex = "Female", 
+                Birthday = "1995-03-20",
+                Created = "2025-01-04", 
+                Status = "Active",
+                Comment = "Test Employee 4",
+                EnrollmentCount = 4
             },
-            new EmployeeDto
-            {
+            new() { 
+                ID = "E005", 
+                Name = "Hoàng Văn E", 
                 IDNumber = "NV005",
-                UserName = "Hoàng Văn E",
-                Enable = true
+                Department = "Sales",
+                Sex = "Male",
+                Birthday = "1987-08-05", 
+                Created = "2025-01-05", 
+                Status = "Active",
+                Comment = "Test Employee 5",
+                EnrollmentCount = 2
             }
         };
+
+        var dialog = new ExportEmployeeDialog();
+        var vm = _serviceProvider.GetRequiredService<ExportEmployeeDialogViewModel>();
+        vm.SetData(testData);
+        vm.SetDialog(dialog);
+        
+        dialog.DataContext = vm;
+        dialog.Owner = System.Windows.Application.Current.MainWindow;
+        dialog.ShowDialog();
     }
+
+
 }

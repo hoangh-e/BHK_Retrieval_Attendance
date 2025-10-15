@@ -1,12 +1,16 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using BHK.Retrieval.Attendance.WPF.ViewModels.Base;
+using BHK.Retrieval.Attendance.WPF.ViewModels.Dialogs;
+using BHK.Retrieval.Attendance.WPF.Views.Dialogs;
 using BHK.Retrieval.Attendance.WPF.Services.Interfaces;
 using BHK.Retrieval.Attendance.Core.DTOs.Responses;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.DependencyInjection;
 using System.Windows;
 
 namespace BHK.Retrieval.Attendance.WPF.ViewModels
@@ -20,6 +24,7 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
 
         private readonly IDeviceService _deviceService;
         private readonly ILogger<EmployeeViewModel> _logger;
+        private readonly IServiceProvider _serviceProvider;
 
         private ObservableCollection<EmployeeDisplayModel> _employees = [];
         private EmployeeDetailModel? _selectedEmployee;
@@ -164,10 +169,12 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
 
         public EmployeeViewModel(
             IDeviceService deviceService,
-            ILogger<EmployeeViewModel> logger)
+            ILogger<EmployeeViewModel> logger,
+            IServiceProvider serviceProvider)
         {
             _deviceService = deviceService ?? throw new ArgumentNullException(nameof(deviceService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
 
             // Initialize collections
             Employees = new ObservableCollection<EmployeeDisplayModel>();
@@ -407,17 +414,17 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
 
         /// <summary>
         /// Xuất TOÀN BỘ danh sách nhân viên (không phân trang)
-        /// ✅ Sử dụng dữ liệu THẬT từ thiết bị
+        /// ✅ Sử dụng dữ liệu THẬT CHI TIẾT từ thiết bị
         /// </summary>
         private async Task ExportAllEmployeesAsync()
         {
             try
             {
-                _logger.LogInformation("Starting export all employees");
+                _logger.LogInformation("Starting export all employees with detailed data");
                 IsLoading = true;
 
-                // ✅ Lấy TOÀN BỘ danh sách nhân viên THẬT từ thiết bị (không phân trang)
-                var allUsers = await _deviceService.GetBasicUsersAsync();
+                // ✅ Lấy TOÀN BỘ danh sách nhân viên CHI TIẾT từ thiết bị (bao gồm enrollment data)
+                var allUsers = await _deviceService.GetAllUsersAsync();
 
                 if (allUsers == null || !allUsers.Any())
                 {
@@ -426,39 +433,34 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
                     return;
                 }
 
-                _logger.LogInformation($"Retrieved {allUsers.Count} employees from device for export");
+                _logger.LogInformation($"Retrieved {allUsers.Count} detailed employees from device for export");
 
-                // Chuyển đổi sang EmployeeDisplayModel với STT
-                var employeeList = allUsers
-                    .Select((user, index) => new EmployeeDisplayModel
-                    {
-                        Index = index + 1,  // STT bắt đầu từ 1
-                        DIN = user.DIN.ToString(),
-                        UserName = user.UserName ?? "N/A",
-                        Department = GetDepartmentName(user.DeptId)
-                    })
-                    .ToList();
-
-                // Tạo dialog xuất file với dữ liệu THẬT
-                var dialog = new Views.Dialogs.ExportEmployeeDialog();
-                var viewModel = new ViewModels.Dialogs.ExportEmployeeViewModel(
-                    dialog,
-                    $"employees_{DateTime.Now:yyyy-MM-dd}",
-                    employeeList.Count,
-                    employeeList  // ✅ Dữ liệu THẬT - toàn bộ nhân viên
-                );
-
-                dialog.DataContext = viewModel;
-                dialog.Owner = Application.Current.MainWindow;
-
-                // Hiển thị dialog
-                var result = dialog.ShowDialog();
-
-                if (result == true)
+                // ✅ Map sang EmployeeExportDto với thông tin chi tiết hơn
+                var exportData = allUsers.Select(x => new EmployeeExportDto
                 {
-                    _logger.LogInformation($"Export completed successfully - {employeeList.Count} employees exported");
-                    ShowSuccessMessage($"Đã xuất {employeeList.Count} nhân viên thành công");
-                }
+                    ID = x.DIN.ToString(),
+                    Name = x.UserName ?? "N/A",
+                    IDNumber = x.IDNumber ?? "",
+                    Department = x.DeptId ?? "",
+                    Sex = x.Sex == 1 ? "Female" : "Male", 
+                    Birthday = x.Birthday != DateTime.MinValue ? x.Birthday.ToString("yyyy-MM-dd") : "",
+                    Created = DateTime.Now.ToString("yyyy-MM-dd"),
+                    Status = x.Enable ? "Active" : "Inactive",
+                    Comment = x.Comment ?? "",
+                    EnrollmentCount = x.Enrollments?.Count ?? 0
+                }).ToList();
+
+                // ✅ Sử dụng dialog MỚI với dữ liệu THẬT
+                var dialog = new ExportEmployeeDialog();
+                var vm = _serviceProvider.GetRequiredService<ExportEmployeeDialogViewModel>();
+                vm.SetData(exportData);  // ✅ Dữ liệu THẬT - không fallback
+                vm.SetDialog(dialog);
+                
+                dialog.DataContext = vm;
+                dialog.Owner = Application.Current.MainWindow;
+                dialog.ShowDialog();
+
+                _logger.LogInformation($"Export dialog opened with {exportData.Count} employees");
             }
             catch (Exception ex)
             {
