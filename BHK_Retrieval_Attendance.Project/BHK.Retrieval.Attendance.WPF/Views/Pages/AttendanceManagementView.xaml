@@ -172,20 +172,19 @@
                             CanUserAddRows="False"
                             IsReadOnly="True"
                             SelectionMode="Single"
-                            MinWidth="600"
+                            MinWidth="800"
                             HorizontalScrollBarVisibility="Disabled"
                             VerticalScrollBarVisibility="Disabled">
                         
                         <DataGrid.Columns>
-                            <!-- Hiển thị 8 cột: DN, DIN, Ngày, Giờ, Loại, Phương thức, Hành động, Ghi chú -->
-                            <DataGridTextColumn Header="DN" Binding="{Binding DN}" Width="80" MinWidth="60"/>
-                            <DataGridTextColumn Header="DIN" Binding="{Binding DIN}" Width="120" MinWidth="100"/>
-                            <DataGridTextColumn Header="Ngày" Binding="{Binding Date}" Width="130" MinWidth="120"/>
-                            <DataGridTextColumn Header="Giờ" Binding="{Binding Time}" Width="110" MinWidth="100"/>
-                            <DataGridTextColumn Header="Loại" Binding="{Binding Type}" Width="120" MinWidth="100"/>
-                            <DataGridTextColumn Header="Phương thức" Binding="{Binding Verify}" Width="110" MinWidth="90"/>
-                            <DataGridTextColumn Header="Hành động" Binding="{Binding Action}" Width="100" MinWidth="90"/>
-                            <DataGridTextColumn Header="Ghi chú" Binding="{Binding Remark}" Width="*" MinWidth="120"/>
+                            <DataGridTextColumn Header="Mã NV" Binding="{Binding EmployeeId}" Width="100" MinWidth="80"/>
+                            <DataGridTextColumn Header="Tên nhân viên" Binding="{Binding EmployeeName}" Width="200" MinWidth="150"/>
+                            <DataGridTextColumn Header="Ngày" Binding="{Binding Date}" Width="120" MinWidth="100"/>
+                            <DataGridTextColumn Header="Giờ chấm" Binding="{Binding Time}" Width="100" MinWidth="80"/>
+                            <DataGridTextColumn Header="Loại" Binding="{Binding CheckType}" Width="100" MinWidth="80"/>
+                            <DataGridTextColumn Header="Phương thức" Binding="{Binding VerifyMode}" Width="120" MinWidth="100"/>
+                            <DataGridTextColumn Header="Thiết bị" Binding="{Binding DeviceId}" Width="80" MinWidth="60"/>
+                            <DataGridTextColumn Header="Ghi chú" Binding="{Binding Remark}" Width="*" MinWidth="100"/>
                         </DataGrid.Columns>
                     </DataGrid>
                 </ScrollViewer>
@@ -200,11 +199,16 @@
                      Style="{StaticResource MaterialDesignBody1TextBlock}"
                      FontWeight="Bold"
                      Margin="0,0,20,0"/>
-            <TextBlock Style="{StaticResource MaterialDesignBody1TextBlock}">
-                <Run Text="(Thời gian: "/>
-                <Run Text="{Binding LoadTimeMs, Mode=OneWay}" FontWeight="Bold"/>
-                <Run Text="ms)"/>
-            </TextBlock>
+            <TextBlock Text="(Thời gian: " 
+                     Style="{StaticResource MaterialDesignBody1TextBlock}"
+                     Visibility="{Binding LoadTimeMs, Converter={StaticResource BoolToVisConverter}}"/>
+            <TextBlock Text="{Binding LoadTimeMs}" 
+                     Style="{StaticResource MaterialDesignBody1TextBlock}"
+                     FontWeight="Bold"
+                     Visibility="{Binding LoadTimeMs, Converter={StaticResource BoolToVisConverter}}"/>
+            <TextBlock Text="ms)" 
+                     Style="{StaticResource MaterialDesignBody1TextBlock}"
+                     Visibility="{Binding LoadTimeMs, Converter={StaticResource BoolToVisConverter}}"/>
         </StackPanel>
     </Grid>
 </UserControl>

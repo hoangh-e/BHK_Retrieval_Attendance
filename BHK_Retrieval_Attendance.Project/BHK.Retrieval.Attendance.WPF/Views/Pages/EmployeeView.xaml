@@ -104,32 +104,70 @@
                          Margin="16,0,16,8">
                     
                     <DataGrid.Columns>
-                        <!-- STT - Lấy từ property Index -->
+                        <!-- STT -->
                         <DataGridTextColumn Header="STT" 
-                                          Binding="{Binding Index}"
-                                          Width="80"
+                                          Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, 
+                                                    Converter={StaticResource RowNumberConverter}}"
+                                          Width="60"
                                           ElementStyle="{StaticResource CenterAlignedTextBlock}"/>
                         
-                        <!-- DIN -->
-                        <DataGridTextColumn Header="DIN" 
+                        <!-- ID -->
+                        <DataGridTextColumn Header="ID (DIN)" 
                                           Binding="{Binding DIN}"
-                                          Width="150"
+                                          Width="120"
                                           FontWeight="Bold"/>
                         
-                        <!-- Họ tên -->
+                        <!-- Tên -->
                         <DataGridTextColumn Header="Họ và tên" 
                                           Binding="{Binding UserName}"
                                           Width="*"
-                                          MinWidth="200"/>
+                                          MinWidth="150"/>
+                        
+                        <!-- CMND/CCCD -->
+                        <DataGridTextColumn Header="CMND/CCCD" 
+                                          Binding="{Binding IDNumber}"
+                                          Width="120"/>
                         
                         <!-- Phòng ban -->
                         <DataGridTextColumn Header="Phòng ban" 
                                           Binding="{Binding Department}"
-                                          Width="200"
-                                          MinWidth="150"/>
+                                          Width="120"/>
                         
-                        <!-- Hành động -->
-                        <DataGridTemplateColumn Header="Hành động" Width="120">
+                        <!-- Ngày tạo -->
+                        <DataGridTextColumn Header="Ngày tạo" 
+                                          Binding="{Binding CreatedDate, StringFormat='{}{0:dd/MM/yyyy}'}"
+                                          Width="110"/>
+                        
+                        <!-- Trạng thái -->
+                        <DataGridTemplateColumn Header="Trạng thái" Width="120">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Border CornerRadius="12"
+                                           Padding="8,4"
+                                           HorizontalAlignment="Center">
+                                        <Border.Style>
+                                            <Style TargetType="Border">
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding Enable}" Value="True">
+                                                        <Setter Property="Background" Value="#4CAF50"/>
+                                                    </DataTrigger>
+                                                    <DataTrigger Binding="{Binding Enable}" Value="False">
+                                                        <Setter Property="Background" Value="#F44336"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Border.Style>
+                                        <TextBlock Text="{Binding StatusText}"
+                                                 Foreground="White"
+                                                 FontSize="11"
+                                                 FontWeight="Bold"/>
+                                    </Border>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        
+                        <!-- Action -->
+                        <DataGridTemplateColumn Header="Hành động" Width="100">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
                                     <Button Style="{StaticResource MaterialDesignFlatButton}"

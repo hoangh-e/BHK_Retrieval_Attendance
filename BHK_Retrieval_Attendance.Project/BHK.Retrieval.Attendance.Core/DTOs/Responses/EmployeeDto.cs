@@ -125,11 +125,6 @@ namespace BHK.Retrieval.Attendance.Core.DTOs.Responses
     public class AttendanceRecordDto
     {
         /// <summary>
-        /// Device Number - Số hiệu thiết bị
-        /// </summary>
-        public ulong DN { get; set; }
-
-        /// <summary>
         /// Device ID Number
         /// </summary>
         public ulong DIN { get; set; }
@@ -145,19 +140,9 @@ namespace BHK.Retrieval.Attendance.Core.DTOs.Responses
         public int State { get; set; }
 
         /// <summary>
-        /// Phương thức xác thực (0=PW, 1=FP, 2=Card, 3=Face, 4=Iris)
+        /// Phương thức xác thực (FP, Card, Password, Face, etc.)
         /// </summary>
         public int VerifyMode { get; set; }
-
-        /// <summary>
-        /// Hành động (0=In, 1=Out, etc.)
-        /// </summary>
-        public int Action { get; set; }
-
-        /// <summary>
-        /// Ghi chú (nếu có)
-        /// </summary>
-        public string Remark { get; set; } = string.Empty;
 
         /// <summary>
         /// ID bản ghi

@@ -185,9 +185,6 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
             ClearSelectionCommand = new RelayCommand(_ => ClearSelection());
 
             _logger.LogInformation("EmployeeViewModel initialized");
-            
-            // AUTO-LOAD: Tự động tải toàn bộ nhân viên khi vào trang
-            _ = LoadEmployeesAsync();
         }
 
         #endregion
@@ -234,18 +231,22 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
                     .Take(PAGE_SIZE)
                     .ToList();
 
-                // Cập nhật UI với Index (STT)
+                // Cập nhật UI
                 Employees.Clear();
-                int startIndex = (CurrentPage - 1) * PAGE_SIZE;
-                for (int i = 0; i < pageUsers.Count; i++)
+                foreach (var user in pageUsers)
                 {
-                    var user = pageUsers[i];
                     Employees.Add(new EmployeeDisplayModel
                     {
-                        Index = startIndex + i + 1,  // STT bắt đầu từ 1
                         DIN = user.DIN.ToString(),
                         UserName = user.UserName ?? "N/A",
-                        Department = GetDepartmentName(user.DeptId)
+                        IDNumber = user.IDNumber ?? "N/A",
+                        Department = GetDepartmentName(user.DeptId),
+                        Enable = user.Enable,
+                        Privilege = GetPrivilegeName(user.Privilege),
+                        // Nếu không có ngày tạo trong User, dùng ValidDate
+                        CreatedDate = user.ValidDate != DateTime.MinValue 
+                            ? user.ValidDate 
+                            : DateTime.Now
                     });
                 }
 
@@ -352,8 +353,8 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
                 IsLoading = true;
                 _logger.LogInformation($"Searching employees with keyword: {SearchKeyword}");
 
-                // ✅ Lấy dữ liệu cơ bản để tìm kiếm nhanh (KHÔNG dùng GetAllUsersAsync - chậm)
-                var allUsers = await _deviceService.GetBasicUsersAsync();
+                // Lấy tất cả nhân viên và lọc
+                var allUsers = await _deviceService.GetAllUsersAsync();
                 var filteredUsers = allUsers.Where(u =>
                     u.UserName?.Contains(SearchKeyword, StringComparison.OrdinalIgnoreCase) == true ||
                     u.DIN.ToString().Contains(SearchKeyword) ||
@@ -365,19 +366,21 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
                 TotalPages = (int)Math.Ceiling(TotalEmployees / (double)PAGE_SIZE);
                 CurrentPage = 1;
 
-                // Hiển thị kết quả trang đầu với Index (STT)
+                // Hiển thị kết quả trang đầu
                 var pageUsers = filteredUsers.Take(PAGE_SIZE).ToList();
                 
                 Employees.Clear();
-                for (int i = 0; i < pageUsers.Count; i++)
+                foreach (var user in pageUsers)
                 {
-                    var user = pageUsers[i];
                     Employees.Add(new EmployeeDisplayModel
                     {
-                        Index = i + 1,  // STT bắt đầu từ 1
                         DIN = user.DIN.ToString(),
                         UserName = user.UserName ?? "N/A",
-                        Department = GetDepartmentName(user.DeptId)
+                        IDNumber = user.IDNumber ?? "N/A",
+                        Department = GetDepartmentName(user.DeptId),
+                        Enable = user.Enable,
+                        Privilege = GetPrivilegeName(user.Privilege),
+                        CreatedDate = user.ValidDate != DateTime.MinValue ? user.ValidDate : DateTime.Now
                     });
                 }
 
@@ -541,31 +544,18 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
 
     /// <summary>
     /// Model hiển thị nhân viên trong danh sách
-    /// CHỈ chứa: STT, DIN, Họ tên, Phòng Ban
     /// </summary>
     public class EmployeeDisplayModel
     {
-        /// <summary>
-        /// Số thứ tự (Index) - sẽ được gán khi load vào DataGrid
-        /// </summary>
-        public int Index { get; set; }
-        
-        /// <summary>
-        /// Device Identification Number - Mã nhân viên trên thiết bị
-        /// </summary>
-        public string DIN { get; set; } = string.Empty;
-        
-        /// <summary>
-        /// Họ tên nhân viên
-        /// </summary>
-        public string UserName { get; set; } = string.Empty;
-        
-        /// <summary>
-        /// Phòng Ban
-        /// </summary>
-        public string Department { get; set; } = string.Empty;
+        public string DIN { get; set; }
+        public string UserName { get; set; }
+        public string IDNumber { get; set; }
+        public string Department { get; set; }
+        public bool Enable { get; set; }
+        public string Privilege { get; set; }
+        public DateTime CreatedDate { get; set; }
+        public string StatusText => Enable ? "Hoạt động" : "Vô hiệu hóa";
     }
-
 
     /// <summary>
     /// Model chi tiết nhân viên
