@@ -36,6 +36,7 @@
                         <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
 
                     <StackPanel Grid.Column="0" Orientation="Horizontal" Margin="16">
@@ -51,7 +52,18 @@
                                  Foreground="White"/>
                     </StackPanel>
 
+                    <!-- Nút xuất file -->
                     <Button Grid.Column="2"
+                            Style="{StaticResource MaterialDesignIconButton}"
+                            Command="{Binding ExportAllEmployeesCommand}"
+                            ToolTip="Xuất toàn bộ danh sách nhân viên"
+                            Margin="0,0,8,0">
+                        <materialDesign:PackIcon Kind="FileExport" 
+                                               Width="24" Height="24"
+                                               Foreground="White"/>
+                    </Button>
+
+                    <Button Grid.Column="3"
                             Style="{StaticResource MaterialDesignIconButton}"
                             Command="{Binding RefreshCommand}"
                             ToolTip="Làm mới"
@@ -104,70 +116,32 @@
                          Margin="16,0,16,8">
                     
                     <DataGrid.Columns>
-                        <!-- STT -->
+                        <!-- STT - Lấy từ property Index -->
                         <DataGridTextColumn Header="STT" 
-                                          Binding="{Binding RelativeSource={RelativeSource AncestorType=DataGridRow}, 
-                                                    Converter={StaticResource RowNumberConverter}}"
-                                          Width="60"
+                                          Binding="{Binding Index}"
+                                          Width="80"
                                           ElementStyle="{StaticResource CenterAlignedTextBlock}"/>
                         
-                        <!-- ID -->
-                        <DataGridTextColumn Header="ID (DIN)" 
+                        <!-- DIN -->
+                        <DataGridTextColumn Header="DIN" 
                                           Binding="{Binding DIN}"
-                                          Width="120"
+                                          Width="150"
                                           FontWeight="Bold"/>
                         
-                        <!-- Tên -->
+                        <!-- Họ tên -->
                         <DataGridTextColumn Header="Họ và tên" 
                                           Binding="{Binding UserName}"
                                           Width="*"
-                                          MinWidth="150"/>
-                        
-                        <!-- CMND/CCCD -->
-                        <DataGridTextColumn Header="CMND/CCCD" 
-                                          Binding="{Binding IDNumber}"
-                                          Width="120"/>
+                                          MinWidth="200"/>
                         
                         <!-- Phòng ban -->
                         <DataGridTextColumn Header="Phòng ban" 
                                           Binding="{Binding Department}"
-                                          Width="120"/>
+                                          Width="200"
+                                          MinWidth="150"/>
                         
-                        <!-- Ngày tạo -->
-                        <DataGridTextColumn Header="Ngày tạo" 
-                                          Binding="{Binding CreatedDate, StringFormat='{}{0:dd/MM/yyyy}'}"
-                                          Width="110"/>
-                        
-                        <!-- Trạng thái -->
-                        <DataGridTemplateColumn Header="Trạng thái" Width="120">
-                            <DataGridTemplateColumn.CellTemplate>
-                                <DataTemplate>
-                                    <Border CornerRadius="12"
-                                           Padding="8,4"
-                                           HorizontalAlignment="Center">
-                                        <Border.Style>
-                                            <Style TargetType="Border">
-                                                <Style.Triggers>
-                                                    <DataTrigger Binding="{Binding Enable}" Value="True">
-                                                        <Setter Property="Background" Value="#4CAF50"/>
-                                                    </DataTrigger>
-                                                    <DataTrigger Binding="{Binding Enable}" Value="False">
-                                                        <Setter Property="Background" Value="#F44336"/>
-                                                    </DataTrigger>
-                                                </Style.Triggers>
-                                            </Style>
-                                        </Border.Style>
-                                        <TextBlock Text="{Binding StatusText}"
-                                                 Foreground="White"
-                                                 FontSize="11"
-                                                 FontWeight="Bold"/>
-                                    </Border>
-                                </DataTemplate>
-                            </DataGridTemplateColumn.CellTemplate>
-                        </DataGridTemplateColumn>
-                        
-                        <!-- Action -->
-                        <DataGridTemplateColumn Header="Hành động" Width="100">
+                        <!-- Hành động -->
+                        <DataGridTemplateColumn Header="Hành động" Width="120">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
                                     <Button Style="{StaticResource MaterialDesignFlatButton}"

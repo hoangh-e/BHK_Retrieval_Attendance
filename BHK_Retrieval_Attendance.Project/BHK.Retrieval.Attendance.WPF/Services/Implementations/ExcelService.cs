@@ -244,17 +244,21 @@ public class ExcelService : IExcelService
                 int currentRow = 2; // Bắt đầu từ row 2 (row 1 là header)
                 foreach (var record in data)
                 {
-                    worksheet.Cell(currentRow, 1).Value = record.EmployeeId;
-                    worksheet.Cell(currentRow, 2).Value = record.Date;
-                    worksheet.Cell(currentRow, 3).Value = record.Time;
-                    worksheet.Cell(currentRow, 4).Value = record.VerifyMode;
+                    worksheet.Cell(currentRow, 1).Value = record.DN;
+                    worksheet.Cell(currentRow, 2).Value = record.DIN;
+                    worksheet.Cell(currentRow, 3).Value = record.Date;
+                    worksheet.Cell(currentRow, 4).Value = record.Time;
+                    worksheet.Cell(currentRow, 5).Value = record.Type;
+                    worksheet.Cell(currentRow, 6).Value = record.Verify;
+                    worksheet.Cell(currentRow, 7).Value = record.Action;
+                    worksheet.Cell(currentRow, 8).Value = record.Remark;
                     currentRow++;
                 }
 
                 // Update table range nếu có table
                 if (table != null)
                 {
-                    var newRange = worksheet.Range(1, 1, currentRow - 1, 4);
+                    var newRange = worksheet.Range(1, 1, currentRow - 1, 8);
                     table.Resize(newRange);
                 }
 

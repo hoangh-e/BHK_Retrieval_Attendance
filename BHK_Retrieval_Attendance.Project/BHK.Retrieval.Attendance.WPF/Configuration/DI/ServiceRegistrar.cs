@@ -114,6 +114,10 @@ namespace BHK.Retrieval.Attendance.WPF.Configuration.DI
             services.AddTransient<SettingsViewModel>();
             services.AddTransient<ExportEmployeeViewModel>();
             
+            // ✅ Factory functions for ViewModels
+            services.AddTransient<Func<ExportEmployeeViewModel>>(provider => 
+                () => provider.GetRequiredService<ExportEmployeeViewModel>());
+            
             // TODO: Thêm các ViewModels khác khi implement
         }
 

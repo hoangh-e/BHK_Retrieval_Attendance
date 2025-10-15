@@ -47,7 +47,7 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
         /// <summary>
         /// Nhân viên được chọn để xem chi tiết
         /// </summary>
-        public EmployeeDetailModel SelectedEmployee
+        public EmployeeDetailModel? SelectedEmployee
         {
             get => _selectedEmployee;
             set
@@ -156,6 +156,7 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
         public ICommand RefreshCommand { get; }
         public ICommand SearchCommand { get; }
         public ICommand ClearSelectionCommand { get; }
+        public ICommand ExportAllEmployeesCommand { get; } // ✅ Command xuất toàn bộ nhân viên
 
         #endregion
 
@@ -179,10 +180,15 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
             PreviousPageCommand = new RelayCommand(_ => GoToPreviousPage(), _ => CanGoPrevious);
             NextPageCommand = new RelayCommand(_ => GoToNextPage(), _ => CanGoNext);
             LastPageCommand = new RelayCommand(_ => GoToLastPage(), _ => CanGoNext);
-            ViewEmployeeDetailCommand = new RelayCommand(async param => await ViewEmployeeDetailAsync(param));
+            ViewEmployeeDetailCommand = new RelayCommand(async param => 
+            {
+                if (param != null)
+                    await ViewEmployeeDetailAsync(param);
+            });
             RefreshCommand = new RelayCommand(async _ => await RefreshAsync());
             SearchCommand = new RelayCommand(async _ => await SearchEmployeesAsync());
             ClearSelectionCommand = new RelayCommand(_ => ClearSelection());
+            ExportAllEmployeesCommand = new RelayCommand(async _ => await ExportAllEmployeesAsync()); // ✅ Xuất toàn bộ nhân viên
 
             _logger.LogInformation("EmployeeViewModel initialized");
         }
@@ -231,22 +237,18 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
                     .Take(PAGE_SIZE)
                     .ToList();
 
-                // Cập nhật UI
+                // Cập nhật UI với Index (STT)
                 Employees.Clear();
-                foreach (var user in pageUsers)
+                int startIndex = (CurrentPage - 1) * PAGE_SIZE;
+                for (int i = 0; i < pageUsers.Count; i++)
                 {
+                    var user = pageUsers[i];
                     Employees.Add(new EmployeeDisplayModel
                     {
+                        Index = startIndex + i + 1,  // STT bắt đầu từ 1
                         DIN = user.DIN.ToString(),
                         UserName = user.UserName ?? "N/A",
-                        IDNumber = user.IDNumber ?? "N/A",
-                        Department = GetDepartmentName(user.DeptId),
-                        Enable = user.Enable,
-                        Privilege = GetPrivilegeName(user.Privilege),
-                        // Nếu không có ngày tạo trong User, dùng ValidDate
-                        CreatedDate = user.ValidDate != DateTime.MinValue 
-                            ? user.ValidDate 
-                            : DateTime.Now
+                        Department = GetDepartmentName(user.DeptId)
                     });
                 }
 
@@ -366,21 +368,19 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
                 TotalPages = (int)Math.Ceiling(TotalEmployees / (double)PAGE_SIZE);
                 CurrentPage = 1;
 
-                // Hiển thị kết quả trang đầu
+                // Hiển thị kết quả trang đầu với Index (STT)
                 var pageUsers = filteredUsers.Take(PAGE_SIZE).ToList();
                 
                 Employees.Clear();
-                foreach (var user in pageUsers)
+                for (int i = 0; i < pageUsers.Count; i++)
                 {
+                    var user = pageUsers[i];
                     Employees.Add(new EmployeeDisplayModel
                     {
+                        Index = i + 1,  // STT bắt đầu từ 1
                         DIN = user.DIN.ToString(),
                         UserName = user.UserName ?? "N/A",
-                        IDNumber = user.IDNumber ?? "N/A",
-                        Department = GetDepartmentName(user.DeptId),
-                        Enable = user.Enable,
-                        Privilege = GetPrivilegeName(user.Privilege),
-                        CreatedDate = user.ValidDate != DateTime.MinValue ? user.ValidDate : DateTime.Now
+                        Department = GetDepartmentName(user.DeptId)
                     });
                 }
 
@@ -403,6 +403,72 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
         private void ClearSelection()
         {
             SelectedEmployee = null;
+        }
+
+        /// <summary>
+        /// Xuất TOÀN BỘ danh sách nhân viên (không phân trang)
+        /// ✅ Sử dụng dữ liệu THẬT từ thiết bị
+        /// </summary>
+        private async Task ExportAllEmployeesAsync()
+        {
+            try
+            {
+                _logger.LogInformation("Starting export all employees");
+                IsLoading = true;
+
+                // ✅ Lấy TOÀN BỘ danh sách nhân viên THẬT từ thiết bị (không phân trang)
+                var allUsers = await _deviceService.GetBasicUsersAsync();
+
+                if (allUsers == null || !allUsers.Any())
+                {
+                    _logger.LogWarning("No employees found in device");
+                    ShowWarningMessage("Không có nhân viên nào để xuất");
+                    return;
+                }
+
+                _logger.LogInformation($"Retrieved {allUsers.Count} employees from device for export");
+
+                // Chuyển đổi sang EmployeeDisplayModel với STT
+                var employeeList = allUsers
+                    .Select((user, index) => new EmployeeDisplayModel
+                    {
+                        Index = index + 1,  // STT bắt đầu từ 1
+                        DIN = user.DIN.ToString(),
+                        UserName = user.UserName ?? "N/A",
+                        Department = GetDepartmentName(user.DeptId)
+                    })
+                    .ToList();
+
+                // Tạo dialog xuất file với dữ liệu THẬT
+                var dialog = new Views.Dialogs.ExportEmployeeDialog();
+                var viewModel = new ViewModels.Dialogs.ExportEmployeeViewModel(
+                    dialog,
+                    $"employees_{DateTime.Now:yyyy-MM-dd}",
+                    employeeList.Count,
+                    employeeList  // ✅ Dữ liệu THẬT - toàn bộ nhân viên
+                );
+
+                dialog.DataContext = viewModel;
+                dialog.Owner = Application.Current.MainWindow;
+
+                // Hiển thị dialog
+                var result = dialog.ShowDialog();
+
+                if (result == true)
+                {
+                    _logger.LogInformation($"Export completed successfully - {employeeList.Count} employees exported");
+                    ShowSuccessMessage($"Đã xuất {employeeList.Count} nhân viên thành công");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to export employees");
+                ShowErrorMessage("Lỗi xuất file", $"Không thể xuất danh sách nhân viên: {ex.Message}");
+            }
+            finally
+            {
+                IsLoading = false;
+            }
         }
 
         #endregion
@@ -503,6 +569,14 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
         {
             // TODO: Implement DialogService
             _logger.LogWarning(message);
+            MessageBox.Show(message, "Cảnh báo", MessageBoxButton.OK, MessageBoxImage.Warning);
+        }
+
+        private void ShowSuccessMessage(string message)
+        {
+            // TODO: Implement DialogService
+            _logger.LogInformation(message);
+            MessageBox.Show(message, "Thành công", MessageBoxButton.OK, MessageBoxImage.Information);
         }
 
         #endregion
@@ -511,27 +585,27 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
 
         private class RelayCommand : ICommand
         {
-            private readonly Action<object> _execute;
-            private readonly Predicate<object> _canExecute;
+            private readonly Action<object?> _execute;
+            private readonly Predicate<object?>? _canExecute;
 
-            public RelayCommand(Action<object> execute, Predicate<object> canExecute = null)
+            public RelayCommand(Action<object?> execute, Predicate<object?>? canExecute = null)
             {
                 _execute = execute ?? throw new ArgumentNullException(nameof(execute));
                 _canExecute = canExecute;
             }
 
-            public event EventHandler CanExecuteChanged
+            public event EventHandler? CanExecuteChanged
             {
                 add => CommandManager.RequerySuggested += value;
                 remove => CommandManager.RequerySuggested -= value;
             }
 
-            public bool CanExecute(object parameter)
+            public bool CanExecute(object? parameter)
             {
                 return _canExecute == null || _canExecute(parameter);
             }
 
-            public void Execute(object parameter)
+            public void Execute(object? parameter)
             {
                 _execute(parameter);
             }
@@ -544,18 +618,31 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
 
     /// <summary>
     /// Model hiển thị nhân viên trong danh sách
+    /// CHỈ chứa: STT, DIN, Họ tên, Phòng Ban
     /// </summary>
     public class EmployeeDisplayModel
     {
-        public string DIN { get; set; }
-        public string UserName { get; set; }
-        public string IDNumber { get; set; }
-        public string Department { get; set; }
-        public bool Enable { get; set; }
-        public string Privilege { get; set; }
-        public DateTime CreatedDate { get; set; }
-        public string StatusText => Enable ? "Hoạt động" : "Vô hiệu hóa";
+        /// <summary>
+        /// Số thứ tự (Index) - sẽ được gán khi load vào DataGrid
+        /// </summary>
+        public int Index { get; set; }
+        
+        /// <summary>
+        /// Device Identification Number - Mã nhân viên trên thiết bị
+        /// </summary>
+        public string DIN { get; set; } = string.Empty;
+        
+        /// <summary>
+        /// Họ tên nhân viên
+        /// </summary>
+        public string UserName { get; set; } = string.Empty;
+        
+        /// <summary>
+        /// Phòng Ban
+        /// </summary>
+        public string Department { get; set; } = string.Empty;
     }
+
 
     /// <summary>
     /// Model chi tiết nhân viên
@@ -563,23 +650,23 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
     public class EmployeeDetailModel
     {
         // Thông tin cơ bản
-        public string DIN { get; set; }
-        public string UserName { get; set; }
-        public string IDNumber { get; set; }
-        public string DeptId { get; set; }
-        public string Department { get; set; }
-        public string Sex { get; set; }
+        public string DIN { get; set; } = string.Empty;
+        public string UserName { get; set; } = string.Empty;
+        public string IDNumber { get; set; } = string.Empty;
+        public string DeptId { get; set; } = string.Empty;
+        public string Department { get; set; } = string.Empty;
+        public string Sex { get; set; } = string.Empty;
         public DateTime Birthday { get; set; }
-        public string Comment { get; set; }
+        public string Comment { get; set; } = string.Empty;
         
         // Quyền và trạng thái
-        public string Privilege { get; set; }
+        public string Privilege { get; set; } = string.Empty;
         public int PrivilegeValue { get; set; }
         public bool Enable { get; set; }
         public string StatusText => Enable ? "Hoạt động" : "Vô hiệu hóa";
         
         // Kiểm soát truy cập
-        public string AccessControl { get; set; }
+        public string AccessControl { get; set; } = string.Empty;
         public bool ValidityPeriod { get; set; }
         public DateTime ValidDate { get; set; }
         public DateTime InvalidDate { get; set; }

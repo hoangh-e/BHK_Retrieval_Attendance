@@ -23,6 +23,7 @@
             <BooleanToVisibilityConverter x:Key="BoolToVisibility"/>
             <converters:SexToTextConverter x:Key="SexToTextConverter"/>
             <converters:EnrollTypeToTextConverter x:Key="EnrollTypeToTextConverter"/>
+            <converters:StringNotEmptyToVisibilityConverter x:Key="StringNotEmptyToVisibilityConverter"/>
 
             <!-- Styles -->
             <Style x:Key="CenterAlignedTextBlock" TargetType="TextBlock">

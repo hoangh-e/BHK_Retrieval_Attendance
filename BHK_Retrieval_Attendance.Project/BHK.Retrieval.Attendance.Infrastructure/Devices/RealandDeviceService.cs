@@ -673,10 +673,13 @@ namespace BHK.Retrieval.Attendance.Infrastructure.Devices
                     var convertStopwatch = System.Diagnostics.Stopwatch.StartNew();
                     var attendanceDtos = records.Select(record => new AttendanceRecordDto
                     {
+                        DN = (ulong)record.DN,      // Device Number (số hiệu thiết bị) - convert int to ulong
                         DIN = record.DIN,           // Device Identification Number (mã nhân viên)
                         Time = record.Clock,        // Thời gian chấm công
                         State = record.Action,      // Trạng thái: Chi tiết vào/ra (Action field)
                         VerifyMode = record.Verify, // Phương thức: 0=Password, 1=Fingerprint, 2=Card, 3=Face, 4=Iris
+                        Action = record.Action,     // Hành động: 0=In, 1=Out, etc.
+                        Remark = string.Empty,      // Ghi chú (SDK không cung cấp)
                         RecordId = record.DIN       // Tạm dùng DIN làm ID (không có RecId trong Record)
                     }).ToList();
                     convertStopwatch.Stop();
@@ -823,11 +826,11 @@ namespace BHK.Retrieval.Attendance.Infrastructure.Devices
                     
                     _logger?.LogInformation("Infrastructure: Calling GetProperty(DeviceProperty.SerialNo)");
                     
-                    bool result = _deviceConnection.GetProperty(
+                    bool result = _deviceConnection?.GetProperty(
                         DeviceProperty.SerialNo,  // 🔥 Sử dụng SerialNo property
                         extraProperty,
                         ref _device,
-                        ref extraData);
+                        ref extraData) ?? false;
 
                     if (result)
                     {
@@ -919,11 +922,11 @@ namespace BHK.Retrieval.Attendance.Infrastructure.Devices
                     object extraProperty = new object();
                     object extraData = new object();
                     
-                    bool result = _deviceConnection.GetProperty(
+                    bool result = _deviceConnection?.GetProperty(
                         DeviceProperty.FirmwareVersion,
                         extraProperty,  // ✅ Không được truyền null
                         ref _device,
-                        ref extraData);
+                        ref extraData) ?? false;
 
                     if (result && extraData != null)
                     {
@@ -969,22 +972,22 @@ namespace BHK.Retrieval.Attendance.Infrastructure.Devices
                     object extraProperty = new object();
                     object extraData = new object();
                     
-                    bool result = _deviceConnection.GetProperty(
+                    bool result = _deviceConnection?.GetProperty(
                         DeviceProperty.Model,
                         extraProperty,  // ✅ Không được truyền null
                         ref _device,
-                        ref extraData);
+                        ref extraData) ?? false;
 
                     if (result && extraData != null)
                     {
-                        string model = extraData.ToString() ?? _device.Model ?? "N/A";
+                        string model = extraData.ToString() ?? _device?.Model ?? "N/A";
                         _logger?.LogInformation("Infrastructure: Device model: {Model}", model);
                         return model;
                     }
                     else
                     {
                         _logger?.LogWarning("Infrastructure: Failed to get device model, using device.Model");
-                        return _device.Model ?? "N/A";
+                        return _device?.Model ?? "N/A";
                     }
                 }
                 catch (Exception ex)
@@ -1026,6 +1029,12 @@ namespace BHK.Retrieval.Attendance.Infrastructure.Devices
         /// </summary>
         private EmployeeDto MapRissUserToEmployeeDto(User rissUser)
         {
+            // 🧠 DEBUG: Log raw data từ thiết bị
+            _logger?.LogDebug("MapRissUser - DIN: {din}, UserName: '{name}', IDNumber: '{id}'", 
+                rissUser.DIN, 
+                rissUser.UserName ?? "(null)", 
+                rissUser.IDNumber ?? "(null)");
+
             var dto = new EmployeeDto
             {
                 DIN = rissUser.DIN,
@@ -1081,6 +1090,18 @@ namespace BHK.Retrieval.Attendance.Infrastructure.Devices
         /// </summary>
         private EmployeeDto MapBasicUserToEmployeeDto(User rissUser)
         {
+            foreach (var prop in typeof(User).GetProperties())
+            {
+                var val = prop.GetValue(rissUser);
+                _logger?.LogDebug($"{prop.Name} = {val ?? "(null)"}");
+            }
+
+            // 🧠 DEBUG: Log raw data từ thiết bị
+            _logger?.LogDebug("MapBasicUser - DIN: {din}, UserName: '{name}', IDNumber: '{id}'", 
+                rissUser.DIN, 
+                rissUser.UserName ?? "(null)", 
+                rissUser.IDNumber ?? "(null)");
+
             var dto = new EmployeeDto
             {
                 DIN = rissUser.DIN,

@@ -276,38 +276,58 @@ public partial class SettingsViewModel : ObservableObject
         {
             new AttendanceDisplayDto
             {
-                EmployeeId = "NV001",
+                DN = "1",
+                DIN = "NV001",
                 Date = DateTime.Now.ToString("dd/MM/yyyy"),
                 Time = "08:30:00",
-                VerifyMode = "Fingerprint"
+                Type = "Check In",
+                Verify = "FP",
+                Action = "In",
+                Remark = string.Empty
             },
             new AttendanceDisplayDto
             {
-                EmployeeId = "NV002",
+                DN = "1",
+                DIN = "NV002",
                 Date = DateTime.Now.ToString("dd/MM/yyyy"),
                 Time = "08:45:00",
-                VerifyMode = "Card"
+                Type = "Check In",
+                Verify = "Card",
+                Action = "In",
+                Remark = string.Empty
             },
             new AttendanceDisplayDto
             {
-                EmployeeId = "NV003",
+                DN = "1",
+                DIN = "NV003",
                 Date = DateTime.Now.ToString("dd/MM/yyyy"),
                 Time = "09:00:00",
-                VerifyMode = "Password"
+                Type = "Check In",
+                Verify = "PW",
+                Action = "In",
+                Remark = string.Empty
             },
             new AttendanceDisplayDto
             {
-                EmployeeId = "NV004",
+                DN = "1",
+                DIN = "NV004",
                 Date = DateTime.Now.ToString("dd/MM/yyyy"),
                 Time = "09:15:00",
-                VerifyMode = "Fingerprint"
+                Type = "Check In",
+                Verify = "FP",
+                Action = "In",
+                Remark = string.Empty
             },
             new AttendanceDisplayDto
             {
-                EmployeeId = "NV005",
+                DN = "1",
+                DIN = "NV005",
                 Date = DateTime.Now.ToString("dd/MM/yyyy"),
                 Time = "09:30:00",
-                VerifyMode = "Face"
+                Type = "Check In",
+                Verify = "Face",
+                Action = "In",
+                Remark = string.Empty
             }
         };
     }
