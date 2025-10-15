@@ -111,8 +111,6 @@ namespace BHK.Retrieval.Attendance.Infrastructure.Devices
                     _device = null;
                     _isConnected = false;
                     
-                    // ✅ Throw với message thân thiện hơn
-                    // Phân loại lỗi dựa trên exception message
                     string userFriendlyMessage = GetUserFriendlyErrorMessage(ex.Message, ip, port);
                     throw new Exception(userFriendlyMessage, ex);
                 }
