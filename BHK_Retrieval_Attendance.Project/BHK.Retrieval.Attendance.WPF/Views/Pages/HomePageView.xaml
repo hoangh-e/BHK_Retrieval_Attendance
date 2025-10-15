@@ -288,14 +288,8 @@
                                       MaxWidth="110"/>
                         </StackPanel>
                     </TabItem.Header>
-                    <StackPanel Margin="24">
-                        <TextBlock Text="CÀI ĐẶT HỆ THỐNG" 
-                                  FontSize="20" 
-                                  FontWeight="Bold"/>
-                        <TextBlock Text="Tính năng đang phát triển..." 
-                                  Margin="0,16,0,0" 
-                                  FontStyle="Italic"/>
-                    </StackPanel>
+                    <!-- ✅ THAY ĐỔI: Sử dụng SettingsView thay vì placeholder -->
+                    <views:SettingsView DataContext="{Binding SettingsViewModel}"/>
                 </TabItem>
 
                 <!-- Tab: Lịch sử -->

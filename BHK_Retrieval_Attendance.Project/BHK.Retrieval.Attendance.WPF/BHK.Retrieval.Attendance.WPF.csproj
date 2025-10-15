@@ -42,6 +42,9 @@
 
     <!-- Dialogs -->
     <PackageReference Include="Ookii.Dialogs.Wpf" Version="4.0.0" />
+    
+    <!-- Excel -->
+    <PackageReference Include="ClosedXML" Version="0.102.1" />
   </ItemGroup>
 
   <ItemGroup>

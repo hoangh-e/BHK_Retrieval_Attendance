@@ -55,6 +55,7 @@ namespace BHK.Retrieval.Attendance.WPF.Configuration.DI
             services.Configure<EmailOptions>(configuration.GetSection(EmailOptions.SectionName));
             services.Configure<ReportOptions>(configuration.GetSection(ReportOptions.SectionName));
             services.Configure<UIOptions>(configuration.GetSection(UIOptions.SectionName));
+            services.Configure<OneDriveOptions>(configuration.GetSection(OneDriveOptions.SectionName));
         }
 
         /// <summary>
@@ -78,6 +79,12 @@ namespace BHK.Retrieval.Attendance.WPF.Configuration.DI
             
             // Attendance Service - Scoped
             services.AddScoped<IAttendanceService, AttendanceService>();
+
+            // Path Settings Service - Singleton
+            services.AddSingleton<IPathSettingsService, PathSettingsService>();
+
+            // Excel Service - Singleton
+            services.AddSingleton<IExcelService, ExcelService>();
 
             // ✅ NavigationService - Singleton (phụ thuộc MainWindowViewModel)
             services.AddSingleton<NavigationService>();
@@ -104,6 +111,8 @@ namespace BHK.Retrieval.Attendance.WPF.Configuration.DI
             services.AddTransient<EmployeeViewModel>();
             services.AddTransient<AttendanceManagementViewModel>();
             services.AddTransient<ExportConfigurationDialogViewModel>();
+            services.AddTransient<SettingsViewModel>();
+            services.AddTransient<ExportEmployeeViewModel>();
             
             // TODO: Thêm các ViewModels khác khi implement
         }

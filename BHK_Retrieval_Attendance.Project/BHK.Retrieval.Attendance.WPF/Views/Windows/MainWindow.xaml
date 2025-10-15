@@ -22,6 +22,11 @@
             <views:HomePageView/>
         </DataTemplate>
         
+        <!-- SettingsViewModel → SettingsView -->
+        <DataTemplate DataType="{x:Type vm:SettingsViewModel}">
+            <views:SettingsView/>
+        </DataTemplate>
+        
         <!-- Thêm các DataTemplate khác ở đây khi cần -->
     </Window.Resources>
     

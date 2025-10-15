@@ -24,6 +24,7 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
         private bool _isTestMode;
         private EmployeeViewModel _employeeViewModel;
         private AttendanceManagementViewModel _attendanceManagementViewModel;
+        private SettingsViewModel _settingsViewModel;
         
         // ✅ Bổ sung thêm thông tin thiết bị
         private string _serialNumber;
@@ -38,7 +39,8 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
             ILogger<HomePageViewModel> logger,
             IOptions<DeviceOptions> deviceOptions,
             EmployeeViewModel employeeViewModel,
-            AttendanceManagementViewModel attendanceManagementViewModel)
+            AttendanceManagementViewModel attendanceManagementViewModel,
+            SettingsViewModel settingsViewModel)
         {
             _deviceService = deviceService ?? throw new ArgumentNullException(nameof(deviceService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -49,6 +51,9 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
             
             // ✅ THÊM: Khởi tạo AttendanceManagementViewModel
             _attendanceManagementViewModel = attendanceManagementViewModel ?? throw new ArgumentNullException(nameof(attendanceManagementViewModel));
+            
+            // ✅ THÊM: Khởi tạo SettingsViewModel
+            _settingsViewModel = settingsViewModel ?? throw new ArgumentNullException(nameof(settingsViewModel));
 
             // Initialize properties with device connection info
             _ipAddress = _deviceOptions.DefaultIpAddress;
@@ -177,6 +182,15 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
         {
             get => _attendanceManagementViewModel;
             set => SetProperty(ref _attendanceManagementViewModel, value);
+        }
+
+        /// <summary>
+        /// ViewModel cho trang cài đặt hệ thống
+        /// </summary>
+        public SettingsViewModel SettingsViewModel
+        {
+            get => _settingsViewModel;
+            set => SetProperty(ref _settingsViewModel, value);
         }
 
         #endregion

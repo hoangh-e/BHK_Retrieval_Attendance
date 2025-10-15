@@ -13,4 +13,9 @@ public class SharePointOptions
     public bool Enabled { get; set; }
     public string ListName { get; set; } = "AttendanceRecords";
     public bool SyncEnabled { get; set; }
+    
+    /// <summary>
+    /// Tên table điểm danh mặc định
+    /// </summary>
+    public string AttendanceTableName { get; set; } = "AttendanceTable";
 }

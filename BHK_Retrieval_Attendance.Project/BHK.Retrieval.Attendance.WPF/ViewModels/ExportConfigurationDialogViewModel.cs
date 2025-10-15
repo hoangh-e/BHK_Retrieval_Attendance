@@ -3,6 +3,7 @@ using CommunityToolkit.Mvvm.Input;
 using BHK.Retrieval.Attendance.Core.DTOs.Requests;
 using System.Windows.Input;
 using System;
+using System.Windows;
 
 namespace BHK.Retrieval.Attendance.WPF.ViewModels
 {
@@ -20,6 +21,9 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
         public ICommand ExportCommand { get; }
         public ICommand CancelCommand { get; }
 
+        // ✅ Thêm property để lưu reference tới dialog window
+        public Window? DialogWindow { get; set; }
+
         public ExportConfigurationDialogViewModel()
         {
             ExportCommand = new RelayCommand(OnExport);
@@ -28,12 +32,22 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
 
         private void OnExport()
         {
-            // TODO: Logic xuất file
+            // ✅ Đóng dialog với DialogResult = true
+            if (DialogWindow != null)
+            {
+                DialogWindow.DialogResult = true;
+                DialogWindow.Close();
+            }
         }
 
         private void OnCancel()
         {
-            // TODO: Đóng dialog
+            // ✅ Đóng dialog với DialogResult = false
+            if (DialogWindow != null)
+            {
+                DialogWindow.DialogResult = false;
+                DialogWindow.Close();
+            }
         }
 
         partial void OnSelectedFileTypeChanged(ExportFileType value)
