@@ -2,6 +2,7 @@ using System;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Windows;
 using System.Windows.Input;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -167,20 +168,41 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
 
         private async Task OpenExportDialogAsync()
         {
-            // TODO: Mở dialog xuất file với dữ liệu hiện tại
-            var exportConfig = new ExportConfigDto
+            try
             {
-                FileType = ExportFileType.Excel,
-                FileName = $"attendance_{DateTime.Now:yyyy-MM-dd}.xlsx",
-                RecordCount = AttendanceRecords.Count,
-                Data = AttendanceRecords.ToList()
-            };
+                // Kiểm tra có dữ liệu để xuất không
+                if (AttendanceRecords == null || AttendanceRecords.Count == 0)
+                {
+                    await _notificationService.ShowWarningAsync("Cảnh báo", "Không có dữ liệu để xuất");
+                    return;
+                }
 
-            // Mở dialog (sẽ implement sau)
-            // var result = await _dialogService.ShowExportDialogAsync(exportConfig);
-            
-            _logger.LogInformation("Export dialog opened");
-            await Task.CompletedTask;
+                // Tạo dialog và ViewModel
+                var dialog = new Views.Dialogs.ExportConfigurationDialog();
+                var viewModel = new ViewModels.Dialogs.ExportConfigurationViewModel(
+                    dialog,
+                    $"attendance_{DateTime.Now:yyyy-MM-dd}",
+                    AttendanceRecords.Count,
+                    AttendanceRecords.ToList()
+                );
+                
+                dialog.DataContext = viewModel;
+                dialog.Owner = Application.Current.MainWindow;
+
+                // Hiển thị dialog
+                var result = dialog.ShowDialog();
+                
+                if (result == true)
+                {
+                    _logger.LogInformation("Export completed successfully");
+                    await _notificationService.ShowSuccessAsync("Thành công", "Đã xuất file thành công");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error opening export dialog");
+                await _notificationService.ShowErrorAsync("Lỗi", $"Không thể mở dialog xuất file: {ex.Message}");
+            }
         }
 
         private void OnApplyFilter(string? parameter)

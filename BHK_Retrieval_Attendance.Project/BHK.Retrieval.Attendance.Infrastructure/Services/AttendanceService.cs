@@ -32,7 +32,7 @@ namespace BHK.Retrieval.Attendance.Infrastructure.Services
 
                 _logger.LogInformation($"⏱️ START Getting attendance records from {startDate:yyyy-MM-dd} to {endDate:yyyy-MM-dd}");
 
-                // BƯỚC 1: Lấy dữ liệu từ thiết bị (thường chậm nhất)
+                // Lấy dữ liệu chấm công từ thiết bị
                 var deviceStopwatch = System.Diagnostics.Stopwatch.StartNew();
                 var attendanceRecords = await _deviceService.GetAttendanceRecordsAsync(startDate, endDate);
                 deviceStopwatch.Stop();
@@ -44,61 +44,86 @@ namespace BHK.Retrieval.Attendance.Infrastructure.Services
                     return new List<AttendanceDisplayDto>();
                 }
 
-                // BƯỚC 2: Lấy danh sách nhân viên cơ bản để map thông tin (NHANH - không có enrollment data)
-                var employeeStopwatch = System.Diagnostics.Stopwatch.StartNew();
-                var employees = await _deviceService.GetBasicEmployeesAsync(); // ✅ SỬ DỤNG GetBasicEmployeesAsync thay vì GetAllEmployeesAsync
-                var employeeDict = employees?.ToDictionary(e => e.DIN, e => e) ?? new Dictionary<ulong, EmployeeDto>();
-                employeeStopwatch.Stop();
-                _logger.LogInformation($"⏱️ Get {employeeDict.Count} basic employees took {employeeStopwatch.ElapsedMilliseconds}ms (FAST - no enrollments)");
-
-                // BƯỚC 3: Chuyển đổi sang DTO hiển thị
+                // Map trực tiếp từ AttRecord sang AttendanceDisplayDto (KHÔNG cần join với employee data)
                 var mappingStopwatch = System.Diagnostics.Stopwatch.StartNew();
                 var displayRecords = attendanceRecords.Select(record =>
                 {
-                    // Tìm thông tin nhân viên
-                    var employee = employeeDict.ContainsKey(record.DIN) ? employeeDict[record.DIN] : null;
+                    var hour = record.Time.Hour;
+                    string checkType;
+                    
+                    // Logic xác định loại chấm công dựa theo giờ
+                    if (hour >= 4 && hour <= 11)
+                    {
+                        checkType = "Check In";
+                    }
+                    else if (hour >= 13 && hour <= 18)
+                    {
+                        checkType = "Check Out";
+                    }
+                    else
+                    {
+                        checkType = "Khác"; // Ngoài giờ định nghĩa
+                    }
+
+                    // Map VerifyMode to readable text
+                    string verifyText = record.VerifyMode switch
+                    {
+                        0 => "PW",
+                        1 => "FP",
+                        2 => "Card",
+                        3 => "Face",
+                        4 => "Iris",
+                        _ => "Unknown"
+                    };
+
+                    // Map Action to readable text
+                    string actionText = record.Action switch
+                    {
+                        0 => "In",
+                        1 => "Out",
+                        2 => "Break",
+                        _ => "Other"
+                    };
 
                     return new AttendanceDisplayDto
                     {
-                        DIN = record.DIN,
-                        EmployeeId = employee?.IDNumber ?? record.DIN.ToString(),
-                        EmployeeName = employee?.UserName ?? "Không xác định",
-                        CheckTime = record.Time,
+                        DN = record.DN.ToString(),
+                        DIN = record.DIN.ToString(),
                         Date = record.Time.ToString("dd/MM/yyyy"),
                         Time = record.Time.ToString("HH:mm:ss"),
-                        VerifyMode = GetVerifyModeText(record.VerifyMode),
-                        CheckType = GetCheckTypeText(record.State),
-                        DeviceId = 1, // TODO: Get from device config
-                        Remark = string.Empty
+                        Type = checkType,
+                        Verify = verifyText,
+                        Action = actionText,
+                        Remark = record.Remark
                     };
                 }).ToList();
                 mappingStopwatch.Stop();
                 _logger.LogInformation($"⏱️ Mapping {displayRecords.Count} records took {mappingStopwatch.ElapsedMilliseconds}ms");
 
-                // BƯỚC 4: Apply time filter
+                // Apply time filter nếu cần
                 var filterStopwatch = System.Diagnostics.Stopwatch.StartNew();
                 if (filter.TimeFilter == TimeFilter.CheckIn)
                 {
                     displayRecords = displayRecords
-                        .Where(x => x.CheckTime.Hour >= 4 && x.CheckTime.Hour <= 11)
+                        .Where(x => x.Type == "Check In")
                         .ToList();
                 }
                 else if (filter.TimeFilter == TimeFilter.CheckOut)
                 {
                     displayRecords = displayRecords
-                        .Where(x => x.CheckTime.Hour >= 13 && x.CheckTime.Hour <= 18)
+                        .Where(x => x.Type == "Check Out")
                         .ToList();
                 }
                 filterStopwatch.Stop();
 
-                // BƯỚC 5: Sort
-                var sortedRecords = displayRecords.OrderByDescending(x => x.CheckTime).ToList();
+                // Sort theo thời gian mới nhất
+                var sortedRecords = displayRecords.OrderByDescending(x => x.Date).ThenByDescending(x => x.Time).ToList();
                 
                 stopwatch.Stop();
                 _logger.LogInformation(
                     $"✅ TOTAL Retrieved {sortedRecords.Count} attendance records in {stopwatch.ElapsedMilliseconds}ms " +
-                    $"(Device: {deviceStopwatch.ElapsedMilliseconds}ms, Employees: {employeeStopwatch.ElapsedMilliseconds}ms, " +
-                    $"Mapping: {mappingStopwatch.ElapsedMilliseconds}ms, Filter: {filterStopwatch.ElapsedMilliseconds}ms)");
+                    $"(Device: {deviceStopwatch.ElapsedMilliseconds}ms, Mapping: {mappingStopwatch.ElapsedMilliseconds}ms, " +
+                    $"Filter: {filterStopwatch.ElapsedMilliseconds}ms)");
                 
                 return sortedRecords;
             }
@@ -108,32 +133,6 @@ namespace BHK.Retrieval.Attendance.Infrastructure.Services
                 _logger.LogError(ex, $"❌ Error getting attendance records after {stopwatch.ElapsedMilliseconds}ms");
                 return new List<AttendanceDisplayDto>();
             }
-        }
-
-        private string GetVerifyModeText(int verifyMode)
-        {
-            return verifyMode switch
-            {
-                0 => "Mật khẩu",
-                1 => "Vân tay",
-                2 => "Thẻ từ",
-                3 => "Khuôn mặt",
-                4 => "Mống mắt",
-                _ => "Không xác định"
-            };
-        }
-
-        private string GetCheckTypeText(int state)
-        {
-            return state switch
-            {
-                0 => "Check-in",
-                1 => "Check-out",
-                2 => "Nghỉ giải lao",
-                3 => "Bắt đầu làm việc",
-                4 => "Kết thúc làm việc",
-                _ => "Khác"
-            };
         }
 
         public async Task<bool> ExportAttendanceAsync(ExportConfigDto config, string filePath)
