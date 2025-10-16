@@ -71,13 +71,22 @@ namespace BHK.Retrieval.Attendance.WPF.Services.Implementations
                     }
 
                     using var workbook = new XLWorkbook(filePath);
-                    tableNames = workbook.Worksheets.Select(ws => ws.Name).ToList();
                     
-                    _logger.LogInformation($"Found {tableNames.Count} worksheets in {filePath}");
+                    // ✅ Lấy tên Excel Tables và hiển thị sheet chứa table đó
+                    foreach (var worksheet in workbook.Worksheets)
+                    {
+                        foreach (var table in worksheet.Tables)
+                        {
+                            // Format: "TableName (Sheet: SheetName)"
+                            tableNames.Add($"{table.Name} (Sheet: {worksheet.Name})");
+                        }
+                    }
+                    
+                    _logger.LogInformation($"Found {tableNames.Count} Excel tables in {filePath}");
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, $"Failed to get table names from: {filePath}");
+                    _logger.LogError(ex, $"Failed to get Excel table names from: {filePath}");
                 }
 
                 return tableNames;
@@ -94,11 +103,23 @@ namespace BHK.Retrieval.Attendance.WPF.Services.Implementations
                         return false;
 
                     using var workbook = new XLWorkbook(filePath);
-                    var exists = workbook.Worksheets.Any(ws => 
-                        ws.Name.Equals(tableName, StringComparison.OrdinalIgnoreCase));
                     
-                    _logger.LogDebug($"Table '{tableName}' exists in {filePath}: {exists}");
-                    return exists;
+                    // ✅ Kiểm tra Excel Table - hỗ trợ cả tên gốc và format có sheet name
+                    string actualTableName = ExtractActualTableName(tableName);
+                    
+                    foreach (var worksheet in workbook.Worksheets)
+                    {
+                        var exists = worksheet.Tables.Any(t => 
+                            t.Name.Equals(actualTableName, StringComparison.OrdinalIgnoreCase));
+                        if (exists)
+                        {
+                            _logger.LogDebug($"Excel table '{actualTableName}' found in worksheet '{worksheet.Name}'");
+                            return true;
+                        }
+                    }
+                    
+                    _logger.LogDebug($"Excel table '{tableName}' not found in {filePath}");
+                    return false;
                 }
                 catch (Exception ex)
                 {
@@ -150,8 +171,16 @@ namespace BHK.Retrieval.Attendance.WPF.Services.Implementations
                         worksheet.Cell(1, 3).Value = "Time";
                         worksheet.Cell(1, 4).Value = "Verify";
 
-                        // ✅ Tạo Excel TABLE thực sự cho Attendance
-                        var table = worksheet.Range(1, 1, 2, 4).CreateTable($"Table_{tableName}"); // Table với 1 row dữ liệu mẫu
+                        // ✅ Thêm 1 row dữ liệu mẫu (cần thiết để tạo table)
+                        worksheet.Cell(2, 1).Value = "Sample";
+                        worksheet.Cell(2, 2).Value = DateTime.Today.ToString("yyyy-MM-dd");
+                        worksheet.Cell(2, 3).Value = DateTime.Now.ToString("HH:mm:ss");
+                        worksheet.Cell(2, 4).Value = "1";
+
+                        // ✅ Tạo Excel TABLE thực sự cho Attendance (phải có ít nhất 1 row data)
+                        // Chỉ sử dụng tên table thuần túy, không có prefix
+                        string actualTableName = ExtractActualTableName(tableName);
+                        var table = worksheet.Range(1, 1, 2, 4).CreateTable(actualTableName);
 
                         // Format header
                         var headerRange = worksheet.Range(1, 1, 1, 4);
@@ -159,8 +188,8 @@ namespace BHK.Retrieval.Attendance.WPF.Services.Implementations
                         headerRange.Style.Fill.BackgroundColor = XLColor.LightBlue;
                         headerRange.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
 
-                        // Xóa row mẫu
-                        worksheet.Row(2).Delete();
+                        // ✅ Xóa row mẫu sau khi tạo table (để table trống nhưng vẫn có structure)
+                        table.DataRange.Delete(XLShiftDeletedCells.ShiftCellsUp);
 
                         // Auto-fit columns
                         worksheet.Columns().AdjustToContents();
@@ -221,17 +250,31 @@ namespace BHK.Retrieval.Attendance.WPF.Services.Implementations
                         worksheet.Cell(1, 9).Value = "Comment";
                         worksheet.Cell(1, 10).Value = "EnrollmentCount";
 
-                        // ✅ Tạo Excel TABLE thực sự (không chỉ là worksheet)
-                        var headerRange = worksheet.Range(1, 1, 1, 10);
-                        var table = worksheet.Range(1, 1, 2, 10).CreateTable($"Table_{tableName}"); // Table với 1 row dữ liệu mẫu
+                        // ✅ Thêm 1 row dữ liệu mẫu (cần thiết để tạo table)
+                        worksheet.Cell(2, 1).Value = "Sample";
+                        worksheet.Cell(2, 2).Value = "Sample Employee";
+                        worksheet.Cell(2, 3).Value = "000000";
+                        worksheet.Cell(2, 4).Value = "IT";
+                        worksheet.Cell(2, 5).Value = "M";
+                        worksheet.Cell(2, 6).Value = DateTime.Today.ToString("yyyy-MM-dd");
+                        worksheet.Cell(2, 7).Value = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+                        worksheet.Cell(2, 8).Value = "Active";
+                        worksheet.Cell(2, 9).Value = "Sample data";
+                        worksheet.Cell(2, 10).Value = "0";
+
+                        // ✅ Tạo Excel TABLE thực sự (phải có ít nhất 1 row data)
+                        // Chỉ sử dụng tên table thuần túy, không có prefix
+                        string actualTableName = ExtractActualTableName(tableName);
+                        var table = worksheet.Range(1, 1, 2, 10).CreateTable(actualTableName);
                         
                         // Format header
+                        var headerRange = worksheet.Range(1, 1, 1, 10);
                         headerRange.Style.Font.Bold = true;
                         headerRange.Style.Fill.BackgroundColor = XLColor.LightGreen;
                         headerRange.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
 
-                        // Xóa row mẫu 
-                        worksheet.Row(2).Delete();
+                        // ✅ Xóa row mẫu sau khi tạo table
+                        table.DataRange.Delete(XLShiftDeletedCells.ShiftCellsUp);
 
                         worksheet.Columns().AdjustToContents();
 
@@ -257,22 +300,30 @@ namespace BHK.Retrieval.Attendance.WPF.Services.Implementations
                         return 0;
 
                     using var workbook = new XLWorkbook(filePath);
-                    var worksheet = workbook.Worksheets.FirstOrDefault(ws => 
-                        ws.Name.Equals(tableName, StringComparison.OrdinalIgnoreCase));
+                    
+                    // ✅ Tìm Excel Table - hỗ trợ cả tên gốc và format có sheet name
+                    string actualTableName = ExtractActualTableName(tableName);
+                    
+                    foreach (var worksheet in workbook.Worksheets)
+                    {
+                        var table = worksheet.Tables.FirstOrDefault(t => 
+                            t.Name.Equals(actualTableName, StringComparison.OrdinalIgnoreCase));
+                        
+                        if (table != null)
+                        {
+                            // Đếm số rows trong Excel Table (không tính header)
+                            var count = table.DataRange?.RowCount() ?? 0;
+                            _logger.LogDebug($"Excel table '{actualTableName}' has {count} data records");
+                            return count;
+                        }
+                    }
 
-                    if (worksheet == null)
-                        return 0;
-
-                    // Đếm số dòng có dữ liệu (trừ header)
-                    var lastRow = worksheet.LastRowUsed()?.RowNumber() ?? 1;
-                    var count = Math.Max(0, lastRow - 1);
-
-                    _logger.LogDebug($"Table '{tableName}' has {count} records");
-                    return count;
+                    _logger.LogDebug($"Excel table '{tableName}' not found in {filePath}");
+                    return 0;
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, $"Failed to count records in table '{tableName}'");
+                    _logger.LogError(ex, $"Failed to count records in Excel table '{tableName}'");
                     return 0;
                 }
             });
@@ -529,5 +580,181 @@ namespace BHK.Retrieval.Attendance.WPF.Services.Implementations
                 }
             });
         }
+
+        public Task<List<string>> GetTableColumnsAsync(string filePath, string tableName)
+        {
+            return Task.Run(() =>
+            {
+                var columns = new List<string>();
+                try
+                {
+                    if (!File.Exists(filePath))
+                        return columns;
+
+                    using var workbook = new XLWorkbook(filePath);
+                    string actualTableName = ExtractActualTableName(tableName);
+                    
+                    foreach (var worksheet in workbook.Worksheets)
+                    {
+                        var table = worksheet.Tables.FirstOrDefault(t => 
+                            t.Name.Equals(actualTableName, StringComparison.OrdinalIgnoreCase));
+                        
+                        if (table != null)
+                        {
+                            // Lấy header columns từ table
+                            var headerRow = table.HeadersRow();
+                            if (headerRow != null)
+                            {
+                                var lastColumn = headerRow.LastCellUsed()?.Address.ColumnNumber ?? 0;
+                                for (int col = 1; col <= lastColumn; col++)
+                                {
+                                    var cellValue = headerRow.Cell(col).GetString();
+                                    if (!string.IsNullOrWhiteSpace(cellValue))
+                                    {
+                                        columns.Add(cellValue);
+                                    }
+                                }
+                            }
+                            break;
+                        }
+                    }
+                    
+                    _logger.LogDebug($"Found {columns.Count} columns in table '{actualTableName}': {string.Join(", ", columns)}");
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, $"Failed to get columns for table '{tableName}'");
+                }
+                
+                return columns;
+            });
+        }
+
+        public Task<bool> ValidateTableColumnsAsync(string filePath, string tableName, string tableType)
+        {
+            return Task.Run(async () =>
+            {
+                try
+                {
+                    var actualColumns = await GetTableColumnsAsync(filePath, tableName);
+                    var expectedColumns = GetExpectedColumns(tableType);
+                    
+                    // Kiểm tra số lượng cột và tên cột có khớp không
+                    if (actualColumns.Count != expectedColumns.Count)
+                    {
+                        _logger.LogWarning($"Column count mismatch. Expected: {expectedColumns.Count}, Actual: {actualColumns.Count}");
+                        return false;
+                    }
+                    
+                    for (int i = 0; i < expectedColumns.Count; i++)
+                    {
+                        if (!actualColumns[i].Equals(expectedColumns[i], StringComparison.OrdinalIgnoreCase))
+                        {
+                            _logger.LogWarning($"Column mismatch at index {i}. Expected: '{expectedColumns[i]}', Actual: '{actualColumns[i]}'");
+                            return false;
+                        }
+                    }
+                    
+                    return true;
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, $"Failed to validate table columns for '{tableName}'");
+                    return false;
+                }
+            });
+        }
+
+        public Task RefactorTableColumnsAsync(string filePath, string tableName, string tableType)
+        {
+            return Task.Run(() =>
+            {
+                try
+                {
+                    using var workbook = new XLWorkbook(filePath);
+                    string actualTableName = ExtractActualTableName(tableName);
+                    
+                    foreach (var worksheet in workbook.Worksheets)
+                    {
+                        var table = worksheet.Tables.FirstOrDefault(t => 
+                            t.Name.Equals(actualTableName, StringComparison.OrdinalIgnoreCase));
+                        
+                        if (table != null)
+                        {
+                            var expectedColumns = GetExpectedColumns(tableType);
+                            var headerRow = table.HeadersRow();
+                            
+                            if (headerRow != null)
+                            {
+                                // Cập nhật header theo đúng format
+                                for (int i = 0; i < expectedColumns.Count; i++)
+                                {
+                                    headerRow.Cell(i + 1).Value = expectedColumns[i];
+                                }
+                                
+                                // Xóa các cột thừa nếu có
+                                var lastColumnIndex = headerRow.LastCellUsed()?.Address.ColumnNumber ?? 0;
+                                for (int i = expectedColumns.Count + 1; i <= lastColumnIndex; i++)
+                                {
+                                    headerRow.Cell(i).Clear();
+                                }
+                                
+                                // Format lại header
+                                for (int i = 1; i <= expectedColumns.Count; i++)
+                                {
+                                    var cell = headerRow.Cell(i);
+                                    cell.Style.Font.Bold = true;
+                                    cell.Style.Fill.BackgroundColor = tableType == "Employee" ? XLColor.LightGreen : XLColor.LightBlue;
+                                    cell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                                }
+                            }
+                            
+                            workbook.Save();
+                            _logger.LogInformation($"Refactored table '{actualTableName}' columns successfully");
+                            break;
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, $"Failed to refactor table columns for '{tableName}'");
+                    throw;
+                }
+            });
+        }
+
+        #region Private Helper Methods
+
+        /// <summary>
+        /// Trích xuất tên table thực từ display name có format "TableName (Sheet: SheetName)"
+        /// </summary>
+        private string ExtractActualTableName(string displayTableName)
+        {
+            if (string.IsNullOrEmpty(displayTableName))
+                return displayTableName;
+
+            // Nếu có format "TableName (Sheet: SheetName)", lấy phần tên table
+            if (displayTableName.Contains(" (Sheet: "))
+            {
+                return displayTableName.Split(" (Sheet: ")[0];
+            }
+
+            return displayTableName;
+        }
+
+        /// <summary>
+        /// Lấy danh sách cột mong đợi theo loại table
+        /// </summary>
+        private List<string> GetExpectedColumns(string tableType)
+        {
+            return tableType.ToLower() switch
+            {
+                "employee" => new List<string> { "ID", "Name", "IDNumber", "Department", "Sex", "Birthday", "Created", "Status", "Comment", "EnrollmentCount" },
+                "attendance" => new List<string> { "ID", "Date", "Time", "Verify" },
+                _ => new List<string>()
+            };
+        }
+
+        #endregion
     }
 }

@@ -2,6 +2,7 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+        xmlns:local="clr-namespace:BHK.Retrieval.Attendance.WPF.Converters"
         Title="Xuất danh sách nhân viên vào Excel" 
         Height="500" 
         Width="600"
@@ -10,7 +11,7 @@
     
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVisibility"/>
-        <!-- Simple converter for status message visibility -->
+        <local:StringToVisibilityConverter x:Key="StringToVisibilityConverter"/>
     </Window.Resources>
 
     <Grid Margin="20">
@@ -62,22 +63,33 @@
                          materialDesign:HintAssist.Hint="Tên file được chọn"
                          Style="{StaticResource MaterialDesignOutlinedTextBox}"/>
 
-                <!-- Chọn Table -->
-                <TextBlock Text="Chọn Table" 
-                           FontWeight="Bold"
-                           Style="{StaticResource MaterialDesignSubtitle2TextBlock}"/>
-                <ComboBox ItemsSource="{Binding AvailableTables}" 
-                          SelectedItem="{Binding SelectedTable}"
-                          Margin="0,5,0,15"
-                          materialDesign:HintAssist.Hint="Chọn table để xuất dữ liệu"
-                          Style="{StaticResource MaterialDesignOutlinedComboBox}"/>
+                <!-- Chọn Excel Table -->
+                <StackPanel Margin="0,0,0,15">
+                    <TextBlock Text="Chọn Excel Table" 
+                               FontWeight="Bold"
+                               Style="{StaticResource MaterialDesignSubtitle2TextBlock}"/>
+                    <TextBlock Text="(Excel Table khác với Worksheet - Table có filter và structured references)" 
+                               Foreground="{DynamicResource MaterialDesignBodyLight}"
+                               FontStyle="Italic"
+                               FontSize="11"
+                               Margin="0,2,0,5"/>
+                    <ComboBox ItemsSource="{Binding AvailableTables}" 
+                              SelectedItem="{Binding SelectedTable}"
+                              materialDesign:HintAssist.Hint="Chọn Excel table để xuất dữ liệu"
+                              Style="{StaticResource MaterialDesignOutlinedComboBox}"/>
+                </StackPanel>
 
-                <!-- Số lượng records -->
-                <TextBlock Text="{Binding RecordCount, StringFormat='Số lượng records hiện có: {0}'}"
-                           Foreground="{DynamicResource PrimaryHueMidBrush}" 
-                           FontWeight="Bold" 
-                           Margin="0,0,0,10"
-                           Style="{StaticResource MaterialDesignBody1TextBlock}"/>
+                <!-- Thông tin Table -->
+                <StackPanel Margin="0,0,0,15" 
+                            Visibility="{Binding IsTableSelected, Converter={StaticResource BoolToVisibility}}">
+                    <TextBlock Text="{Binding RecordCount, StringFormat='📊 Số records trong table: {0}'}"
+                               Foreground="{DynamicResource PrimaryHueMidBrush}" 
+                               FontWeight="Bold" 
+                               Style="{StaticResource MaterialDesignBody1TextBlock}"/>
+                    <TextBlock Text="{Binding SelectedTable, StringFormat='📋 Tên Excel table: {0}'}"
+                               Foreground="{DynamicResource MaterialDesignBodyLight}" 
+                               Style="{StaticResource MaterialDesignCaptionTextBlock}"/>
+                </StackPanel>
 
                 <!-- Loading -->
                 <ProgressBar IsIndeterminate="True" 
@@ -93,6 +105,53 @@
                            Margin="0,10"
                            Style="{StaticResource MaterialDesignBody2TextBlock}"/>
 
+                <!-- Table Validation Message & Actions -->
+                <materialDesign:Card Padding="15" 
+                                     Margin="0,10,0,0"
+                                     Background="{DynamicResource ValidationErrorBrush}"
+                                     Visibility="{Binding TableValidationMessage, Converter={StaticResource StringToVisibilityConverter}}">
+                    <StackPanel>
+                        <TextBlock Text="{Binding TableValidationMessage}" 
+                                   Foreground="White"
+                                   FontWeight="Bold"
+                                   TextWrapping="Wrap"
+                                   Margin="0,0,0,10"
+                                   Style="{StaticResource MaterialDesignBody1TextBlock}"/>
+                        <StackPanel Orientation="Horizontal">
+                            <Button Content="🔧 REFACTOR CỘT" 
+                                    Command="{Binding ShowRefactorDialogCommand}"
+                                    Margin="0,0,10,0"
+                                    Style="{StaticResource MaterialDesignRaisedLightButton}"/>
+                            <TextBlock Text="Hoặc chọn table khác phù hợp" 
+                                       VerticalAlignment="Center"
+                                       Foreground="White"
+                                       Style="{StaticResource MaterialDesignCaptionTextBlock}"/>
+                        </StackPanel>
+                    </StackPanel>
+                </materialDesign:Card>
+
+                <!-- Create Default Table (when no tables exist) -->
+                <materialDesign:Card Padding="15" 
+                                     Margin="0,10,0,0"
+                                     Background="{DynamicResource SecondaryHueMidBrush}"
+                                     Visibility="{Binding ShowCreateDefaultTable, Converter={StaticResource BoolToVisibility}}">
+                    <StackPanel>
+                        <TextBlock Text="🏗️ Tạo Employee Table mặc định" 
+                                   Foreground="White"
+                                   FontWeight="Bold"
+                                   Margin="0,0,0,5"
+                                   Style="{StaticResource MaterialDesignSubtitle2TextBlock}"/>
+                        <TextBlock Text="Tạo table với cấu trúc Employee chuẩn (10 cột) trên sheet đầu tiên" 
+                                   Foreground="White"
+                                   Margin="0,0,0,10"
+                                   Style="{StaticResource MaterialDesignCaptionTextBlock}"/>
+                        <Button Content="✨ TẠO EMPLOYEE TABLE" 
+                                Command="{Binding CreateDefaultTableCommand}"
+                                Style="{StaticResource MaterialDesignRaisedLightButton}"/>
+                    </StackPanel>
+                </materialDesign:Card>
+
+
             </StackPanel>
         </ScrollViewer>
 
@@ -102,20 +161,22 @@
                     HorizontalAlignment="Right" 
                     Margin="0,20,0,0">
             
-            <Button Content="TẠO TABLE" 
+            <Button Content="🔧 TẠO EXCEL TABLE MỚI" 
                     Command="{Binding CreateTableCommand}"
                     Visibility="{Binding CanCreateTable, Converter={StaticResource BoolToVisibility}}"
                     Margin="0,0,10,0"
+                    ToolTip="Tạo Excel Table mới trong file (không phải worksheet)"
                     Style="{StaticResource MaterialDesignOutlinedButton}"/>
             
-            <Button Content="HỦY" 
+            <Button Content="❌ HỦY" 
                     Command="{Binding CancelCommand}"
                     Margin="0,0,10,0"
                     Style="{StaticResource MaterialDesignOutlinedButton}"/>
             
-            <Button Content="XUẤT" 
+            <Button Content="📤 XUẤT VÀO TABLE" 
                     Command="{Binding ExportCommand}"
                     IsEnabled="{Binding IsTableSelected}"
+                    ToolTip="Xuất dữ liệu vào Excel Table đã chọn"
                     Style="{StaticResource MaterialDesignRaisedButton}"/>
         </StackPanel>
     </Grid>

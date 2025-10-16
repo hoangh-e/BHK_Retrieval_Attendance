@@ -50,5 +50,20 @@ namespace BHK.Retrieval.Attendance.WPF.Services.Interfaces
         /// Xuất dữ liệu Employee vào table (Update existing + Insert new)
         /// </summary>
         Task ExportEmployeeDataAsync<T>(string filePath, string tableName, List<T> data);
+
+        /// <summary>
+        /// Lấy danh sách cột trong table
+        /// </summary>
+        Task<List<string>> GetTableColumnsAsync(string filePath, string tableName);
+
+        /// <summary>
+        /// Kiểm tra cột table có hợp lệ theo định dạng không
+        /// </summary>
+        Task<bool> ValidateTableColumnsAsync(string filePath, string tableName, string tableType);
+
+        /// <summary>
+        /// Refactor cột table theo đúng định dạng
+        /// </summary>
+        Task RefactorTableColumnsAsync(string filePath, string tableName, string tableType);
     }
 }
