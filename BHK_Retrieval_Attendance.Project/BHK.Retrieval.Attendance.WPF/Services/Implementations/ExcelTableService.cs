@@ -262,7 +262,7 @@ namespace BHK.Retrieval.Attendance.WPF.Services.Implementations
                         worksheet.Cell(2, 9).Value = "Sample data";
                         worksheet.Cell(2, 10).Value = "0";
 
-                        // ✅ Tạo Excel TABLE thực sự (phải có ít nhất 1 row data)
+                        // ✅ Tạo Excel TABLE với header và 1 row mẫu (bắt buộc cho ClosedXML)
                         // Chỉ sử dụng tên table thuần túy, không có prefix
                         string actualTableName = ExtractActualTableName(tableName);
                         var table = worksheet.Range(1, 1, 2, 10).CreateTable(actualTableName);
@@ -273,12 +273,12 @@ namespace BHK.Retrieval.Attendance.WPF.Services.Implementations
                         headerRange.Style.Fill.BackgroundColor = XLColor.LightGreen;
                         headerRange.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
 
-                        // ✅ Xóa row mẫu sau khi tạo table
-                        table.DataRange.Delete(XLShiftDeletedCells.ShiftCellsUp);
+                        // ✅ Giữ lại row mẫu để table không bị rỗng (tránh EmptyTableException)
+                        // Row mẫu sẽ được thay thế khi export data thật
 
                         worksheet.Columns().AdjustToContents();
 
-                        workbook.SaveAs(filePath);
+                        yworkbook.SaveAs(filePath);
                         _logger.LogInformation($"Created Employee table '{tableName}' in {filePath}");
                     }
                 }
@@ -313,6 +313,18 @@ namespace BHK.Retrieval.Attendance.WPF.Services.Implementations
                         {
                             // Đếm số rows trong Excel Table (không tính header)
                             var count = table.DataRange?.RowCount() ?? 0;
+                            
+                            // ✅ Kiểm tra nếu chỉ có 1 row và là sample data → trả về 0
+                            if (count == 1 && table.DataRange != null)
+                            {
+                                var firstRowFirstCell = table.DataRange.FirstCell()?.Value.ToString();
+                                if (firstRowFirstCell == "Sample")
+                                {
+                                    _logger.LogDebug($"Excel table '{actualTableName}' contains only sample data");
+                                    return 0; // Coi như table trống
+                                }
+                            }
+                            
                             _logger.LogDebug($"Excel table '{actualTableName}' has {count} data records");
                             return count;
                         }

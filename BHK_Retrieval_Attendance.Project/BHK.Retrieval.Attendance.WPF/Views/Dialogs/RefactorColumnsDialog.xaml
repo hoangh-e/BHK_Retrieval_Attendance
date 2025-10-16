@@ -6,8 +6,7 @@
         Height="400" 
         Width="600"
         WindowStartupLocation="CenterOwner"
-        ResizeMode="NoResize"
-        Style="{StaticResource MaterialDesignWindow}">
+        ResizeMode="NoResize">
 
     <Grid>
         <Grid.RowDefinitions>
@@ -17,119 +16,96 @@
         </Grid.RowDefinitions>
 
         <!-- Header -->
-        <Border Grid.Row="0" 
-                Background="{DynamicResource PrimaryHueMidBrush}"
-                Padding="20">
+        <materialDesign:Card Grid.Row="0" 
+                            Padding="20"
+                            Background="{DynamicResource MaterialDesignPaper}"
+                            Margin="10,10,10,5">
             <StackPanel>
-                <TextBlock Text="⚠️ Cấu trúc Table không hợp lệ" 
-                           Foreground="White"
-                           FontSize="18"
-                           FontWeight="Bold"
-                           Style="{StaticResource MaterialDesignHeadline6TextBlock}"/>
-                <TextBlock Text="Các cột trong table không khớp với định dạng mong đợi" 
-                           Foreground="White"
-                           Margin="0,5,0,0"
-                           Style="{StaticResource MaterialDesignBody2TextBlock}"/>
+                <TextBlock Text="🔧 Refactor Table Columns" 
+                          FontSize="18"
+                          FontWeight="Bold"
+                          Foreground="{DynamicResource PrimaryHueMidBrush}"
+                          Margin="0,0,0,5"/>
+                <TextBlock Text="The table structure doesn't match the expected Employee format. Please review and fix the column structure." 
+                          TextWrapping="Wrap"
+                          Foreground="{DynamicResource MaterialDesignBodyLight}"/>
             </StackPanel>
-        </Border>
+        </materialDesign:Card>
 
         <!-- Content -->
         <ScrollViewer Grid.Row="1" 
-                      VerticalScrollBarVisibility="Auto"
-                      Padding="20">
+                      Margin="10,5,10,5"
+                      VerticalScrollBarVisibility="Auto">
             <StackPanel>
                 
-                <!-- Table Info -->
+                <!-- Current Columns -->
                 <materialDesign:Card Padding="15" 
-                                     Margin="0,0,0,15">
+                                    Margin="0,0,0,10"
+                                    Background="{DynamicResource ValidationErrorBrush}">
                     <StackPanel>
-                        <TextBlock Text="📊 Thông tin Table" 
-                                   FontWeight="Bold"
-                                   FontSize="14"
-                                   Foreground="{DynamicResource PrimaryHueDarkBrush}"
-                                   Margin="0,0,0,10"/>
-                        <TextBlock Text="{Binding TableName, StringFormat='🏷️ Tên: {0}'}" 
-                                   Style="{StaticResource MaterialDesignBody2TextBlock}"/>
-                        <TextBlock Text="{Binding TableType, StringFormat='📋 Loại: {0}'}" 
-                                   Style="{StaticResource MaterialDesignBody2TextBlock}"/>
+                        <TextBlock Text="❌ Current Columns (Invalid)" 
+                                  FontWeight="Bold"
+                                  Foreground="White"
+                                  Margin="0,0,0,10"/>
+                        <ItemsControl ItemsSource="{Binding CurrentColumns}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <materialDesign:Chip Content="{Binding}"
+                                                        Margin="5,2"
+                                                        Background="White"
+                                                        Foreground="{DynamicResource ValidationErrorBrush}"/>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel/>
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                        </ItemsControl>
                     </StackPanel>
                 </materialDesign:Card>
 
-                <!-- Current vs Expected Columns -->
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="20"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
-
-                    <!-- Current Columns -->
-                    <materialDesign:Card Grid.Column="0" 
-                                         Padding="15">
-                        <StackPanel>
-                            <TextBlock Text="❌ Cột hiện tại" 
-                                       FontWeight="Bold"
-                                       Foreground="{DynamicResource MaterialDesignValidationErrorBrush}"
-                                       Margin="0,0,0,10"/>
-                            <ItemsControl ItemsSource="{Binding CurrentColumns}">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
-                                        <TextBlock Text="{Binding}" 
-                                                   Margin="5,2"
-                                                   Style="{StaticResource MaterialDesignCaptionTextBlock}"/>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                        </StackPanel>
-                    </materialDesign:Card>
-
-                    <!-- Arrow -->
-                    <TextBlock Grid.Column="1" 
-                               Text="→" 
-                               FontSize="24"
-                               HorizontalAlignment="Center"
-                               VerticalAlignment="Center"
-                               Foreground="{DynamicResource PrimaryHueMidBrush}"/>
-
-                    <!-- Expected Columns -->
-                    <materialDesign:Card Grid.Column="2" 
-                                         Padding="15">
-                        <StackPanel>
-                            <TextBlock Text="✅ Cột mong đợi" 
-                                       FontWeight="Bold"
-                                       Foreground="{DynamicResource SecondaryHueMidBrush}"
-                                       Margin="0,0,0,10"/>
-                            <ItemsControl ItemsSource="{Binding ExpectedColumns}">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
-                                        <TextBlock Text="{Binding}" 
-                                                   Margin="5,2"
-                                                   Style="{StaticResource MaterialDesignCaptionTextBlock}"/>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                        </StackPanel>
-                    </materialDesign:Card>
-                </Grid>
-
-                <!-- Warning Message -->
+                <!-- Expected Columns -->
                 <materialDesign:Card Padding="15" 
-                                     Margin="0,15,0,0"
-                                     Background="{DynamicResource ValidationErrorBrush}">
+                                    Margin="0,0,0,10"
+                                    Background="{DynamicResource SecondaryHueMidBrush}">
                     <StackPanel>
-                        <TextBlock Text="⚠️ Cảnh báo" 
-                                   FontWeight="Bold"
-                                   Foreground="White"
-                                   Margin="0,0,0,5"/>
-                        <TextBlock TextWrapping="Wrap" 
-                                   Foreground="White"
-                                   Style="{StaticResource MaterialDesignBody2TextBlock}">
-                            <Run Text="• Refactor sẽ thay đổi cấu trúc cột trong table"/>
-                            <LineBreak/>
-                            <Run Text="• Dữ liệu hiện có có thể bị ảnh hưởng"/>
-                            <LineBreak/>
-                            <Run Text="• Hãy backup file trước khi thực hiện"/>
-                        </TextBlock>
+                        <TextBlock Text="✅ Expected Columns (Employee Format)" 
+                                  FontWeight="Bold"
+                                  Foreground="White"
+                                  Margin="0,0,0,10"/>
+                        <ItemsControl ItemsSource="{Binding ExpectedColumns}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <materialDesign:Chip Content="{Binding}"
+                                                        Margin="5,2"
+                                                        Background="White"
+                                                        Foreground="{DynamicResource SecondaryHueMidBrush}"/>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <WrapPanel/>
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                        </ItemsControl>
+                    </StackPanel>
+                </materialDesign:Card>
+
+                <!-- Warning -->
+                <materialDesign:Card Padding="15" 
+                                    Background="{DynamicResource MaterialDesignLightBackground}"
+                                    BorderBrush="{DynamicResource PrimaryHueMidBrush}"
+                                    BorderThickness="1">
+                    <StackPanel Orientation="Horizontal">
+                        <materialDesign:PackIcon Kind="Warning" 
+                                               Foreground="{DynamicResource PrimaryHueMidBrush}"
+                                               VerticalAlignment="Center"
+                                               Margin="0,0,10,0"/>
+                        <TextBlock Text="Refactoring will restructure the table to match Employee format. Existing data may be lost." 
+                                  TextWrapping="Wrap"
+                                  VerticalAlignment="Center"
+                                  Foreground="{DynamicResource MaterialDesignBody}"/>
                     </StackPanel>
                 </materialDesign:Card>
 
@@ -137,21 +113,20 @@
         </ScrollViewer>
 
         <!-- Footer -->
-        <Border Grid.Row="2" 
-                Background="{DynamicResource MaterialDesignCardBackground}"
-                Padding="20"
-                BorderBrush="{DynamicResource MaterialDesignDivider}"
-                BorderThickness="0,1,0,0">
-            <StackPanel Orientation="Horizontal" 
-                        HorizontalAlignment="Right">
-                <Button Content="❌ ĐÓNG" 
-                        Command="{Binding CloseCommand}"
-                        Margin="0,0,15,0"
-                        Style="{StaticResource MaterialDesignOutlinedButton}"/>
-                <Button Content="🔧 REFACTOR CỘT" 
-                        Command="{Binding RefactorCommand}"
-                        Style="{StaticResource MaterialDesignRaisedButton}"/>
-            </StackPanel>
-        </Border>
+        <StackPanel Grid.Row="2" 
+                    Orientation="Horizontal" 
+                    HorizontalAlignment="Right" 
+                    Margin="10,5,10,10">
+            
+            <Button Content="❌ CANCEL" 
+                    Command="{Binding CancelCommand}"
+                    Margin="0,0,10,0"
+                    Style="{StaticResource MaterialDesignOutlinedButton}"/>
+            
+            <Button Content="🔧 REFACTOR COLUMNS" 
+                    Command="{Binding RefactorCommand}"
+                    Style="{StaticResource MaterialDesignRaisedButton}"/>
+        </StackPanel>
+
     </Grid>
 </Window>

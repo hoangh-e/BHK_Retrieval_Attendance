@@ -359,10 +359,8 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels.Dialogs
 
         partial void OnSelectedTableChanged(string value)
         {
-            if (!string.IsNullOrWhiteSpace(value))
-            {
-                _ = UpdateTableInfoAsync();
-            }
+            // Always call UpdateTableInfoAsync to handle both selection and deselection
+            _ = UpdateTableInfoAsync();
         }
 
         partial void OnFilePathChanged(string value)
