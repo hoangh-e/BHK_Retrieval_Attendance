@@ -125,20 +125,14 @@
                         <!-- DIN -->
                         <DataGridTextColumn Header="DIN" 
                                           Binding="{Binding DIN}"
-                                          Width="150"
+                                          Width="200"
                                           FontWeight="Bold"/>
                         
-                        <!-- Họ tên -->
+                        <!-- Họ tên - Always "(Xem chi tiết)" -->
                         <DataGridTextColumn Header="Họ và tên" 
                                           Binding="{Binding UserName}"
                                           Width="*"
                                           MinWidth="200"/>
-                        
-                        <!-- Phòng ban -->
-                        <DataGridTextColumn Header="Phòng ban" 
-                                          Binding="{Binding Department}"
-                                          Width="200"
-                                          MinWidth="150"/>
                         
                         <!-- Hành động -->
                         <DataGridTemplateColumn Header="Hành động" Width="120">

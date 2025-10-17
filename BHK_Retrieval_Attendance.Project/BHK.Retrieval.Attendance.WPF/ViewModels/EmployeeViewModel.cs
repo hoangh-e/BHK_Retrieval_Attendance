@@ -34,6 +34,10 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
         private bool _isLoading;
         private string _searchKeyword = string.Empty;
         private string _loadingMessage = "Đang tải dữ liệu...";
+        
+        private List<EmployeeDto> _allBasicUsers = []; // Store all basic users for search
+        private List<EmployeeDto> _filteredUsers = []; // Store filtered users for pagination
+        private bool _isSearchMode = false; // Flag to track if in search mode
 
         private const int PAGE_SIZE = 10;
 
@@ -227,20 +231,38 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
                 IsLoading = true;
                 _logger.LogInformation($"Loading employees page {CurrentPage}");
 
-                // ✅ Lấy thông tin cơ bản từ thiết bị (NHANH - không có enrollment data)
-                var allUsers = await _deviceService.GetBasicUsersAsync();
-
-                if (allUsers == null || !allUsers.Any())
+                List<EmployeeDto> sourceUsers;
+                
+                // Use filtered users if in search mode, otherwise fetch all
+                if (_isSearchMode && _filteredUsers.Any())
                 {
-                    _logger.LogWarning("No employees found in device");
-                    Employees.Clear();
-                    TotalEmployees = 0;
-                    TotalPages = 0;
-                    return;
+                    sourceUsers = _filteredUsers;
+                }
+                else
+                {
+                    // ✅ Lấy thông tin cơ bản từ thiết bị (NHANH - không có enrollment data)
+                    var allUsers = await _deviceService.GetBasicUsersAsync();
+
+                    if (allUsers == null || !allUsers.Any())
+                    {
+                        _logger.LogWarning("No employees found in device");
+                        Employees.Clear();
+                        TotalEmployees = 0;
+                        TotalPages = 0;
+                        _allBasicUsers.Clear();
+                        _filteredUsers.Clear();
+                        _isSearchMode = false;
+                        return;
+                    }
+
+                    // Store all basic users for search functionality
+                    _allBasicUsers = allUsers.ToList();
+                    sourceUsers = _allBasicUsers;
+                    _isSearchMode = false;
                 }
 
                 // Tính toán phân trang
-                TotalEmployees = allUsers.Count;
+                TotalEmployees = sourceUsers.Count;
                 TotalPages = (int)Math.Ceiling(TotalEmployees / (double)PAGE_SIZE);
 
                 // Đảm bảo CurrentPage hợp lệ
@@ -250,7 +272,7 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
                     CurrentPage = 1;
 
                 // Lấy nhân viên cho trang hiện tại
-                var pageUsers = allUsers
+                var pageUsers = sourceUsers
                     .Skip((CurrentPage - 1) * PAGE_SIZE)
                     .Take(PAGE_SIZE)
                     .ToList();
@@ -265,8 +287,8 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
                     {
                         Index = startIndex + i + 1,  // STT bắt đầu từ 1
                         DIN = user.DIN.ToString(),
-                        UserName = user.UserName ?? "N/A",
-                        Department = GetDepartmentName(user.DeptId)
+                        UserName = "(Xem chi tiết)", // Always show this text
+                        Department = string.Empty // Remove department column
                     });
                 }
 
@@ -352,6 +374,10 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
         /// </summary>
         private async Task RefreshAsync()
         {
+            // Reset search mode
+            _isSearchMode = false;
+            _filteredUsers.Clear();
+            SearchKeyword = string.Empty;
             CurrentPage = 1;
             SelectedEmployee = null;
             await LoadEmployeesAsync();
@@ -364,7 +390,17 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
         {
             if (string.IsNullOrWhiteSpace(SearchKeyword))
             {
+                // Reset search mode and reload all
+                _isSearchMode = false;
+                _filteredUsers.Clear();
+                CurrentPage = 1;
                 await LoadEmployeesAsync();
+                
+                // Cập nhật UI properties sau khi load lại toàn bộ
+                OnPropertyChanged(nameof(CurrentPageDisplay));
+                OnPropertyChanged(nameof(TotalEmployeesDisplay));
+                OnPropertyChanged(nameof(CanGoPrevious));
+                OnPropertyChanged(nameof(CanGoNext));
                 return;
             }
 
@@ -373,19 +409,26 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
                 IsLoading = true;
                 _logger.LogInformation($"Searching employees with keyword: {SearchKeyword}");
 
-                // Lấy tất cả nhân viên và lọc theo ID (DIN)
-                var allUsers = await _deviceService.GetAllUsersAsync();
-                var filteredUsers = allUsers.Where(u =>
+                // ✅ Lấy tất cả basic users (nếu chưa có)
+                if (_allBasicUsers == null || !_allBasicUsers.Any())
+                {
+                    var allUsers = await _deviceService.GetBasicUsersAsync();
+                    _allBasicUsers = allUsers?.ToList() ?? [];
+                }
+
+                // ✅ Lọc theo ID (DIN) - chỉ dùng basic data
+                _filteredUsers = _allBasicUsers.Where(u =>
                     u.DIN.ToString().Contains(SearchKeyword)
                 ).ToList();
 
-                // Cập nhật phân trang
-                TotalEmployees = filteredUsers.Count;
-                TotalPages = (int)Math.Ceiling(TotalEmployees / (double)PAGE_SIZE);
+                // Enable search mode and update pagination
+                _isSearchMode = true;
+                TotalEmployees = _filteredUsers.Count;
+                TotalPages = TotalEmployees > 0 ? (int)Math.Ceiling(TotalEmployees / (double)PAGE_SIZE) : 1;
                 CurrentPage = 1;
 
                 // Hiển thị kết quả trang đầu với Index (STT)
-                var pageUsers = filteredUsers.Take(PAGE_SIZE).ToList();
+                var pageUsers = _filteredUsers.Take(PAGE_SIZE).ToList();
                 
                 Employees.Clear();
                 for (int i = 0; i < pageUsers.Count; i++)
@@ -395,10 +438,16 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
                     {
                         Index = i + 1,  // STT bắt đầu từ 1
                         DIN = user.DIN.ToString(),
-                        UserName = user.UserName ?? "N/A",
-                        Department = GetDepartmentName(user.DeptId)
+                        UserName = "(Xem chi tiết)", // Always show this text
+                        Department = string.Empty // Remove department column
                     });
                 }
+                
+                // Update pagination display
+                OnPropertyChanged(nameof(CurrentPageDisplay));
+                OnPropertyChanged(nameof(TotalEmployeesDisplay));
+                OnPropertyChanged(nameof(CanGoPrevious));
+                OnPropertyChanged(nameof(CanGoNext));
 
                 _logger.LogInformation($"Found {TotalEmployees} employees matching keyword: {SearchKeyword}");
             }
@@ -472,16 +521,13 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
                             {
                                 results.Add(new EmployeeExportDto
                                 {
-                                    ID = detailedUser.DIN.ToString(),
+                                    DIN = detailedUser.DIN.ToString(),
                                     Name = detailedUser.UserName ?? "N/A",
-                                    IDNumber = detailedUser.IDNumber ?? "",
-                                    Department = detailedUser.DeptId ?? "",
                                     Sex = detailedUser.Sex == 1 ? "Female" : "Male", 
                                     Birthday = detailedUser.Birthday != DateTime.MinValue ? detailedUser.Birthday.ToString("yyyy-MM-dd") : "",
                                     Created = DateTime.Now.ToString("yyyy-MM-dd"),
                                     Status = detailedUser.Enable ? "Active" : "Inactive",
-                                    Comment = detailedUser.Comment ?? "",
-                                    EnrollmentCount = detailedUser.Enrollments?.Count ?? 0
+                                    Comment = detailedUser.Comment ?? ""
                                 });
                                 
                                 _logger.LogDebug($"Successfully fetched detailed data for employee DIN: {basicUser.DIN}");
@@ -492,16 +538,13 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
                                 // ✅ Thêm với thông tin cơ bản nếu không lấy được chi tiết
                                 results.Add(new EmployeeExportDto
                                 {
-                                    ID = basicUser.DIN.ToString(),
+                                    DIN = basicUser.DIN.ToString(),
                                     Name = basicUser.UserName ?? "N/A",
-                                    IDNumber = basicUser.IDNumber ?? "",
-                                    Department = basicUser.DeptId ?? "",
                                     Sex = basicUser.Sex == 1 ? "Female" : "Male", 
                                     Birthday = basicUser.Birthday != DateTime.MinValue ? basicUser.Birthday.ToString("yyyy-MM-dd") : "",
                                     Created = DateTime.Now.ToString("yyyy-MM-dd"),
                                     Status = basicUser.Enable ? "Active" : "Inactive",
-                                    Comment = basicUser.Comment ?? "",
-                                    EnrollmentCount = 0 // Không có thông tin chi tiết
+                                    Comment = basicUser.Comment ?? ""
                                 });
                             }
                         }
@@ -511,16 +554,13 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
                             // ✅ Thêm với thông tin cơ bản nếu có lỗi
                             results.Add(new EmployeeExportDto
                             {
-                                ID = basicUser.DIN.ToString(),
+                                DIN = basicUser.DIN.ToString(),
                                 Name = basicUser.UserName ?? "N/A",
-                                IDNumber = basicUser.IDNumber ?? "",
-                                Department = basicUser.DeptId ?? "",
                                 Sex = basicUser.Sex == 1 ? "Female" : "Male", 
                                 Birthday = basicUser.Birthday != DateTime.MinValue ? basicUser.Birthday.ToString("yyyy-MM-dd") : "",
                                 Created = DateTime.Now.ToString("yyyy-MM-dd"),
                                 Status = basicUser.Enable ? "Active" : "Inactive",
-                                Comment = basicUser.Comment ?? "",
-                                EnrollmentCount = 0 // Lỗi khi fetch chi tiết
+                                Comment = basicUser.Comment ?? ""
                             });
                         }
 

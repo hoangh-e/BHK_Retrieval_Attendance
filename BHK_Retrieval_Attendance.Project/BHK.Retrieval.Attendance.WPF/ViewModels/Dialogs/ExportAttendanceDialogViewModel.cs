@@ -27,6 +27,10 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels.Dialogs
         private readonly ILogger<ExportAttendanceDialogViewModel> _logger;
         private List<AttendanceExportDto> _data;
         private Window? _dialog;
+        
+        // ✅ Thông tin date filter để tạo filename động
+        private DateTime? _filterStartDate;
+        private DateTime? _filterEndDate;
 
         #region Properties
 
@@ -97,8 +101,8 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels.Dialogs
             TableName = _pathConfig.GetAttendanceTableName();
             SelectedFileType = "xlsx";
             
-            // ✅ Thiết lập cột mặc định cho attendance
-            ColumnList = "ID, Date, Time, Verify";
+            // ✅ Thiết lập cột mặc định cho attendance (6 cột: DeviceNumber, DIN, Date, Time, Verify, Action)
+            ColumnList = "DeviceNumber, DIN, Date, Time, Verify, Action";
             
             UpdateGeneratedFileName();
             _ = LoadInitialDataAsync();
@@ -114,6 +118,17 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels.Dialogs
         public void SetData(List<AttendanceExportDto> data)
         {
             _data = data ?? new List<AttendanceExportDto>();
+            AttendanceCount = _data.Count; // ✅ Cập nhật số lượng record
+        }
+
+        /// <summary>
+        /// Set date filter để tạo filename động theo ngày filter
+        /// </summary>
+        public void SetDateFilter(DateTime? startDate, DateTime? endDate)
+        {
+            _filterStartDate = startDate;
+            _filterEndDate = endDate;
+            UpdateGeneratedFileName();
         }
 
         #endregion
@@ -392,9 +407,31 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels.Dialogs
                 return;
             }
 
-            var timestamp = DateTime.Now.ToString("yyyy-MM-dd_HHmmss");
-            // SelectedFileType hiện tại chỉ là string (xlsx, json, xls, csv)
-            GeneratedFileName = $"attendance_{timestamp}.{SelectedFileType}";
+            // ✅ Tạo filename động dựa trên date filter
+            string dateString;
+            if (_filterStartDate.HasValue && _filterEndDate.HasValue)
+            {
+                var startDate = _filterStartDate.Value.Date;
+                var endDate = _filterEndDate.Value.Date;
+                
+                // Nếu cùng ngày → attendance_2025-10-17.xlsx
+                if (startDate == endDate)
+                {
+                    dateString = startDate.ToString("yyyy-MM-dd");
+                }
+                // Nếu khác ngày → attendance_2025-10-17_2025-10-19.xlsx
+                else
+                {
+                    dateString = $"{startDate:yyyy-MM-dd}_{endDate:yyyy-MM-dd}";
+                }
+            }
+            else
+            {
+                // Fallback: Dùng timestamp nếu không có date filter
+                dateString = DateTime.Now.ToString("yyyy-MM-dd_HHmmss");
+            }
+            
+            GeneratedFileName = $"attendance_{dateString}.{SelectedFileType}";
         }
 
         private async Task LoadInitialDataAsync()
@@ -406,13 +443,8 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels.Dialogs
             // Cập nhật số lượng bản ghi
             AttendanceCount = _data?.Count ?? 0;
 
-            // Cập nhật thông tin cột (giả sử từ AttendanceExportDto)
-            var columns = new List<string>
-            {
-                "EmployeeId", "EmployeeName", "Department", 
-                "Date", "TimeIn", "TimeOut", "Status"
-            };
-            ColumnList = string.Join(", ", columns);
+            // ✅ Cột đã được set trong constructor, không cần override ở đây
+            // ColumnList đã = "DeviceNumber, DIN, Date, Time, Verify, Action"
 
             // Cập nhật tên file
             UpdateGeneratedFileName();

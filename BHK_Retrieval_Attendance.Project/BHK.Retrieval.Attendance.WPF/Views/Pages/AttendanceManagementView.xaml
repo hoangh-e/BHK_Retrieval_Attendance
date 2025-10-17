@@ -33,122 +33,99 @@
                    Style="{StaticResource MaterialDesignHeadline4TextBlock}"
                    Margin="0,0,0,20"/>
 
-        <!-- Filter Panel -->
-        <materialDesign:Card Grid.Row="1" Padding="20" Margin="0,0,0,20">
-            <StackPanel>
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="2*"/>
-                        <ColumnDefinition Width="*"/>
-                    </Grid.ColumnDefinitions>
+        <!-- Filter Panel - Responsive Design -->
+        <materialDesign:Card Grid.Row="1" Padding="15" Margin="0,0,0,15">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
 
-                    <!-- Left: Date Filter Options -->
-                    <StackPanel Grid.Column="0" Margin="0,0,20,0">
-                        <TextBlock Text="Lọc theo ngày" 
-                                  Style="{StaticResource MaterialDesignHeadline6TextBlock}"
-                                  Margin="0,0,0,15"/>
-                        
-                        <!-- Option 1: Predefined Range -->
-                        <RadioButton Content="Chọn khoảng thời gian có sẵn"
-                                   IsChecked="{Binding SelectedFilterType, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=PredefinedRange}"
-                                   Margin="0,0,0,10"/>
-                        
-                        <ComboBox materialDesign:HintAssist.Hint="Chọn khoảng thời gian"
-                                Style="{StaticResource MaterialDesignOutlinedComboBox}"
-                                ItemsSource="{Binding PredefinedDateRanges}"
-                                DisplayMemberPath="Display"
-                                SelectedItem="{Binding SelectedPredefinedRangeItem}"
-                                IsEnabled="{Binding SelectedFilterType, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=PredefinedRange}"
-                                Margin="20,0,0,15"/>
+                <!-- Row 1: Filter Type Selection -->
+                <WrapPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,10">
+                    <RadioButton Content="Khoảng có sẵn"
+                               IsChecked="{Binding SelectedFilterType, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=PredefinedRange}"
+                               Margin="0,0,15,5" VerticalAlignment="Center"/>
+                    
+                    <RadioButton Content="Ngày cụ thể"
+                               IsChecked="{Binding SelectedFilterType, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=SingleDate}"
+                               Margin="0,0,15,5" VerticalAlignment="Center"/>
+                    
+                    <RadioButton Content="Khoảng tùy chỉnh"
+                               IsChecked="{Binding SelectedFilterType, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=DateRange}"
+                               Margin="0,0,0,5" VerticalAlignment="Center"/>
+                </WrapPanel>
 
-                        <!-- Option 2: Single Date -->
-                        <RadioButton Content="Chọn ngày cụ thể"
-                                   IsChecked="{Binding SelectedFilterType, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=SingleDate}"
-                                   Margin="0,0,0,10"/>
-                        
-                        <DatePicker materialDesign:HintAssist.Hint="Chọn ngày"
-                                  Style="{StaticResource MaterialDesignOutlinedDatePicker}"
-                                  SelectedDate="{Binding SingleDate}"
-                                  IsEnabled="{Binding SelectedFilterType, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=SingleDate}"
-                                  Margin="20,0,0,15"/>
+                <!-- Row 2: Date/Time Filters & Actions -->
+                <WrapPanel Grid.Row="1" Orientation="Horizontal">
+                    <!-- Predefined Range Combo -->
+                    <ComboBox materialDesign:HintAssist.Hint="Chọn khoảng thời gian"
+                            Style="{StaticResource MaterialDesignOutlinedComboBox}"
+                            ItemsSource="{Binding PredefinedDateRanges}"
+                            DisplayMemberPath="Display"
+                            SelectedItem="{Binding SelectedPredefinedRangeItem}"
+                            IsEnabled="{Binding SelectedFilterType, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=PredefinedRange}"
+                            MinWidth="180" MaxWidth="250" Margin="0,0,10,5"/>
 
-                        <!-- Option 3: Date Range -->
-                        <RadioButton Content="Chọn khoảng ngày tùy chỉnh"
-                                   IsChecked="{Binding SelectedFilterType, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=DateRange}"
-                                   Margin="0,0,0,10"/>
-                        
-                        <StackPanel Orientation="Horizontal" 
-                                  IsEnabled="{Binding SelectedFilterType, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=DateRange}"
-                                  Margin="20,0,0,0">
-                            <DatePicker materialDesign:HintAssist.Hint="Từ ngày"
-                                      Style="{StaticResource MaterialDesignOutlinedDatePicker}"
-                                      SelectedDate="{Binding StartDate}"
-                                      Width="200" Margin="0,0,15,0"/>
-                            
-                            <DatePicker materialDesign:HintAssist.Hint="Đến ngày"
-                                      Style="{StaticResource MaterialDesignOutlinedDatePicker}"
-                                      SelectedDate="{Binding EndDate}"
-                                      Width="200"/>
-                        </StackPanel>
-                    </StackPanel>
+                    <!-- Single Date Picker -->
+                    <DatePicker materialDesign:HintAssist.Hint="Chọn ngày"
+                              Style="{StaticResource MaterialDesignOutlinedDatePicker}"
+                              SelectedDate="{Binding SingleDate}"
+                              IsEnabled="{Binding SelectedFilterType, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=SingleDate}"
+                              MinWidth="180" MaxWidth="250" Margin="0,0,10,5"/>
 
-                    <!-- Right: Time Filter & Actions -->
-                    <StackPanel Grid.Column="1">
-                        <TextBlock Text="Lọc theo giờ"
-                                 Style="{StaticResource MaterialDesignHeadline6TextBlock}"
-                                 Margin="0,0,0,15"/>
-                        
-                        <ComboBox materialDesign:HintAssist.Hint="Chọn khung giờ"
-                                Style="{StaticResource MaterialDesignOutlinedComboBox}"
-                                ItemsSource="{Binding TimeFilters}"
-                                DisplayMemberPath="Display"
-                                SelectedItem="{Binding SelectedTimeFilterItem}"
-                                Margin="0,0,0,20"/>
-                    </StackPanel>
-                </Grid>
+                    <!-- Date Range: From -->
+                    <DatePicker materialDesign:HintAssist.Hint="Từ ngày"
+                              Style="{StaticResource MaterialDesignOutlinedDatePicker}"
+                              SelectedDate="{Binding StartDate}"
+                              IsEnabled="{Binding SelectedFilterType, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=DateRange}"
+                              MinWidth="140" MaxWidth="180" Margin="0,0,10,5"/>
+                    
+                    <!-- Date Range: To -->
+                    <DatePicker materialDesign:HintAssist.Hint="Đến ngày"
+                              Style="{StaticResource MaterialDesignOutlinedDatePicker}"
+                              SelectedDate="{Binding EndDate}"
+                              IsEnabled="{Binding SelectedFilterType, Converter={StaticResource EnumToBooleanConverter}, ConverterParameter=DateRange}"
+                              MinWidth="140" MaxWidth="180" Margin="0,0,15,5"/>
 
-                <!-- Action Buttons - Moved below for better visibility -->
-                <Separator Margin="0,10,0,10"/>
-                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                    <!-- Nút Lọc - Load dữ liệu theo điều kiện -->
+                    <!-- Time Filter -->
+                    <ComboBox materialDesign:HintAssist.Hint="Giờ"
+                            Style="{StaticResource MaterialDesignOutlinedComboBox}"
+                            ItemsSource="{Binding TimeFilters}"
+                            DisplayMemberPath="Display"
+                            SelectedItem="{Binding SelectedTimeFilterItem}"
+                            MinWidth="120" MaxWidth="150" Margin="0,0,15,5"/>
+
+                    <!-- Action Buttons -->
                     <Button Style="{StaticResource MaterialDesignRaisedButton}"
                           Command="{Binding LoadDataCommand}"
-                          Margin="0,0,10,0"
-                          Height="36"
+                          Margin="0,0,8,5"
+                          Height="32" Padding="12,0"
                           materialDesign:ButtonProgressAssist.IsIndicatorVisible="{Binding IsLoading}"
                           materialDesign:ButtonProgressAssist.IsIndeterminate="True">
-                        <Button.Content>
-                            <StackPanel Orientation="Horizontal">
-                                <materialDesign:PackIcon Kind="Filter" VerticalAlignment="Center" Margin="0,0,5,0"/>
-                                <TextBlock Text="Lọc" VerticalAlignment="Center"/>
-                            </StackPanel>
-                        </Button.Content>
+                        <StackPanel Orientation="Horizontal">
+                            <materialDesign:PackIcon Kind="Filter" Width="16" Height="16" VerticalAlignment="Center" Margin="0,0,4,0"/>
+                            <TextBlock Text="Lọc" VerticalAlignment="Center" FontSize="13"/>
+                        </StackPanel>
                     </Button>
                     
                     <Button Style="{StaticResource MaterialDesignOutlinedButton}"
                           Command="{Binding RefreshCommand}"
-                          Margin="0,0,10,0"
-                          Height="36">
-                        <Button.Content>
-                            <StackPanel Orientation="Horizontal">
-                                <materialDesign:PackIcon Kind="Refresh" VerticalAlignment="Center" Margin="0,0,5,0"/>
-                                <TextBlock Text="Làm mới" VerticalAlignment="Center"/>
-                            </StackPanel>
-                        </Button.Content>
+                          Margin="0,0,8,5"
+                          Height="32" Padding="10,0"
+                          ToolTip="Làm mới">
+                        <materialDesign:PackIcon Kind="Refresh" Width="16" Height="16"/>
                     </Button>
 
                     <Button Style="{StaticResource MaterialDesignOutlinedButton}"
                           Command="{Binding OpenExportDialogCommand}"
-                          Height="36">
-                        <Button.Content>
-                            <StackPanel Orientation="Horizontal">
-                                <materialDesign:PackIcon Kind="FileExport" VerticalAlignment="Center" Margin="0,0,5,0"/>
-                                <TextBlock Text="Xuất file" VerticalAlignment="Center"/>
-                            </StackPanel>
-                        </Button.Content>
+                          Height="32" Padding="10,0"
+                          Margin="0,0,0,5"
+                          ToolTip="Xuất file">
+                        <materialDesign:PackIcon Kind="FileExport" Width="16" Height="16"/>
                     </Button>
-                </StackPanel>
-            </StackPanel>
+                </WrapPanel>
+            </Grid>
         </materialDesign:Card>
 
         <!-- Data Grid with proper scrolling -->
@@ -178,13 +155,13 @@
                         Visibility="{Binding IsLoading, Converter={StaticResource InverseBoolToVisConverter}}">
                     
                     <DataGrid.Columns>
-                        <!-- Hiển thị 8 cột: DN, DIN, Ngày, Giờ, Loại, Phương thức, Hành động, Ghi chú -->
-                        <DataGridTextColumn Header="DN" Binding="{Binding DN}" Width="80" MinWidth="60"/>
+                        <!-- Thứ tự cột: STT, DIN, Ngày, Giờ, Loại, Thiết bị (DN), Hành động, Ghi chú -->
+                        <DataGridTextColumn Header="STT" Binding="{Binding Index}" Width="60" MinWidth="50"/>
                         <DataGridTextColumn Header="DIN" Binding="{Binding DIN}" Width="120" MinWidth="100"/>
                         <DataGridTextColumn Header="Ngày" Binding="{Binding Date}" Width="130" MinWidth="120"/>
                         <DataGridTextColumn Header="Giờ" Binding="{Binding Time}" Width="110" MinWidth="100"/>
                         <DataGridTextColumn Header="Loại" Binding="{Binding Type}" Width="120" MinWidth="100"/>
-                        <DataGridTextColumn Header="Phương thức" Binding="{Binding Verify}" Width="110" MinWidth="90"/>
+                        <DataGridTextColumn Header="Thiết bị" Binding="{Binding DN}" Width="90" MinWidth="70"/>
                         <DataGridTextColumn Header="Hành động" Binding="{Binding Action}" Width="100" MinWidth="90"/>
                         <DataGridTextColumn Header="Ghi chú" Binding="{Binding Remark}" Width="*" MinWidth="120"/>
                     </DataGrid.Columns>
@@ -192,20 +169,77 @@
             </Grid>
         </materialDesign:Card>
 
-        <!-- Footer: Statistics with Load Time -->
-        <StackPanel Grid.Row="3" Orientation="Horizontal" Margin="0,15,0,0" FlowDirection="LeftToRight">
-            <TextBlock Text="Tổng số bản ghi: " 
-                     Style="{StaticResource MaterialDesignBody1TextBlock}"/>
-            <TextBlock Text="{Binding TotalRecords}" 
-                     Style="{StaticResource MaterialDesignBody1TextBlock}"
-                     FontWeight="Bold"
-                     Margin="0,0,20,0"/>
-            <TextBlock Style="{StaticResource MaterialDesignBody1TextBlock}">
-                <Run Text="(Thời gian: "/>
-                <Run Text="{Binding LoadTimeMs, Mode=OneWay}" FontWeight="Bold"/>
-                <Run Text="ms)"/>
-            </TextBlock>
-        </StackPanel>
+        <!-- Pagination -->
+        <Grid Grid.Row="3" Margin="0,15,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Left: Statistics with Load Time -->
+            <StackPanel Grid.Column="0" VerticalAlignment="Center">
+                <!-- Total Records -->
+                <TextBlock Text="{Binding TotalRecordsDisplay}"
+                         FontWeight="Bold"
+                         Foreground="{DynamicResource PrimaryHueMidBrush}"
+                         Margin="0,0,0,4"/>
+                
+                <!-- Load Time -->
+                <TextBlock Text="{Binding LoadTimeDisplay}"
+                         FontSize="12"
+                         Foreground="{DynamicResource MaterialDesignBodyLight}"/>
+            </StackPanel>
+
+            <!-- Right: Pagination Buttons -->
+            <StackPanel Grid.Column="2" Orientation="Horizontal">
+                <!-- First Page -->
+                <Button Style="{StaticResource MaterialDesignIconButton}"
+                       Command="{Binding FirstPageCommand}"
+                       ToolTip="Trang đầu"
+                       Width="32" Height="32"
+                       Margin="0,0,4,0">
+                    <materialDesign:PackIcon Kind="PageFirst" Width="20" Height="20"/>
+                </Button>
+
+                <!-- Previous Page -->
+                <Button Style="{StaticResource MaterialDesignIconButton}"
+                       Command="{Binding PreviousPageCommand}"
+                       ToolTip="Trang trước"
+                       Width="32" Height="32"
+                       Margin="0,0,4,0">
+                    <materialDesign:PackIcon Kind="ChevronLeft" Width="20" Height="20"/>
+                </Button>
+
+                <!-- Page Info -->
+                <Border Background="{DynamicResource PrimaryHueLightBrush}"
+                       CornerRadius="4"
+                       Padding="12,6"
+                       Margin="0,0,4,0">
+                    <TextBlock Text="{Binding CurrentPageDisplay}"
+                             FontWeight="Bold"
+                             Foreground="White"
+                             VerticalAlignment="Center"/>
+                </Border>
+
+                <!-- Next Page -->
+                <Button Style="{StaticResource MaterialDesignIconButton}"
+                       Command="{Binding NextPageCommand}"
+                       ToolTip="Trang sau"
+                       Width="32" Height="32"
+                       Margin="0,0,4,0">
+                    <materialDesign:PackIcon Kind="ChevronRight" Width="20" Height="20"/>
+                </Button>
+
+                <!-- Last Page -->
+                <Button Style="{StaticResource MaterialDesignIconButton}"
+                       Command="{Binding LastPageCommand}"
+                       ToolTip="Trang cuối"
+                       Width="32" Height="32">
+                    <materialDesign:PackIcon Kind="PageLast" Width="20" Height="20"/>
+                </Button>
+            </StackPanel>
+        </Grid>
         </Grid>
     </ScrollViewer>
 </UserControl>

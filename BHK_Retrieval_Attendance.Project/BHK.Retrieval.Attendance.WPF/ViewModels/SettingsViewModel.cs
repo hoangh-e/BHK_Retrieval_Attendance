@@ -115,14 +115,14 @@ public partial class SettingsViewModel : ObservableObject
 
     private async Task TestExportAttendanceAsync()
     {
-        // ✅ Tạo 5 dữ liệu TEST
+        // ✅ Tạo 5 dữ liệu TEST với 6 cột (DeviceNumber, DIN, Date, Time, Verify, Action)
         var testData = new List<AttendanceExportDto>
         {
-            new() { ID = "001", Date = "2025-10-15", Time = "08:00", Verify = "FP" },
-            new() { ID = "002", Date = "2025-10-15", Time = "08:15", Verify = "Card" },
-            new() { ID = "003", Date = "2025-10-15", Time = "08:30", Verify = "Password" },
-            new() { ID = "004", Date = "2025-10-15", Time = "17:00", Verify = "FP" },
-            new() { ID = "005", Date = "2025-10-15", Time = "17:15", Verify = "Card" }
+            new() { DeviceNumber = "Device01", DIN = "001", Date = "2025-10-15", Time = "08:00", Verify = "FP", Action = "Check-in" },
+            new() { DeviceNumber = "Device01", DIN = "002", Date = "2025-10-15", Time = "08:15", Verify = "Card", Action = "Check-in" },
+            new() { DeviceNumber = "Device02", DIN = "003", Date = "2025-10-15", Time = "08:30", Verify = "Password", Action = "Check-in" },
+            new() { DeviceNumber = "Device02", DIN = "004", Date = "2025-10-15", Time = "17:00", Verify = "FP", Action = "Check-out" },
+            new() { DeviceNumber = "Device01", DIN = "005", Date = "2025-10-15", Time = "17:15", Verify = "Card", Action = "Check-out" }
         };
 
         var dialog = new ExportAttendanceDialog();
@@ -137,68 +137,53 @@ public partial class SettingsViewModel : ObservableObject
 
     private async Task TestExportEmployeeAsync()
     {
-        // ✅ Tạo 5 dữ liệu TEST với thông tin chi tiết
+        // ✅ Tạo 5 dữ liệu TEST với thông tin chi tiết (7 cột)
         var testData = new List<EmployeeExportDto>
         {
             new() { 
-                ID = "E001", 
+                DIN = "E001", 
                 Name = "Nguyễn Văn A", 
-                IDNumber = "NV001",
-                Department = "IT",
                 Sex = "Male",
                 Birthday = "1990-01-01",
                 Created = "2025-01-01", 
                 Status = "Active",
-                Comment = "Test Employee 1",
-                EnrollmentCount = 3
+                Comment = "Test Employee 1"
             },
             new() { 
-                ID = "E002", 
+                DIN = "E002", 
                 Name = "Trần Thị B", 
-                IDNumber = "NV002",
-                Department = "HR", 
                 Sex = "Female",
                 Birthday = "1992-05-15",
                 Created = "2025-01-02", 
                 Status = "Active",
-                Comment = "Test Employee 2",
-                EnrollmentCount = 2
+                Comment = "Test Employee 2"
             },
             new() { 
-                ID = "E003", 
+                DIN = "E003", 
                 Name = "Lê Văn C", 
-                IDNumber = "NV003",
-                Department = "Finance",
                 Sex = "Male",
                 Birthday = "1988-12-10", 
                 Created = "2025-01-03", 
                 Status = "Inactive",
-                Comment = "Test Employee 3",
-                EnrollmentCount = 1
+                Comment = "Test Employee 3"
             },
             new() { 
-                ID = "E004", 
+                DIN = "E004", 
                 Name = "Phạm Thị D", 
-                IDNumber = "NV004",
-                Department = "Marketing",
                 Sex = "Female", 
                 Birthday = "1995-03-20",
                 Created = "2025-01-04", 
                 Status = "Active",
-                Comment = "Test Employee 4",
-                EnrollmentCount = 4
+                Comment = "Test Employee 4"
             },
             new() { 
-                ID = "E005", 
+                DIN = "E005", 
                 Name = "Hoàng Văn E", 
-                IDNumber = "NV005",
-                Department = "Sales",
                 Sex = "Male",
                 Birthday = "1987-08-05", 
                 Created = "2025-01-05", 
                 Status = "Active",
-                Comment = "Test Employee 5",
-                EnrollmentCount = 2
+                Comment = "Test Employee 5"
             }
         };
 

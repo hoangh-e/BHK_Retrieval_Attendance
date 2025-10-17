@@ -52,10 +52,9 @@ namespace BHK.Retrieval.Attendance.WPF.Services.Interfaces
         Task ExportEmployeeDataAsync<T>(string filePath, string tableName, List<T> data);
 
         /// <summary>
-        /// Xuất dữ liệu Employee vào table với progress callback chi tiết
+        /// Xuất dữ liệu Employee vào table với progress callback
         /// </summary>
-        Task ExportEmployeeDataAsync<T>(string filePath, string tableName, List<T> data, 
-            Action<int, int, string>? progressCallback);
+        Task ExportEmployeeDataAsync<T>(string filePath, string tableName, List<T> data, Action<int, int, string>? progressCallback);
 
         /// <summary>
         /// Lấy danh sách cột trong table

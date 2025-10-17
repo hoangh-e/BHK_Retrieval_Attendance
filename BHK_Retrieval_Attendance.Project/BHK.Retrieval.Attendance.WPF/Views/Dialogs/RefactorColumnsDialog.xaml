@@ -26,9 +26,9 @@
                           FontWeight="Bold"
                           Foreground="{DynamicResource PrimaryHueMidBrush}"
                           Margin="0,0,0,5"/>
-                <TextBlock Text="The table structure doesn't match the expected Employee format. Please review and fix the column structure." 
+                <TextBlock Text="Cấu trúc cột của table không đúng với định dạng Employee mong đợi. Vui lòng xem xét và sửa lại cấu trúc cột." 
                           TextWrapping="Wrap"
-                          Foreground="{DynamicResource MaterialDesignBodyLight}"/>
+                          Foreground="{DynamicResource MaterialDesignBody}"/>
             </StackPanel>
         </materialDesign:Card>
 
@@ -41,11 +41,12 @@
                 <!-- Current Columns -->
                 <materialDesign:Card Padding="15" 
                                     Margin="0,0,0,10"
-                                    Background="{DynamicResource ValidationErrorBrush}">
+                                    Background="#FFE57373">
                     <StackPanel>
-                        <TextBlock Text="❌ Current Columns (Invalid)" 
+                        <TextBlock Text="❌ Cột hiện tại (Không hợp lệ)" 
                                   FontWeight="Bold"
-                                  Foreground="White"
+                                  Foreground="#FF1B1B1B"
+                                  FontSize="14"
                                   Margin="0,0,0,10"/>
                         <ItemsControl ItemsSource="{Binding CurrentColumns}">
                             <ItemsControl.ItemTemplate>
@@ -53,7 +54,7 @@
                                     <materialDesign:Chip Content="{Binding}"
                                                         Margin="5,2"
                                                         Background="White"
-                                                        Foreground="{DynamicResource ValidationErrorBrush}"/>
+                                                        Foreground="#FFD32F2F"/>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                             <ItemsControl.ItemsPanel>
@@ -68,11 +69,12 @@
                 <!-- Expected Columns -->
                 <materialDesign:Card Padding="15" 
                                     Margin="0,0,0,10"
-                                    Background="{DynamicResource SecondaryHueMidBrush}">
+                                    Background="#FF81C784">
                     <StackPanel>
-                        <TextBlock Text="✅ Expected Columns (Employee Format)" 
+                        <TextBlock Text="✅ Cột mong đợi (Định dạng Employee)" 
                                   FontWeight="Bold"
-                                  Foreground="White"
+                                  Foreground="#FF1B1B1B"
+                                  FontSize="14"
                                   Margin="0,0,0,10"/>
                         <ItemsControl ItemsSource="{Binding ExpectedColumns}">
                             <ItemsControl.ItemTemplate>
@@ -80,7 +82,7 @@
                                     <materialDesign:Chip Content="{Binding}"
                                                         Margin="5,2"
                                                         Background="White"
-                                                        Foreground="{DynamicResource SecondaryHueMidBrush}"/>
+                                                        Foreground="#FF388E3C"/>
                                 </DataTemplate>
                             </ItemsControl.ItemTemplate>
                             <ItemsControl.ItemsPanel>
@@ -94,18 +96,21 @@
 
                 <!-- Warning -->
                 <materialDesign:Card Padding="15" 
-                                    Background="{DynamicResource MaterialDesignLightBackground}"
-                                    BorderBrush="{DynamicResource PrimaryHueMidBrush}"
-                                    BorderThickness="1">
+                                    Background="#FFFFF3E0"
+                                    BorderBrush="#FFFFA726"
+                                    BorderThickness="2">
                     <StackPanel Orientation="Horizontal">
                         <materialDesign:PackIcon Kind="Warning" 
-                                               Foreground="{DynamicResource PrimaryHueMidBrush}"
+                                               Foreground="#FFF57C00"
+                                               Width="24"
+                                               Height="24"
                                                VerticalAlignment="Center"
                                                Margin="0,0,10,0"/>
-                        <TextBlock Text="Refactoring will restructure the table to match Employee format. Existing data may be lost." 
+                        <TextBlock Text="Refactor sẽ tái cấu trúc table để khớp với định dạng Employee. Dữ liệu hiện có có thể bị mất." 
                                   TextWrapping="Wrap"
                                   VerticalAlignment="Center"
-                                  Foreground="{DynamicResource MaterialDesignBody}"/>
+                                  Foreground="#FF424242"
+                                  FontWeight="Medium"/>
                     </StackPanel>
                 </materialDesign:Card>
 
@@ -119,7 +124,7 @@
                     Margin="10,5,10,10">
             
             <Button Content="❌ CANCEL" 
-                    Command="{Binding CancelCommand}"
+                    Command="{Binding CloseCommand}"
                     Margin="0,0,10,0"
                     Style="{StaticResource MaterialDesignOutlinedButton}"/>
             

@@ -71,9 +71,25 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
         [ObservableProperty]
         private long _loadTimeMs;
 
+        // Pagination properties
+        [ObservableProperty]
+        private int _currentPage = 1;
+
+        [ObservableProperty]
+        private int _totalPages = 1;
+
+        private const int PAGE_SIZE = 10;
+
         // ComboBox Items Sources
         public List<ComboBoxItem<PredefinedDateRange>> PredefinedDateRanges { get; }
         public List<ComboBoxItem<TimeFilter>> TimeFilters { get; }
+
+        // Pagination display properties
+        public string CurrentPageDisplay => $"Trang {CurrentPage}/{TotalPages}";
+        public string TotalRecordsDisplay => $"Tổng số bản ghi: {TotalRecords}";
+        public string LoadTimeDisplay => $"Thời gian: {LoadTimeMs}ms";
+        public bool CanGoPrevious => CurrentPage > 1;
+        public bool CanGoNext => CurrentPage < TotalPages;
 
         #endregion
 
@@ -83,6 +99,12 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
         public IAsyncRelayCommand RefreshCommand { get; }
         public IAsyncRelayCommand OpenExportDialogCommand { get; }
         public IRelayCommand<string> ApplyFilterCommand { get; }
+        
+        // Pagination commands
+        public IRelayCommand FirstPageCommand { get; }
+        public IRelayCommand PreviousPageCommand { get; }
+        public IRelayCommand NextPageCommand { get; }
+        public IRelayCommand LastPageCommand { get; }
 
         #endregion
 
@@ -112,12 +134,20 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
             RefreshCommand = new AsyncRelayCommand(RefreshAsync);
             OpenExportDialogCommand = new AsyncRelayCommand(OpenExportDialogAsync);
             ApplyFilterCommand = new RelayCommand<string>(OnApplyFilter);
+            
+            // Pagination commands
+            FirstPageCommand = new RelayCommand(GoToFirstPage, () => CanGoPrevious);
+            PreviousPageCommand = new RelayCommand(GoToPreviousPage, () => CanGoPrevious);
+            NextPageCommand = new RelayCommand(GoToNextPage, () => CanGoNext);
+            LastPageCommand = new RelayCommand(GoToLastPage, () => CanGoNext);
 
             // Không tự động load dữ liệu
             // User sẽ click nút "Lọc" để load dữ liệu theo điều kiện
         }
 
         #region Command Implementations
+
+        private List<AttendanceDisplayDto> _allRecords = new(); // Store all records for pagination
 
         public async Task LoadDataAsync()
         {
@@ -131,18 +161,31 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
                 var filter = BuildFilterDto();
                 var records = await _attendanceService.GetAttendanceRecordsAsync(filter);
                 
-                AttendanceRecords.Clear();
-                foreach (var record in records)
-                {
-                    AttendanceRecords.Add(record);
-                }
+                // Store all records
+                _allRecords = records.ToList();
+                TotalRecords = _allRecords.Count;
                 
-                TotalRecords = AttendanceRecords.Count;
+                // Calculate pagination
+                TotalPages = TotalRecords > 0 ? (int)Math.Ceiling(TotalRecords / (double)PAGE_SIZE) : 1;
+                
+                // Ensure CurrentPage is valid
+                if (CurrentPage > TotalPages)
+                    CurrentPage = TotalPages;
+                if (CurrentPage < 1)
+                    CurrentPage = 1;
+                
+                // Load first page
+                LoadCurrentPage();
                 
                 stopwatch.Stop();
                 LoadTimeMs = stopwatch.ElapsedMilliseconds;
                 
-                _logger.LogInformation($"Loaded {TotalRecords} attendance records in {LoadTimeMs}ms");
+                // Update display properties
+                OnPropertyChanged(nameof(TotalRecordsDisplay));
+                OnPropertyChanged(nameof(LoadTimeDisplay));
+                UpdatePaginationProperties(); // ✅ Cập nhật cả OnPropertyChanged và NotifyCanExecuteChanged
+                
+                _logger.LogInformation($"Loaded {TotalRecords} attendance records in {LoadTimeMs}ms, showing page {CurrentPage}/{TotalPages}");
             }
             catch (Exception ex)
             {
@@ -157,6 +200,23 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
             }
         }
 
+        private void LoadCurrentPage()
+        {
+            var pageRecords = _allRecords
+                .Skip((CurrentPage - 1) * PAGE_SIZE)
+                .Take(PAGE_SIZE)
+                .ToList();
+            
+            AttendanceRecords.Clear();
+            int startIndex = (CurrentPage - 1) * PAGE_SIZE;
+            for (int i = 0; i < pageRecords.Count; i++)
+            {
+                var record = pageRecords[i];
+                record.Index = startIndex + i + 1; // STT bắt đầu từ 1
+                AttendanceRecords.Add(record);
+            }
+        }
+
         private async Task RefreshAsync()
         {
             // Reset về mặc định
@@ -166,6 +226,7 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
             SingleDate = DateTime.Today;
             StartDate = DateTime.Today.AddDays(-7);
             EndDate = DateTime.Today;
+            CurrentPage = 1;
 
             await LoadDataAsync();
             
@@ -177,28 +238,52 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
             try
             {
                 // ✅ Kiểm tra có dữ liệu THẬT để xuất không
-                if (AttendanceRecords == null || AttendanceRecords.Count == 0)
+                if (_allRecords == null || _allRecords.Count == 0)
                 {
                     await _notificationService.ShowWarningAsync("Cảnh báo", "Không có dữ liệu để xuất. Vui lòng tải dữ liệu trước.");
                     _logger.LogWarning("No attendance records to export");
                     return;
                 }
 
-                _logger.LogInformation($"Opening export dialog with {AttendanceRecords.Count} real attendance records");
+                _logger.LogInformation($"Opening export dialog with {_allRecords.Count} real attendance records");
 
-                // ✅ Map dữ liệu THẬT sang AttendanceExportDto
-                var exportData = AttendanceRecords.Select(x => new AttendanceExportDto
+                // ✅ Map dữ liệu THẬT sang AttendanceExportDto với tất cả các cột
+                var exportData = _allRecords.Select(x => new AttendanceExportDto
                 {
-                    ID = x.DIN,
+                    DeviceNumber = x.DN,
+                    DIN = x.DIN,
                     Date = x.Date,
                     Time = x.Time,
-                    Verify = x.Verify
+                    Verify = x.Verify,
+                    Action = x.Action
                 }).ToList();
+
+                // ✅ Lấy date filter hiện tại để tạo filename động
+                DateTime? startDate = null;
+                DateTime? endDate = null;
+                
+                switch (SelectedFilterType)
+                {
+                    case FilterType.PredefinedRange:
+                        var predefinedRange = SelectedPredefinedRangeItem?.Value ?? PredefinedDateRange.Today;
+                        startDate = GetStartDateFromPredefined(predefinedRange);
+                        endDate = GetEndDateFromPredefined(predefinedRange);
+                        break;
+                    case FilterType.SingleDate:
+                        startDate = SingleDate.Date;
+                        endDate = SingleDate.Date;
+                        break;
+                    case FilterType.DateRange:
+                        startDate = StartDate.Date;
+                        endDate = EndDate.Date;
+                        break;
+                }
 
                 // ✅ Sử dụng dialog MỚI với dữ liệu THẬT
                 var dialog = new ExportAttendanceDialog();
                 var vm = _serviceProvider.GetRequiredService<ExportAttendanceDialogViewModel>();
                 vm.SetData(exportData);  // ✅ Dữ liệu THẬT - không fallback
+                vm.SetDateFilter(startDate, endDate);  // ✅ Truyền date filter cho dynamic filename
                 vm.SetDialog(dialog);
                 
                 dialog.DataContext = vm;
@@ -217,7 +302,65 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
         private void OnApplyFilter(string? parameter)
         {
             // Apply filter khi user thay đổi options
+            CurrentPage = 1; // Reset to first page when filtering
             _ = LoadDataAsync();
+        }
+
+        #endregion
+
+        #region Pagination Methods
+
+        private void GoToFirstPage()
+        {
+            if (CurrentPage != 1)
+            {
+                CurrentPage = 1;
+                LoadCurrentPage();
+                UpdatePaginationProperties();
+            }
+        }
+
+        private void GoToPreviousPage()
+        {
+            if (CurrentPage > 1)
+            {
+                CurrentPage--;
+                LoadCurrentPage();
+                UpdatePaginationProperties();
+            }
+        }
+
+        private void GoToNextPage()
+        {
+            if (CurrentPage < TotalPages)
+            {
+                CurrentPage++;
+                LoadCurrentPage();
+                UpdatePaginationProperties();
+            }
+        }
+
+        private void GoToLastPage()
+        {
+            if (CurrentPage != TotalPages)
+            {
+                CurrentPage = TotalPages;
+                LoadCurrentPage();
+                UpdatePaginationProperties();
+            }
+        }
+
+        private void UpdatePaginationProperties()
+        {
+            OnPropertyChanged(nameof(CurrentPageDisplay));
+            OnPropertyChanged(nameof(CanGoPrevious));
+            OnPropertyChanged(nameof(CanGoNext));
+            
+            // ✅ Notify commands to update their CanExecute state
+            FirstPageCommand.NotifyCanExecuteChanged();
+            PreviousPageCommand.NotifyCanExecuteChanged();
+            NextPageCommand.NotifyCanExecuteChanged();
+            LastPageCommand.NotifyCanExecuteChanged();
         }
 
         #endregion

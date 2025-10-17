@@ -2,10 +2,15 @@ namespace BHK.Retrieval.Attendance.Core.DTOs.Responses
 {
     /// <summary>
     /// DTO hiển thị bản ghi chấm công trên UI
-    /// Chứa đầy đủ dữ liệu: DN, DIN, Ngày, Giờ, Loại, Phương thức, Hành động, Ghi chú
+    /// Chứa đầy đủ dữ liệu: STT, DN, DIN, Ngày, Giờ, Loại, Phương thức, Hành động, Ghi chú
     /// </summary>
     public class AttendanceDisplayDto
     {
+        /// <summary>
+        /// Số thứ tự (STT) - Index cho DataGrid
+        /// </summary>
+        public int Index { get; set; }
+        
         /// <summary>
         /// Device Number - Số hiệu thiết bị
         /// </summary>

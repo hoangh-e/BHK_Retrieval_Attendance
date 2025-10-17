@@ -419,9 +419,9 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels.Dialogs
 
             try
             {
-                // Lấy thông tin cột hiện tại và mong đợi
+                // Lấy thông tin cột hiện tại và mong đợi (7 cột: DIN, Name, Sex, Birthday, Created, Status, Comment)
                 var currentColumns = await _excelService.GetTableColumnsAsync(FilePath, SelectedTable);
-                var expectedColumns = new List<string> { "ID", "Name", "IDNumber", "Department", "Sex", "Birthday", "Created", "Status", "Comment", "EnrollmentCount" };
+                var expectedColumns = new List<string> { "DIN", "Name", "Sex", "Birthday", "Created", "Status", "Comment" };
 
                 // Tạo và hiển thị dialog refactor
                 var refactorDialog = new Views.Dialogs.RefactorColumnsDialog();

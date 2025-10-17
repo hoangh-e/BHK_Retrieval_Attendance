@@ -79,7 +79,10 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels.Dialogs
         private void Close()
         {
             DialogResult = false;
-            _dialog?.Close();
+            if (_dialog != null)
+            {
+                _dialog.Close();
+            }
         }
 
         [RelayCommand]
@@ -100,7 +103,10 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels.Dialogs
                     MessageBoxButton.OK, 
                     MessageBoxImage.Information);
                 
-                _dialog?.Close();
+                if (_dialog != null)
+                {
+                    _dialog.Close();
+                }
             }
             catch (Exception ex)
             {

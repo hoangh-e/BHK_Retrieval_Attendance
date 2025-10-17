@@ -165,25 +165,29 @@ namespace BHK.Retrieval.Attendance.WPF.Services.Implementations
                         // Tạo worksheet mới
                         var worksheet = workbook.Worksheets.Add(tableName);
 
-                        // ✅ Tạo header cho Attendance: ID, Date, Time, Verify
-                        worksheet.Cell(1, 1).Value = "ID";
-                        worksheet.Cell(1, 2).Value = "Date";
-                        worksheet.Cell(1, 3).Value = "Time";
-                        worksheet.Cell(1, 4).Value = "Verify";
+                        // ✅ Tạo header cho Attendance: DeviceNumber, DIN, Date, Time, Verify, Action
+                        worksheet.Cell(1, 1).Value = "DeviceNumber";
+                        worksheet.Cell(1, 2).Value = "DIN";
+                        worksheet.Cell(1, 3).Value = "Date";
+                        worksheet.Cell(1, 4).Value = "Time";
+                        worksheet.Cell(1, 5).Value = "Verify";
+                        worksheet.Cell(1, 6).Value = "Action";
 
                         // ✅ Thêm 1 row dữ liệu mẫu (cần thiết để tạo table)
-                        worksheet.Cell(2, 1).Value = "Sample";
-                        worksheet.Cell(2, 2).Value = DateTime.Today.ToString("yyyy-MM-dd");
-                        worksheet.Cell(2, 3).Value = DateTime.Now.ToString("HH:mm:ss");
-                        worksheet.Cell(2, 4).Value = "1";
+                        worksheet.Cell(2, 1).Value = "DN001";
+                        worksheet.Cell(2, 2).Value = "000001";
+                        worksheet.Cell(2, 3).Value = DateTime.Today.ToString("yyyy-MM-dd");
+                        worksheet.Cell(2, 4).Value = DateTime.Now.ToString("HH:mm:ss");
+                        worksheet.Cell(2, 5).Value = "FP";
+                        worksheet.Cell(2, 6).Value = "Check-in";
 
                         // ✅ Tạo Excel TABLE thực sự cho Attendance (phải có ít nhất 1 row data)
                         // Chỉ sử dụng tên table thuần túy, không có prefix
                         string actualTableName = ExtractActualTableName(tableName);
-                        var table = worksheet.Range(1, 1, 2, 4).CreateTable(actualTableName);
+                        var table = worksheet.Range(1, 1, 2, 6).CreateTable(actualTableName);
 
                         // Format header
-                        var headerRange = worksheet.Range(1, 1, 1, 4);
+                        var headerRange = worksheet.Range(1, 1, 1, 6);
                         headerRange.Style.Font.Bold = true;
                         headerRange.Style.Fill.BackgroundColor = XLColor.LightBlue;
                         headerRange.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
@@ -238,37 +242,31 @@ namespace BHK.Retrieval.Attendance.WPF.Services.Implementations
 
                         var worksheet = workbook.Worksheets.Add(tableName);
 
-                        // ✅ Tạo header chi tiết cho Employee
-                        worksheet.Cell(1, 1).Value = "ID";
+                        // ✅ Tạo header cho Employee: DIN, Name, Sex, Birthday, Created, Status, Comment
+                        worksheet.Cell(1, 1).Value = "DIN";
                         worksheet.Cell(1, 2).Value = "Name";
-                        worksheet.Cell(1, 3).Value = "IDNumber";
-                        worksheet.Cell(1, 4).Value = "Department";
-                        worksheet.Cell(1, 5).Value = "Sex";
-                        worksheet.Cell(1, 6).Value = "Birthday";
-                        worksheet.Cell(1, 7).Value = "Created";
-                        worksheet.Cell(1, 8).Value = "Status";
-                        worksheet.Cell(1, 9).Value = "Comment";
-                        worksheet.Cell(1, 10).Value = "EnrollmentCount";
+                        worksheet.Cell(1, 3).Value = "Sex";
+                        worksheet.Cell(1, 4).Value = "Birthday";
+                        worksheet.Cell(1, 5).Value = "Created";
+                        worksheet.Cell(1, 6).Value = "Status";
+                        worksheet.Cell(1, 7).Value = "Comment";
 
                         // ✅ Thêm 1 row dữ liệu mẫu (cần thiết để tạo table)
-                        worksheet.Cell(2, 1).Value = "Sample";
+                        worksheet.Cell(2, 1).Value = "000000";
                         worksheet.Cell(2, 2).Value = "Sample Employee";
-                        worksheet.Cell(2, 3).Value = "000000";
-                        worksheet.Cell(2, 4).Value = "IT";
-                        worksheet.Cell(2, 5).Value = "M";
-                        worksheet.Cell(2, 6).Value = DateTime.Today.ToString("yyyy-MM-dd");
-                        worksheet.Cell(2, 7).Value = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
-                        worksheet.Cell(2, 8).Value = "Active";
-                        worksheet.Cell(2, 9).Value = "Sample data";
-                        worksheet.Cell(2, 10).Value = "0";
+                        worksheet.Cell(2, 3).Value = "M";
+                        worksheet.Cell(2, 4).Value = DateTime.Today.ToString("yyyy-MM-dd");
+                        worksheet.Cell(2, 5).Value = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+                        worksheet.Cell(2, 6).Value = "Active";
+                        worksheet.Cell(2, 7).Value = "Sample data";
 
                         // ✅ Tạo Excel TABLE với header và 1 row mẫu (bắt buộc cho ClosedXML)
                         // Chỉ sử dụng tên table thuần túy, không có prefix
                         string actualTableName = ExtractActualTableName(tableName);
-                        var table = worksheet.Range(1, 1, 2, 10).CreateTable(actualTableName);
+                        var table = worksheet.Range(1, 1, 2, 7).CreateTable(actualTableName);
                         
                         // Format header
-                        var headerRange = worksheet.Range(1, 1, 1, 10);
+                        var headerRange = worksheet.Range(1, 1, 1, 7);
                         headerRange.Style.Font.Bold = true;
                         headerRange.Style.Fill.BackgroundColor = XLColor.LightGreen;
                         headerRange.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
@@ -385,26 +383,29 @@ namespace BHK.Retrieval.Attendance.WPF.Services.Implementations
                             // Lấy sheet đầu tiên hoặc tạo mới nếu không có
                             targetWorksheet = workbook.Worksheets.FirstOrDefault() ?? workbook.Worksheets.Add("Sheet1");
                             
-                            // ✅ Kiểm tra xem range A1:D1 đã thuộc table nào khác chưa
-                            var headerRange = targetWorksheet.Range("A1:D1");
+                            // ✅ Kiểm tra xem range A1:F1 đã thuộc table nào khác chưa
+                            var checkRange = targetWorksheet.Range("A1:F1");
                             var existingTable = targetWorksheet.Tables.FirstOrDefault(t => 
-                                t.RangeAddress.Intersects(headerRange.RangeAddress));
+                                t.RangeAddress.Intersects(checkRange.RangeAddress));
                             
                             if (existingTable != null)
                             {
-                                _logger.LogInformation($"Range A1:D1 is already occupied by table '{existingTable.Name}', using that table instead");
+                                _logger.LogInformation($"Range A1:F1 is already occupied by table '{existingTable.Name}', using that table instead");
                                 targetTable = existingTable;
                             }
                             else
                             {
-                                // Tạo header Attendance (4 cột) bắt đầu từ A1
-                                targetWorksheet.Cell(1, 1).Value = "ID";
-                                targetWorksheet.Cell(1, 2).Value = "Date";
-                                targetWorksheet.Cell(1, 3).Value = "Time";
-                                targetWorksheet.Cell(1, 4).Value = "Verify";
+                                // Tạo header Attendance (6 cột: DeviceNumber, DIN, Date, Time, Verify, Action) bắt đầu từ A1
+                                targetWorksheet.Cell(1, 1).Value = "DeviceNumber";
+                                targetWorksheet.Cell(1, 2).Value = "DIN";
+                                targetWorksheet.Cell(1, 3).Value = "Date";
+                                targetWorksheet.Cell(1, 4).Value = "Time";
+                                targetWorksheet.Cell(1, 5).Value = "Verify";
+                                targetWorksheet.Cell(1, 6).Value = "Action";
 
-                                // ✅ Tạo Excel Table thực sự từ range A1:D1 (chỉ header)
-                                targetTable = headerRange.CreateTable(tableName);
+                                // ✅ Tạo Excel Table thực sự từ range A1:F1 (chỉ header)
+                                var newHeaderRange = targetWorksheet.Range("A1:F1");
+                                targetTable = newHeaderRange.CreateTable(tableName);
                                 
                                 // Thiết lập theme cho table như Excel thật
                                 targetTable.Theme = XLTableTheme.TableStyleMedium2;
@@ -433,21 +434,25 @@ namespace BHK.Retrieval.Attendance.WPF.Services.Implementations
                             foreach (var item in data)
                             {
                                 var type = typeof(T);
-                                var id = type.GetProperty("ID")?.GetValue(item)?.ToString() ?? "";
+                                var deviceNumber = type.GetProperty("DeviceNumber")?.GetValue(item)?.ToString() ?? "";
+                                var din = type.GetProperty("DIN")?.GetValue(item)?.ToString() ?? "";
                                 var date = type.GetProperty("Date")?.GetValue(item)?.ToString() ?? "";
                                 var time = type.GetProperty("Time")?.GetValue(item)?.ToString() ?? "";
                                 var verify = type.GetProperty("Verify")?.GetValue(item)?.ToString() ?? "";
+                                var action = type.GetProperty("Action")?.GetValue(item)?.ToString() ?? "";
 
-                                targetWorksheet.Cell(startRow, 1).Value = id;
-                                targetWorksheet.Cell(startRow, 2).Value = date;
-                                targetWorksheet.Cell(startRow, 3).Value = time;
-                                targetWorksheet.Cell(startRow, 4).Value = verify;
+                                targetWorksheet.Cell(startRow, 1).Value = deviceNumber;
+                                targetWorksheet.Cell(startRow, 2).Value = din;
+                                targetWorksheet.Cell(startRow, 3).Value = date;
+                                targetWorksheet.Cell(startRow, 4).Value = time;
+                                targetWorksheet.Cell(startRow, 5).Value = verify;
+                                targetWorksheet.Cell(startRow, 6).Value = action;
 
                                 startRow++;
                             }
 
                             // ✅ BƯỚC 6: Resize Excel Table để bao gồm tất cả dữ liệu
-                            var newTableRange = targetWorksheet.Range(1, 1, startRow - 1, 4); // Từ A1 đến D(lastRow)
+                            var newTableRange = targetWorksheet.Range(1, 1, startRow - 1, 6); // Từ A1 đến F(lastRow)
                             targetTable.Resize(newTableRange);
                             
                             _logger.LogInformation($"Resized Excel table '{tableName}' to include {data.Count} records");
@@ -472,18 +477,10 @@ namespace BHK.Retrieval.Attendance.WPF.Services.Implementations
 
         public Task ExportEmployeeDataAsync<T>(string filePath, string tableName, List<T> data)
         {
-            return ExportEmployeeDataAsync(filePath, tableName, data, null);
-        }
-
-        public Task ExportEmployeeDataAsync<T>(string filePath, string tableName, List<T> data, 
-            Action<int, int, string>? progressCallback)
-        {
             return Task.Run(() =>
             {
                 try
                 {
-                    progressCallback?.Invoke(0, data.Count, "Đang mở file Excel...");
-                    
                     // ✅ Mở hoặc tạo workbook
                     XLWorkbook workbook;
                     if (File.Exists(filePath))
@@ -497,7 +494,6 @@ namespace BHK.Retrieval.Attendance.WPF.Services.Implementations
 
                     using (workbook)
                     {
-                        progressCallback?.Invoke(0, data.Count, "Đang tìm kiếm Excel table...");
                         // ✅ BƯỚC 1: Tìm kiếm Excel Table thực sự theo tên
                         IXLTable? targetTable = null;
                         IXLWorksheet? targetWorksheet = null;
@@ -523,32 +519,30 @@ namespace BHK.Retrieval.Attendance.WPF.Services.Implementations
                             // Lấy sheet đầu tiên hoặc tạo mới nếu không có
                             targetWorksheet = workbook.Worksheets.FirstOrDefault() ?? workbook.Worksheets.Add("Sheet1");
                             
-                            // ✅ Kiểm tra xem range A1:J1 đã thuộc table nào khác chưa
-                            var headerRange = targetWorksheet.Range("A1:J1");
+                            // ✅ Kiểm tra xem range A1:G1 đã thuộc table nào khác chưa
+                            var checkRange = targetWorksheet.Range("A1:G1");
                             var existingTable = targetWorksheet.Tables.FirstOrDefault(t => 
-                                t.RangeAddress.Intersects(headerRange.RangeAddress));
+                                t.RangeAddress.Intersects(checkRange.RangeAddress));
                             
                             if (existingTable != null)
                             {
-                                _logger.LogInformation($"Range A1:J1 is already occupied by table '{existingTable.Name}', using that table instead");
+                                _logger.LogInformation($"Range A1:G1 is already occupied by table '{existingTable.Name}', using that table instead");
                                 targetTable = existingTable;
                             }
                             else
                             {
-                                // Tạo header Employee (10 cột) bắt đầu từ A1
-                                targetWorksheet.Cell(1, 1).Value = "ID";
+                                // Tạo header Employee (7 cột: DIN, Name, Sex, Birthday, Created, Status, Comment) bắt đầu từ A1
+                                targetWorksheet.Cell(1, 1).Value = "DIN";
                                 targetWorksheet.Cell(1, 2).Value = "Name";
-                                targetWorksheet.Cell(1, 3).Value = "IDNumber";
-                                targetWorksheet.Cell(1, 4).Value = "Department";
-                                targetWorksheet.Cell(1, 5).Value = "Sex";
-                                targetWorksheet.Cell(1, 6).Value = "Birthday";
-                                targetWorksheet.Cell(1, 7).Value = "Created";
-                                targetWorksheet.Cell(1, 8).Value = "Status";
-                                targetWorksheet.Cell(1, 9).Value = "Comment";
-                                targetWorksheet.Cell(1, 10).Value = "EnrollmentCount";
+                                targetWorksheet.Cell(1, 3).Value = "Sex";
+                                targetWorksheet.Cell(1, 4).Value = "Birthday";
+                                targetWorksheet.Cell(1, 5).Value = "Created";
+                                targetWorksheet.Cell(1, 6).Value = "Status";
+                                targetWorksheet.Cell(1, 7).Value = "Comment";
 
-                                // ✅ Tạo Excel Table thực sự từ range A1:J1 (chỉ header)
-                                targetTable = headerRange.CreateTable(tableName);
+                                // ✅ Tạo Excel Table thực sự từ range A1:G1 (chỉ header)
+                                var newHeaderRange = targetWorksheet.Range("A1:G1");
+                                targetTable = newHeaderRange.CreateTable(tableName);
                                 
                                 // Thiết lập theme cho table như Excel thật
                                 targetTable.Theme = XLTableTheme.TableStyleMedium9;
@@ -558,7 +552,6 @@ namespace BHK.Retrieval.Attendance.WPF.Services.Implementations
                         }
 
                         // ✅ BƯỚC 3: Clear dữ liệu cũ (giữ lại header)
-                        progressCallback?.Invoke(0, data.Count, "Đang xóa dữ liệu cũ...");
                         if (targetTable.DataRange != null)
                         {
                             targetTable.DataRange.Clear();
@@ -574,59 +567,41 @@ namespace BHK.Retrieval.Attendance.WPF.Services.Implementations
                         if (data.Count > 0)
                         {
                             var startRow = 2; // Bắt đầu sau header
-                            var currentIndex = 0;
 
                             foreach (var item in data)
                             {
-                                // ✅ Cập nhật progress cho từng nhân viên
-                                currentIndex++;
-                                progressCallback?.Invoke(currentIndex, data.Count, 
-                                    $"Đang chuẩn bị dữ liệu chi tiết của {currentIndex}/{data.Count} nhân viên...");
-
                                 var type = typeof(T);
-                                var id = type.GetProperty("ID")?.GetValue(item)?.ToString() ?? "";
+                                var din = type.GetProperty("DIN")?.GetValue(item)?.ToString() ?? "";
                                 var name = type.GetProperty("Name")?.GetValue(item)?.ToString() ?? "";
-                                var idNumber = type.GetProperty("IDNumber")?.GetValue(item)?.ToString() ?? "";
-                                var department = type.GetProperty("Department")?.GetValue(item)?.ToString() ?? "";
                                 var sex = type.GetProperty("Sex")?.GetValue(item)?.ToString() ?? "";
                                 var birthday = type.GetProperty("Birthday")?.GetValue(item)?.ToString() ?? "";
                                 var created = type.GetProperty("Created")?.GetValue(item)?.ToString() ?? "";
                                 var status = type.GetProperty("Status")?.GetValue(item)?.ToString() ?? "";
                                 var comment = type.GetProperty("Comment")?.GetValue(item)?.ToString() ?? "";
-                                var enrollmentCount = type.GetProperty("EnrollmentCount")?.GetValue(item)?.ToString() ?? "";
 
-                                targetWorksheet.Cell(startRow, 1).Value = id;
+                                targetWorksheet.Cell(startRow, 1).Value = din;
                                 targetWorksheet.Cell(startRow, 2).Value = name;
-                                targetWorksheet.Cell(startRow, 3).Value = idNumber;
-                                targetWorksheet.Cell(startRow, 4).Value = department;
-                                targetWorksheet.Cell(startRow, 5).Value = sex;
-                                targetWorksheet.Cell(startRow, 6).Value = birthday;
-                                targetWorksheet.Cell(startRow, 7).Value = created;
-                                targetWorksheet.Cell(startRow, 8).Value = status;
-                                targetWorksheet.Cell(startRow, 9).Value = comment;
-                                targetWorksheet.Cell(startRow, 10).Value = enrollmentCount;
+                                targetWorksheet.Cell(startRow, 3).Value = sex;
+                                targetWorksheet.Cell(startRow, 4).Value = birthday;
+                                targetWorksheet.Cell(startRow, 5).Value = created;
+                                targetWorksheet.Cell(startRow, 6).Value = status;
+                                targetWorksheet.Cell(startRow, 7).Value = comment;
 
                                 startRow++;
                             }
 
-                            progressCallback?.Invoke(data.Count, data.Count, "Đang hoàn thiện Excel table...");
-                            
                             // ✅ BƯỚC 6: Resize Excel Table để bao gồm tất cả dữ liệu
-                            var newTableRange = targetWorksheet.Range(1, 1, startRow - 1, 10); // Từ A1 đến J(lastRow)
+                            var newTableRange = targetWorksheet.Range(1, 1, startRow - 1, 7); // Từ A1 đến G(lastRow)
                             targetTable.Resize(newTableRange);
                             
                             _logger.LogInformation($"Resized Excel table '{tableName}' to include {data.Count} records");
                         }
 
-                        progressCallback?.Invoke(data.Count, data.Count, "Đang lưu file...");
-                        
                         // Auto-fit columns
                         targetWorksheet.Columns().AdjustToContents();
                         
                         // Lưu file
                         workbook.SaveAs(filePath);
-                        
-                        progressCallback?.Invoke(data.Count, data.Count, $"✅ Hoàn thành! Đã xuất {data.Count} nhân viên");
                         
                         _logger.LogInformation($"Successfully exported {data.Count} employee records to Excel table '{tableName}'");
                     }
@@ -637,6 +612,13 @@ namespace BHK.Retrieval.Attendance.WPF.Services.Implementations
                     throw;
                 }
             });
+        }
+
+        // ✅ Overload method với progress callback
+        public Task ExportEmployeeDataAsync<T>(string filePath, string tableName, List<T> data, Action<int, int, string>? progressCallback)
+        {
+            // Đơn giản gọi method không có callback (ignore progress)
+            return ExportEmployeeDataAsync(filePath, tableName, data);
         }
 
         public Task<List<string>> GetTableColumnsAsync(string filePath, string tableName)
@@ -797,11 +779,24 @@ namespace BHK.Retrieval.Attendance.WPF.Services.Implementations
                 // ✅ BƯỚC 2: Xử lý cột thừa (nếu thu hẹp)
                 if (expectedColumns.Count < currentColumnCount)
                 {
-                    // Clear các cột thừa
-                    for (int col = startCol + expectedColumns.Count; col <= currentRange.LastAddress.ColumnNumber; col++)
+                    _logger.LogInformation($"Shrinking table: removing columns from {expectedColumns.Count + 1} to {currentColumnCount}");
+                    
+                    // Xóa các cột thừa từ phải sang trái để tránh lỗi index
+                    for (int col = currentRange.LastAddress.ColumnNumber; col > startCol + expectedColumns.Count - 1; col--)
                     {
-                        var columnRange = worksheet.Range(startRow, col, currentRange.LastAddress.RowNumber, col);
-                        columnRange.Clear();
+                        try
+                        {
+                            // Xóa toàn bộ cột (bao gồm cả header và data)
+                            worksheet.Column(col).Delete();
+                            _logger.LogDebug($"Deleted column at index {col}");
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogWarning($"Failed to delete column {col}: {ex.Message}. Will clear content instead.");
+                            // Fallback: Clear content nếu không thể xóa cột
+                            var columnRange = worksheet.Range(startRow, col, currentRange.LastAddress.RowNumber, col);
+                            columnRange.Clear();
+                        }
                     }
                 }
                 
@@ -912,7 +907,27 @@ namespace BHK.Retrieval.Attendance.WPF.Services.Implementations
                 // ✅ BƯỚC 6: Thiết lập theme cho table
                 newTable.Theme = tableType == "Employee" ? XLTableTheme.TableStyleMedium9 : XLTableTheme.TableStyleMedium2;
                 
-                // ✅ BƯỚC 7: Điều chỉnh độ rộng cột
+                // ✅ BƯỚC 7: Xóa các cột thừa bên phải table (nếu thu hẹp)
+                var oldEndCol = currentRange.LastAddress.ColumnNumber;
+                if (newEndColumn < oldEndCol)
+                {
+                    _logger.LogInformation($"Cleaning up {oldEndCol - newEndColumn} excess columns after table recreation");
+                    for (int col = oldEndCol; col > newEndColumn; col--)
+                    {
+                        try
+                        {
+                            // Clear toàn bộ cột từ header đến end của old range
+                            var clearRange = worksheet.Range(startRow, col, currentRange.LastAddress.RowNumber, col);
+                            clearRange.Clear();
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogWarning($"Failed to clear column {col}: {ex.Message}");
+                        }
+                    }
+                }
+                
+                // ✅ BƯỚC 8: Điều chỉnh độ rộng cột
                 worksheet.Columns().AdjustToContents();
             }
         }
@@ -943,8 +958,10 @@ namespace BHK.Retrieval.Attendance.WPF.Services.Implementations
         {
             return tableType.ToLower() switch
             {
-                "employee" => new List<string> { "ID", "Name", "IDNumber", "Department", "Sex", "Birthday", "Created", "Status", "Comment", "EnrollmentCount" },
-                "attendance" => new List<string> { "ID", "Date", "Time", "Verify" },
+                // ✅ 7 cột: DIN, Name, Sex, Birthday, Created, Status, Comment
+                "employee" => new List<string> { "DIN", "Name", "Sex", "Birthday", "Created", "Status", "Comment" },
+                // ✅ 6 cột: DeviceNumber, DIN, Date, Time, Verify, Action
+                "attendance" => new List<string> { "DeviceNumber", "DIN", "Date", "Time", "Verify", "Action" },
                 _ => new List<string>()
             };
         }
