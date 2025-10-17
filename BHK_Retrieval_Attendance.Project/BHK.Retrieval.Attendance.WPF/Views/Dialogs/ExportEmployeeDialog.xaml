@@ -68,14 +68,10 @@
                     <TextBlock Text="Chọn Excel Table" 
                                FontWeight="Bold"
                                Style="{StaticResource MaterialDesignSubtitle2TextBlock}"/>
-                    <TextBlock Text="(Excel Table khác với Worksheet - Table có filter và structured references)" 
-                               Foreground="{DynamicResource MaterialDesignBodyLight}"
-                               FontStyle="Italic"
-                               FontSize="11"
-                               Margin="0,2,0,5"/>
                     <ComboBox ItemsSource="{Binding AvailableTables}" 
                               SelectedItem="{Binding SelectedTable}"
                               materialDesign:HintAssist.Hint="Chọn Excel table để xuất dữ liệu"
+                              Margin="0,5,0,0"
                               Style="{StaticResource MaterialDesignOutlinedComboBox}"/>
                 </StackPanel>
 
@@ -112,21 +108,14 @@
                                      Visibility="{Binding TableValidationMessage, Converter={StaticResource StringToVisibilityConverter}}">
                     <StackPanel>
                         <TextBlock Text="{Binding TableValidationMessage}" 
-                                   Foreground="White"
+                                   Foreground="{DynamicResource MaterialDesignPaper}"
                                    FontWeight="Bold"
                                    TextWrapping="Wrap"
                                    Margin="0,0,0,10"
                                    Style="{StaticResource MaterialDesignBody1TextBlock}"/>
-                        <StackPanel Orientation="Horizontal">
-                            <Button Content="🔧 REFACTOR CỘT" 
+                        <Button Content="REFACTOR CỘT" 
                                     Command="{Binding ShowRefactorDialogCommand}"
-                                    Margin="0,0,10,0"
                                     Style="{StaticResource MaterialDesignRaisedLightButton}"/>
-                            <TextBlock Text="Hoặc chọn table khác phù hợp" 
-                                       VerticalAlignment="Center"
-                                       Foreground="White"
-                                       Style="{StaticResource MaterialDesignCaptionTextBlock}"/>
-                        </StackPanel>
                     </StackPanel>
                 </materialDesign:Card>
 
@@ -136,16 +125,16 @@
                                      Background="{DynamicResource SecondaryHueMidBrush}"
                                      Visibility="{Binding ShowCreateDefaultTable, Converter={StaticResource BoolToVisibility}}">
                     <StackPanel>
-                        <TextBlock Text="🏗️ Tạo Employee Table mặc định" 
-                                   Foreground="White"
+                        <TextBlock Text="Tạo Employee Table mặc định" 
+                                   Foreground="{DynamicResource MaterialDesignPaper}"
                                    FontWeight="Bold"
                                    Margin="0,0,0,5"
                                    Style="{StaticResource MaterialDesignSubtitle2TextBlock}"/>
                         <TextBlock Text="Tạo table với cấu trúc Employee chuẩn (10 cột) trên sheet đầu tiên" 
-                                   Foreground="White"
+                                   Foreground="{DynamicResource MaterialDesignPaper}"
                                    Margin="0,0,0,10"
                                    Style="{StaticResource MaterialDesignCaptionTextBlock}"/>
-                        <Button Content="✨ TẠO EMPLOYEE TABLE" 
+                        <Button Content="TẠO EMPLOYEE TABLE" 
                                 Command="{Binding CreateDefaultTableCommand}"
                                 Style="{StaticResource MaterialDesignRaisedLightButton}"/>
                     </StackPanel>

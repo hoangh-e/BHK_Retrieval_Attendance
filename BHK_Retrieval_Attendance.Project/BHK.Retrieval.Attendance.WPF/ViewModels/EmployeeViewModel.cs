@@ -33,6 +33,7 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
         private int _totalEmployees;
         private bool _isLoading;
         private string _searchKeyword = string.Empty;
+        private string _loadingMessage = "Đang tải dữ liệu...";
 
         private const int PAGE_SIZE = 10;
 
@@ -115,6 +116,15 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
         }
 
         /// <summary>
+        /// Thông báo loading chi tiết
+        /// </summary>
+        public string LoadingMessage
+        {
+            get => _loadingMessage;
+            set => SetProperty(ref _loadingMessage, value);
+        }
+
+        /// <summary>
         /// Từ khóa tìm kiếm
         /// </summary>
         public string SearchKeyword
@@ -180,6 +190,7 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
             Employees = new ObservableCollection<EmployeeDisplayModel>();
             CurrentPage = 1;
             TotalPages = 1;
+            LoadingMessage = "Đang tải dữ liệu..."; // ✅ Khởi tạo loading message mặc định
 
             // Initialize commands
             LoadEmployeesCommand = new RelayCommand(async _ => await LoadEmployeesAsync());
@@ -414,41 +425,116 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
 
         /// <summary>
         /// Xuất TOÀN BỘ danh sách nhân viên (không phân trang)
-        /// ✅ Sử dụng dữ liệu THẬT CHI TIẾT từ thiết bị
+        /// ✅ Sử dụng dữ liệu THẬT CHI TIẾT từ thiết bị với progress chi tiết
         /// </summary>
         private async Task ExportAllEmployeesAsync()
         {
             try
             {
                 _logger.LogInformation("Starting export all employees with detailed data");
+                
+                // ✅ BƯỚC 1: Lấy danh sách DIN cơ bản trước (nhanh)
                 IsLoading = true;
+                LoadingMessage = "Đang lấy danh sách nhân viên từ thiết bị...";
 
-                // ✅ Lấy TOÀN BỘ danh sách nhân viên CHI TIẾT từ thiết bị (bao gồm enrollment data)
-                var allUsers = await _deviceService.GetAllUsersAsync();
+                var basicUsers = await _deviceService.GetBasicUsersAsync();
 
-                if (allUsers == null || !allUsers.Any())
+                if (basicUsers == null || !basicUsers.Any())
                 {
                     _logger.LogWarning("No employees found in device");
                     ShowWarningMessage("Không có nhân viên nào để xuất");
                     return;
                 }
 
-                _logger.LogInformation($"Retrieved {allUsers.Count} detailed employees from device for export");
+                var totalEmployees = basicUsers.Count;
+                _logger.LogInformation($"Found {totalEmployees} employees, fetching detailed data for each employee");
 
-                // ✅ Map sang EmployeeExportDto với thông tin chi tiết hơn
-                var exportData = allUsers.Select(x => new EmployeeExportDto
+                // ✅ BƯỚC 2: Fetch chi tiết từng nhân viên theo DIN với progress counter
+                var exportData = await Task.Run(async () =>
                 {
-                    ID = x.DIN.ToString(),
-                    Name = x.UserName ?? "N/A",
-                    IDNumber = x.IDNumber ?? "",
-                    Department = x.DeptId ?? "",
-                    Sex = x.Sex == 1 ? "Female" : "Male", 
-                    Birthday = x.Birthday != DateTime.MinValue ? x.Birthday.ToString("yyyy-MM-dd") : "",
-                    Created = DateTime.Now.ToString("yyyy-MM-dd"),
-                    Status = x.Enable ? "Active" : "Inactive",
-                    Comment = x.Comment ?? "",
-                    EnrollmentCount = x.Enrollments?.Count ?? 0
-                }).ToList();
+                    var results = new List<EmployeeExportDto>();
+                    
+                    for (int i = 0; i < basicUsers.Count; i++)
+                    {
+                        var basicUser = basicUsers[i];
+                        var processed = i + 1;
+                        
+                        // ✅ Cập nhật progress TRƯỚC khi fetch nhân viên
+                        await Application.Current.Dispatcher.InvokeAsync(() =>
+                        {
+                            LoadingMessage = $"Đang chuẩn bị dữ liệu chi tiết của {processed}/{totalEmployees} nhân viên (ID: {basicUser.DIN})...";
+                        });
+
+                        try
+                        {
+                            // ✅ Fetch chi tiết nhân viên theo DIN
+                            var detailedUser = await _deviceService.GetUserByIdAsync(basicUser.DIN);
+                            
+                            if (detailedUser != null)
+                            {
+                                results.Add(new EmployeeExportDto
+                                {
+                                    ID = detailedUser.DIN.ToString(),
+                                    Name = detailedUser.UserName ?? "N/A",
+                                    IDNumber = detailedUser.IDNumber ?? "",
+                                    Department = detailedUser.DeptId ?? "",
+                                    Sex = detailedUser.Sex == 1 ? "Female" : "Male", 
+                                    Birthday = detailedUser.Birthday != DateTime.MinValue ? detailedUser.Birthday.ToString("yyyy-MM-dd") : "",
+                                    Created = DateTime.Now.ToString("yyyy-MM-dd"),
+                                    Status = detailedUser.Enable ? "Active" : "Inactive",
+                                    Comment = detailedUser.Comment ?? "",
+                                    EnrollmentCount = detailedUser.Enrollments?.Count ?? 0
+                                });
+                                
+                                _logger.LogDebug($"Successfully fetched detailed data for employee DIN: {basicUser.DIN}");
+                            }
+                            else
+                            {
+                                _logger.LogWarning($"Failed to fetch detailed data for employee DIN: {basicUser.DIN}");
+                                // ✅ Thêm với thông tin cơ bản nếu không lấy được chi tiết
+                                results.Add(new EmployeeExportDto
+                                {
+                                    ID = basicUser.DIN.ToString(),
+                                    Name = basicUser.UserName ?? "N/A",
+                                    IDNumber = basicUser.IDNumber ?? "",
+                                    Department = basicUser.DeptId ?? "",
+                                    Sex = basicUser.Sex == 1 ? "Female" : "Male", 
+                                    Birthday = basicUser.Birthday != DateTime.MinValue ? basicUser.Birthday.ToString("yyyy-MM-dd") : "",
+                                    Created = DateTime.Now.ToString("yyyy-MM-dd"),
+                                    Status = basicUser.Enable ? "Active" : "Inactive",
+                                    Comment = basicUser.Comment ?? "",
+                                    EnrollmentCount = 0 // Không có thông tin chi tiết
+                                });
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(ex, $"Error fetching detailed data for employee DIN: {basicUser.DIN}");
+                            // ✅ Thêm với thông tin cơ bản nếu có lỗi
+                            results.Add(new EmployeeExportDto
+                            {
+                                ID = basicUser.DIN.ToString(),
+                                Name = basicUser.UserName ?? "N/A",
+                                IDNumber = basicUser.IDNumber ?? "",
+                                Department = basicUser.DeptId ?? "",
+                                Sex = basicUser.Sex == 1 ? "Female" : "Male", 
+                                Birthday = basicUser.Birthday != DateTime.MinValue ? basicUser.Birthday.ToString("yyyy-MM-dd") : "",
+                                Created = DateTime.Now.ToString("yyyy-MM-dd"),
+                                Status = basicUser.Enable ? "Active" : "Inactive",
+                                Comment = basicUser.Comment ?? "",
+                                EnrollmentCount = 0 // Lỗi khi fetch chi tiết
+                            });
+                        }
+
+                        // ✅ Thêm delay nhỏ để tránh spam thiết bị và để user thấy progress
+                        await Task.Delay(50); // 50ms delay giữa các request
+                    }
+                    
+                    return results;
+                });
+
+                // ✅ Hoàn tất và chuẩn bị mở dialog
+                LoadingMessage = $"Đã hoàn tất chuẩn bị {totalEmployees} nhân viên. Đang mở cửa sổ xuất file...";
 
                 // ✅ Sử dụng dialog MỚI với dữ liệu THẬT
                 var dialog = new ExportEmployeeDialog();
@@ -458,6 +544,10 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
                 
                 dialog.DataContext = vm;
                 dialog.Owner = Application.Current.MainWindow;
+                
+                // ✅ Ẩn loading trước khi hiển thị dialog
+                IsLoading = false;
+                
                 dialog.ShowDialog();
 
                 _logger.LogInformation($"Export dialog opened with {exportData.Count} employees");
@@ -470,6 +560,7 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
             finally
             {
                 IsLoading = false;
+                LoadingMessage = "Đang tải dữ liệu..."; // Reset về mặc định
             }
         }
 

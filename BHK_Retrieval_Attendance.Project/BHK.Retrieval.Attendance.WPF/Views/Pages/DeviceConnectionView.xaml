@@ -235,46 +235,6 @@
                 </StackPanel>
             </materialDesign:Card>
 
-            <!-- Information Card -->
-            <materialDesign:Card Grid.Row="3" 
-                                 Style="{StaticResource CardStyle}"
-                                 VerticalAlignment="Top">
-                <StackPanel>
-                    <TextBlock Text="Connection Information" Style="{StaticResource SectionHeaderStyle}"/>
-                    
-                    <Border BorderBrush="{DynamicResource MaterialDesignDivider}"
-                            BorderThickness="1"
-                            CornerRadius="4"
-                            Padding="12"
-                            Background="{DynamicResource MaterialDesignCardBackground}">
-                        <StackPanel>
-                            <TextBlock Text="📌 Tips:" 
-                                       FontWeight="SemiBold"
-                                       Margin="0,0,0,8"/>
-                            <TextBlock TextWrapping="Wrap" 
-                                       Margin="16,0,0,4"
-                                       Foreground="{DynamicResource MaterialDesignBodyLight}">
-                                • Ensure the device is powered on and connected to the network
-                            </TextBlock>
-                            <TextBlock TextWrapping="Wrap" 
-                                       Margin="16,0,0,4"
-                                       Foreground="{DynamicResource MaterialDesignBodyLight}">
-                                • Verify the IP address matches the device's network configuration
-                            </TextBlock>
-                            <TextBlock TextWrapping="Wrap" 
-                                       Margin="16,0,0,4"
-                                       Foreground="{DynamicResource MaterialDesignBodyLight}">
-                                • Default UDP port for ZDC2911 is 4370
-                            </TextBlock>
-                            <TextBlock TextWrapping="Wrap" 
-                                       Margin="16,0,0,0"
-                                       Foreground="{DynamicResource MaterialDesignBodyLight}">
-                                • Use Test button to verify network connectivity before connecting
-                            </TextBlock>
-                        </StackPanel>
-                    </Border>
-                </StackPanel>
-            </materialDesign:Card>
         </Grid>
     </ScrollViewer>
 </UserControl>

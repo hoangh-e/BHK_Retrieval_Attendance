@@ -95,7 +95,7 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels.Dialogs
                 _logger.LogInformation($"Successfully refactored columns for table '{TableName}'");
                 
                 MessageBox.Show(
-                    "✅ Đã refactor cột thành công!\nTable đã được cập nhật theo đúng định dạng.", 
+                    "Đã refactor cột thành công!\nTable đã được cập nhật theo đúng định dạng.", 
                     "Thành công", 
                     MessageBoxButton.OK, 
                     MessageBoxImage.Information);
@@ -106,7 +106,7 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels.Dialogs
             {
                 _logger.LogError(ex, "Failed to refactor table columns");
                 MessageBox.Show(
-                    $"❌ Lỗi refactor cột: {ex.Message}", 
+                    $"Lỗi refactor cột: {ex.Message}", 
                     "Lỗi", 
                     MessageBoxButton.OK, 
                     MessageBoxImage.Error);

@@ -237,12 +237,14 @@
                                    Value="0"
                                    IsIndeterminate="True"
                                    Width="48" Height="48"/>
-                        <TextBlock Text="Đang tải dữ liệu..."
+                        <TextBlock Text="{Binding LoadingMessage}"
                                  Foreground="White"
                                  FontSize="14"
                                  FontWeight="Bold"
                                  Margin="0,16,0,0"
-                                 HorizontalAlignment="Center"/>
+                                 HorizontalAlignment="Center"
+                                 TextWrapping="Wrap"
+                                 MaxWidth="300"/>
                     </StackPanel>
                 </Grid>
             </Grid>

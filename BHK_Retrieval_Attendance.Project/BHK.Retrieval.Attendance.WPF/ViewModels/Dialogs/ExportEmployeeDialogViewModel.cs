@@ -149,7 +149,7 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels.Dialogs
 
                 await _excelService.CreateEmployeeTableAsync(FilePath, SelectedTable);
 
-                StatusMessage = $"✅ Đã tạo Excel table '{SelectedTable}' thành công với 10 cột employee";
+                StatusMessage = $"Đã tạo Excel table '{SelectedTable}' thành công với 10 cột employee";
                 _logger.LogInformation($"Created Excel table '{SelectedTable}' in {FilePath}");
 
                 // Reload table list
@@ -157,7 +157,7 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels.Dialogs
             }
             catch (Exception ex)
             {
-                StatusMessage = $"❌ Lỗi tạo Excel table: {ex.Message}";
+                StatusMessage = $"Lỗi tạo Excel table: {ex.Message}";
                 _logger.LogError(ex, "Failed to create Excel table");
             }
             finally
@@ -195,10 +195,10 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels.Dialogs
                 // ✅ Xuất dữ liệu vào Excel Table (không phải worksheet)
                 await _excelService.ExportEmployeeDataAsync(FilePath, SelectedTable, _data);
 
-                StatusMessage = $"✅ Đã xuất {_data.Count} records vào Excel table thành công!";
+                StatusMessage = $"Đã xuất {_data.Count} records vào Excel table thành công!";
                 _logger.LogInformation($"Exported {_data.Count} records to Excel table '{SelectedTable}' in {FilePath}");
 
-                MessageBox.Show($"🎉 Xuất thành công!\n\n📊 Đã xuất {_data.Count} bản ghi employee vào Excel table '{SelectedTable}'\n📁 File: {Path.GetFileName(FilePath)}\n\n✨ Excel table có filter và structured references sẵn sàng sử dụng!",
+                MessageBox.Show($"Xuất thành công!\n\nĐã xuất {_data.Count} bản ghi employee vào Excel table '{SelectedTable}'\nFile: {Path.GetFileName(FilePath)}\n\nExcel table có filter và structured references sẵn sàng sử dụng!",
                     "Thành công",
                     MessageBoxButton.OK,
                     MessageBoxImage.Information);
@@ -212,7 +212,7 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels.Dialogs
             }
             catch (Exception ex)
             {
-                StatusMessage = $"❌ Lỗi xuất vào Excel table: {ex.Message}";
+                StatusMessage = $"Lỗi xuất vào Excel table: {ex.Message}";
                 _logger.LogError(ex, "Failed to export data to Excel table");
                 
                 MessageBox.Show($"Lỗi xuất dữ liệu: {ex.Message}",
@@ -285,7 +285,7 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels.Dialogs
                     }
 
                     CanCreateTable = false;
-                    StatusMessage = $"✅ Tìm thấy {tables.Count} Excel table trong file";
+                    StatusMessage = $"Tìm thấy {tables.Count} Excel table trong file";
                 }
                 else
                 {
@@ -295,12 +295,12 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels.Dialogs
                     IsTableSelected = false;
                     TableValidationMessage = ""; // Clear any previous validation message
                     SelectedTable = ""; // Clear selected table
-                    StatusMessage = "📋 File không có Excel table nào. Cần tạo Excel table mới để xuất dữ liệu";
+                    StatusMessage = "File không có Excel table nào. Cần tạo Excel table mới để xuất dữ liệu";
                 }
             }
             catch (Exception ex)
             {
-                StatusMessage = $"❌ Lỗi kiểm tra file Excel: {ex.Message}";
+                StatusMessage = $"Lỗi kiểm tra file Excel: {ex.Message}";
                 _logger.LogError(ex, "Failed to load Excel file info");
             }
             finally
@@ -322,20 +322,24 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels.Dialogs
 
             try
             {
+                // ✅ Luôn lấy và hiển thị tên cột hiện tại
+                var currentColumns = await _excelService.GetTableColumnsAsync(FilePath, SelectedTable);
+                var currentColumnNames = currentColumns.Any() ? string.Join(", ", currentColumns) : "Không có cột nào";
+                
                 // Kiểm tra cột table có hợp lệ không
                 var isValid = await _excelService.ValidateTableColumnsAsync(FilePath, SelectedTable, "Employee");
                 
                 if (!isValid)
                 {
                     // Cột không hợp lệ - hiển thị thông báo và nút refactor
-                    TableValidationMessage = "⚠️ Cấu trúc cột table không đúng định dạng Employee";
+                    TableValidationMessage = $"Cấu trúc cột table không đúng định dạng Employee\nCột hiện tại: {currentColumnNames}";
                     IsTableSelected = false; // Không cho phép xuất
                     ShowCreateDefaultTable = false; // Hide create button when table exists but invalid
                 }
                 else
                 {
                     // Cột hợp lệ - cho phép xuất
-                    TableValidationMessage = "";
+                    TableValidationMessage = $"Cấu trúc cột table hợp lệ\nCột hiện tại: {currentColumnNames}";
                     IsTableSelected = true;
                     ShowCreateDefaultTable = false; // Hide create button when valid table selected
                     
@@ -344,14 +348,14 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels.Dialogs
 
                     // Get record count từ Excel Table
                     RecordCount = await _excelService.GetRecordCountAsync(FilePath, SelectedTable);
-                    StatusMessage = $"📊 Excel table '{SelectedTable}' có {RecordCount} records - Cấu trúc hợp lệ ✅";
+                    StatusMessage = $"Excel table '{SelectedTable}' có {RecordCount} records - Cấu trúc hợp lệ";
                 }
 
                 CanCreateTable = false;
             }
             catch (Exception ex)
             {
-                TableValidationMessage = $"❌ Lỗi kiểm tra table: {ex.Message}";
+                TableValidationMessage = $"Lỗi kiểm tra table: {ex.Message}";
                 IsTableSelected = false;
                 _logger.LogError(ex, "Failed to update Excel table info");
             }
@@ -390,7 +394,7 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels.Dialogs
                 
                 await _excelService.CreateEmployeeTableAsync(FilePath, defaultTableName);
 
-                StatusMessage = $"✅ Đã tạo Employee table '{defaultTableName}' thành công với 10 cột tiêu chuẩn";
+                StatusMessage = $"Đã tạo Employee table '{defaultTableName}' thành công với 10 cột tiêu chuẩn";
                 _logger.LogInformation($"Created default Employee table '{defaultTableName}' in {FilePath}");
 
                 // Reload table list
@@ -398,7 +402,7 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels.Dialogs
             }
             catch (Exception ex)
             {
-                StatusMessage = $"❌ Lỗi tạo Employee table mặc định: {ex.Message}";
+                StatusMessage = $"Lỗi tạo Employee table mặc định: {ex.Message}";
                 _logger.LogError(ex, "Failed to create default Employee table");
             }
             finally
@@ -441,7 +445,7 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels.Dialogs
             }
             catch (Exception ex)
             {
-                StatusMessage = $"❌ Lỗi hiển thị dialog refactor: {ex.Message}";
+                StatusMessage = $"Lỗi hiển thị dialog refactor: {ex.Message}";
                 _logger.LogError(ex, "Failed to show refactor dialog");
             }
         }

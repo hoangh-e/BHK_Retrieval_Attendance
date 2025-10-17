@@ -32,8 +32,8 @@
         <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
             <StackPanel Margin="0,20">
                 
-                <!-- Đường dẫn file -->
-                <TextBlock Text="Đường dẫn file Excel sẽ tạo" 
+                <!-- Đường dẫn folder export -->
+                <TextBlock Text="Đường dẫn folder export file" 
                            FontWeight="Bold"
                            Style="{StaticResource MaterialDesignSubtitle2TextBlock}"/>
                 <Grid Margin="0,5,0,15">
@@ -42,43 +42,62 @@
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
                     <TextBox Grid.Column="0" 
-                             Text="{Binding FilePath, UpdateSourceTrigger=PropertyChanged}" 
+                             Text="{Binding ExportFolder, UpdateSourceTrigger=PropertyChanged}" 
                              Margin="0,0,10,0"
-                             IsReadOnly="True"
-                             materialDesign:HintAssist.Hint="File Excel sẽ được tạo tại đây"
+                             materialDesign:HintAssist.Hint="Chọn folder để lưu file export"
                              Style="{StaticResource MaterialDesignOutlinedTextBox}"/>
                     <Button Grid.Column="1" 
                             Content="Chọn thư mục" 
-                            Command="{Binding BrowseFileCommand}"
+                            Command="{Binding BrowseFolderCommand}"
                             Style="{StaticResource MaterialDesignRaisedButton}"/>
                 </Grid>
 
-                <!-- Tên file (readonly) -->
-                <TextBlock Text="Tên file" 
+                <!-- Loại file -->
+                <TextBlock Text="Loại file" 
                            FontWeight="Bold"
                            Style="{StaticResource MaterialDesignSubtitle2TextBlock}"/>
-                <TextBox Text="{Binding FileName}" 
-                         IsReadOnly="True" 
-                         Margin="0,5,0,15"
-                         materialDesign:HintAssist.Hint="Tên file được chọn"
-                         Style="{StaticResource MaterialDesignOutlinedTextBox}"/>
-
-                <!-- Chọn Table -->
-                <TextBlock Text="Chọn Table" 
-                           FontWeight="Bold"
-                           Style="{StaticResource MaterialDesignSubtitle2TextBlock}"/>
-                <ComboBox ItemsSource="{Binding AvailableTables}" 
-                          SelectedItem="{Binding SelectedTable}"
+                <ComboBox ItemsSource="{Binding FileTypes}" 
+                          SelectedItem="{Binding SelectedFileType}"
                           Margin="0,5,0,15"
-                          materialDesign:HintAssist.Hint="Chọn table để xuất dữ liệu"
+                          materialDesign:HintAssist.Hint="Chọn định dạng file export"
                           Style="{StaticResource MaterialDesignOutlinedComboBox}"/>
 
-                <!-- Số lượng records -->
-                <TextBlock Text="{Binding RecordCount, StringFormat='Số lượng records hiện có: {0}'}"
+                <!-- Tên file (template) -->
+                <TextBlock Text="Tên file sẽ tạo" 
+                           FontWeight="Bold"
+                           Style="{StaticResource MaterialDesignSubtitle2TextBlock}"/>
+                <TextBox Text="{Binding GeneratedFileName}" 
+                         IsReadOnly="True" 
+                         Margin="0,5,0,15"
+                         materialDesign:HintAssist.Hint="Tên file được tạo theo template"
+                         Style="{StaticResource MaterialDesignOutlinedTextBox}"
+                         Foreground="{DynamicResource MaterialDesignBody}"/>
+
+                <!-- Tên table -->
+                <TextBlock Text="Tên table" 
+                           FontWeight="Bold"
+                           Style="{StaticResource MaterialDesignSubtitle2TextBlock}"/>
+                <TextBox Text="{Binding TableName, UpdateSourceTrigger=PropertyChanged}" 
+                         Margin="0,5,0,15"
+                         materialDesign:HintAssist.Hint="Tên table trong file Excel (có thể thay đổi)"
+                         Style="{StaticResource MaterialDesignOutlinedTextBox}"/>
+
+                <!-- Số lượng điểm danh sẽ xuất -->
+                <TextBlock Text="{Binding AttendanceCount, StringFormat='Số lượng điểm danh sẽ xuất: {0} bản ghi'}"
                            Foreground="{DynamicResource PrimaryHueMidBrush}" 
                            FontWeight="Bold" 
                            Margin="0,0,0,10"
                            Style="{StaticResource MaterialDesignBody1TextBlock}"/>
+
+                <!-- Các cột sẽ tạo trong table -->
+                <TextBlock Text="Các cột sẽ tạo trong table" 
+                           FontWeight="Bold"
+                           Style="{StaticResource MaterialDesignSubtitle2TextBlock}"/>
+                <TextBlock Text="{Binding ColumnList}"
+                           Foreground="{DynamicResource MaterialDesignBodyLight}" 
+                           Margin="0,5,0,15"
+                           TextWrapping="Wrap"
+                           Style="{StaticResource MaterialDesignBody2TextBlock}"/>
 
                 <!-- Loading -->
                 <ProgressBar IsIndeterminate="True" 
@@ -103,12 +122,6 @@
                     HorizontalAlignment="Right" 
                     Margin="0,20,0,0">
             
-            <Button Content="TẠO TABLE" 
-                    Command="{Binding CreateTableCommand}"
-                    Visibility="{Binding CanCreateTable, Converter={StaticResource BoolToVisibility}}"
-                    Margin="0,0,10,0"
-                    Style="{StaticResource MaterialDesignOutlinedButton}"/>
-            
             <Button Content="HỦY" 
                     Command="{Binding CancelCommand}"
                     Margin="0,0,10,0"
@@ -116,7 +129,6 @@
             
             <Button Content="XUẤT" 
                     Command="{Binding ExportCommand}"
-                    IsEnabled="{Binding IsTableSelected}"
                     Style="{StaticResource MaterialDesignRaisedButton}"/>
         </StackPanel>
     </Grid>

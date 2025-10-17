@@ -12,6 +12,7 @@ using Microsoft.Win32;
 using Microsoft.Extensions.Logging;
 using BHK.Retrieval.Attendance.WPF.Services.Interfaces;
 using BHK.Retrieval.Attendance.Core.DTOs.Responses;
+using BHK.Retrieval.Attendance.WPF.Models.Data;
 
 namespace BHK.Retrieval.Attendance.WPF.ViewModels.Dialogs
 {
@@ -30,19 +31,25 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels.Dialogs
         #region Properties
 
         [ObservableProperty]
-        private string _filePath = string.Empty;
+        private string _exportFolder = string.Empty;
 
         [ObservableProperty]
-        private string _fileName = string.Empty;
+        private ObservableCollection<string> _fileTypes = new() { "xlsx", "xls", "csv", "json" };
 
         [ObservableProperty]
-        private string _selectedTable = string.Empty;
+        private string _selectedFileType = "xlsx";
 
         [ObservableProperty]
-        private ObservableCollection<string> _availableTables = new();
+        private string _generatedFileName = string.Empty;
 
         [ObservableProperty]
-        private int _recordCount;
+        private string _tableName = string.Empty;
+
+        [ObservableProperty]
+        private int _attendanceCount;
+
+        [ObservableProperty]
+        private string _columnList = string.Empty;
 
         [ObservableProperty]
         private bool _isLoading;
@@ -50,11 +57,10 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels.Dialogs
         [ObservableProperty]
         private string _statusMessage = string.Empty;
 
-        [ObservableProperty]
-        private bool _canCreateTable;
-
-        [ObservableProperty]
-        private bool _isTableSelected;
+        // ✅ Legacy properties để tương thích với code cũ
+        public string FilePath => Path.Combine(ExportFolder, GeneratedFileName);
+        public string FileName => GeneratedFileName;
+        public string SelectedTable => TableName;
 
         public bool DialogResult { get; private set; }
         
@@ -80,19 +86,22 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels.Dialogs
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _data = new List<AttendanceExportDto>();
 
-            // Load initial values từ PathConfigurationService
+            // ✅ Load initial values từ PathConfigurationService
             var folder = _pathConfig.GetAttendanceExportFolder();
             if (string.IsNullOrWhiteSpace(folder))
             {
                 folder = Environment.GetFolderPath(Environment.SpecialFolder.Desktop);
             }
             
-            // Tạo tên file tự động trong folder
-            var fileName = $"attendance_{DateTime.Now:yyyy-MM-dd_HHmmss}.xlsx";
-            FilePath = Path.Combine(folder, fileName);
-            SelectedTable = _pathConfig.GetAttendanceTableName();
-
-            _ = LoadFileInfoAsync();
+            ExportFolder = folder;
+            TableName = _pathConfig.GetAttendanceTableName();
+            SelectedFileType = "xlsx";
+            
+            // ✅ Thiết lập cột mặc định cho attendance
+            ColumnList = "ID, Date, Time, Verify";
+            
+            UpdateGeneratedFileName();
+            _ = LoadInitialDataAsync();
         }
 
         #endregion
@@ -112,24 +121,23 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels.Dialogs
         #region Commands
 
         [RelayCommand]
-        private void BrowseFile()
+        private void BrowseFolder()
         {
             var dialog = new System.Windows.Forms.FolderBrowserDialog
             {
                 Description = "Chọn thư mục để xuất file điểm danh",
-                SelectedPath = FilePath
+                SelectedPath = ExportFolder
             };
 
             if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
-                // Tạo tên file tự động trong folder đã chọn
-                var fileName = $"attendance_{DateTime.Now:yyyy-MM-dd_HHmmss}.xlsx";
-                FilePath = Path.Combine(dialog.SelectedPath, fileName);
-                _pathConfig.SaveAttendanceExportFolder(dialog.SelectedPath); // ✅ Lưu folder vào Settings
-                _ = LoadFileInfoAsync();
+                ExportFolder = dialog.SelectedPath;
+                // Folder sẽ được lưu tự động trong OnExportFolderChanged
             }
         }
 
+        // TODO: Cập nhật lại cho interface mới - sẽ tự tạo file và table khi Export
+        /*
         [RelayCommand]
         private async Task CreateTable()
         {
@@ -168,19 +176,26 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels.Dialogs
                 IsLoading = false;
             }
         }
+        */
 
         [RelayCommand]
         private async Task Export()
         {
-            if (string.IsNullOrWhiteSpace(FilePath))
+            if (string.IsNullOrWhiteSpace(ExportFolder))
             {
-                StatusMessage = "Vui lòng chọn file Excel";
+                StatusMessage = "Vui lòng chọn thư mục xuất file";
                 return;
             }
 
-            if (string.IsNullOrWhiteSpace(SelectedTable))
+            if (string.IsNullOrWhiteSpace(TableName))
             {
-                StatusMessage = "Vui lòng chọn table";
+                StatusMessage = "Vui lòng nhập tên table";
+                return;
+            }
+
+            if (string.IsNullOrWhiteSpace(SelectedFileType))
+            {
+                StatusMessage = "Vui lòng chọn định dạng file";
                 return;
             }
 
@@ -195,13 +210,25 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels.Dialogs
                 IsLoading = true;
                 StatusMessage = "Đang xuất dữ liệu...";
 
-                // ✅ Xuất dữ liệu (data được truyền từ bên ngoài - Test hoặc Real)
-                await _excelService.ExportAttendanceDataAsync(FilePath, SelectedTable, _data);
+                // Tạo đường dẫn file đầy đủ
+                var fullFilePath = Path.Combine(ExportFolder, GeneratedFileName);
+
+                // ✅ Xuất dữ liệu theo định dạng đã chọn
+                if (SelectedFileType == "xlsx" || SelectedFileType == "xls")
+                {
+                    await _excelService.ExportAttendanceDataAsync(fullFilePath, TableName, _data);
+                }
+                else
+                {
+                    // TODO: Thêm hỗ trợ JSON, CSV sau
+                    StatusMessage = $"Định dạng {SelectedFileType} chưa được hỗ trợ";
+                    return;
+                }
 
                 StatusMessage = $"Đã xuất {_data.Count} bản ghi thành công!";
-                _logger.LogInformation($"Exported {_data.Count} records to {FilePath}");
+                _logger.LogInformation($"Exported {_data.Count} records to {fullFilePath}");
 
-                System.Windows.MessageBox.Show($"Đã xuất {_data.Count} bản ghi vào table '{SelectedTable}' thành công!",
+                System.Windows.MessageBox.Show($"Đã xuất {_data.Count} bản ghi vào file '{GeneratedFileName}' thành công!\n\nĐường dẫn: {fullFilePath}",
                     "Thành công",
                     MessageBoxButton.OK,
                     MessageBoxImage.Information);
@@ -244,6 +271,8 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels.Dialogs
 
         #region Helper Methods
 
+        // TODO: Cập nhật lại method này cho interface mới
+        /*
         private async Task LoadFileInfoAsync()
         {
             if (string.IsNullOrWhiteSpace(FilePath))
@@ -306,7 +335,10 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels.Dialogs
                 IsLoading = false;
             }
         }
+        */
 
+        // TODO: Cập nhật lại method này cho interface mới
+        /*
         private async Task UpdateTableInfoAsync()
         {
             if (string.IsNullOrWhiteSpace(SelectedTable))
@@ -347,6 +379,65 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels.Dialogs
             if (!string.IsNullOrWhiteSpace(value))
             {
                 _ = LoadFileInfoAsync();
+            }
+        }
+        */
+
+        // Thêm các method mới cho interface cập nhật
+        private void UpdateGeneratedFileName()
+        {
+            if (string.IsNullOrWhiteSpace(ExportFolder) || string.IsNullOrWhiteSpace(SelectedFileType))
+            {
+                GeneratedFileName = "Chưa chọn thư mục hoặc định dạng file";
+                return;
+            }
+
+            var timestamp = DateTime.Now.ToString("yyyy-MM-dd_HHmmss");
+            // SelectedFileType hiện tại chỉ là string (xlsx, json, xls, csv)
+            GeneratedFileName = $"attendance_{timestamp}.{SelectedFileType}";
+        }
+
+        private async Task LoadInitialDataAsync()
+        {
+            // Đọc thông tin từ settings
+            ExportFolder = _pathConfig.GetAttendanceExportFolder();
+            TableName = _pathConfig.GetAttendanceTableName();
+            
+            // Cập nhật số lượng bản ghi
+            AttendanceCount = _data?.Count ?? 0;
+
+            // Cập nhật thông tin cột (giả sử từ AttendanceExportDto)
+            var columns = new List<string>
+            {
+                "EmployeeId", "EmployeeName", "Department", 
+                "Date", "TimeIn", "TimeOut", "Status"
+            };
+            ColumnList = string.Join(", ", columns);
+
+            // Cập nhật tên file
+            UpdateGeneratedFileName();
+        }
+
+        // Property change handlers cho interface mới
+        partial void OnSelectedFileTypeChanged(string value)
+        {
+            UpdateGeneratedFileName();
+        }
+
+        partial void OnExportFolderChanged(string value)
+        {
+            if (!string.IsNullOrWhiteSpace(value))
+            {
+                _pathConfig.SaveAttendanceExportFolder(value);
+                UpdateGeneratedFileName();
+            }
+        }
+
+        partial void OnTableNameChanged(string value)
+        {
+            if (!string.IsNullOrWhiteSpace(value))
+            {
+                _pathConfig.SaveAttendanceTableName(value);
             }
         }
 
