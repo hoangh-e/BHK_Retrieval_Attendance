@@ -18,13 +18,14 @@
         <converters:InverseBooleanToVisibilityConverter x:Key="InverseBoolToVisConverter"/>
     </UserControl.Resources>
 
-    <Grid Margin="20">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
-        </Grid.RowDefinitions>
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <Grid Margin="20">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
 
         <!-- Header -->
         <TextBlock Grid.Row="0" 
@@ -150,9 +151,9 @@
             </StackPanel>
         </materialDesign:Card>
 
-        <!-- Data Grid with ScrollViewer for responsiveness -->
-        <materialDesign:Card Grid.Row="2" Padding="0">
-            <Grid MinHeight="300">
+        <!-- Data Grid with proper scrolling -->
+        <materialDesign:Card Grid.Row="2" Padding="0" MaxHeight="600">
+            <Grid>
                 <!-- Loading Overlay -->
                 <ProgressBar Style="{StaticResource MaterialDesignCircularProgressBar}"
                            IsIndeterminate="True"
@@ -160,35 +161,34 @@
                            HorizontalAlignment="Center"
                            VerticalAlignment="Center"
                            Width="50"
-                           Height="50"/>
+                           Height="50"
+                           Panel.ZIndex="1"/>
 
-                <!-- Data Grid with ScrollViewer -->
-                <ScrollViewer HorizontalScrollBarVisibility="Auto" 
-                            VerticalScrollBarVisibility="Auto"
-                            Visibility="{Binding IsLoading, Converter={StaticResource InverseBoolToVisConverter}}">
-                    <DataGrid ItemsSource="{Binding AttendanceRecords}"
-                            SelectedItem="{Binding SelectedRecord}"
-                            AutoGenerateColumns="False"
-                            CanUserAddRows="False"
-                            IsReadOnly="True"
-                            SelectionMode="Single"
-                            MinWidth="600"
-                            HorizontalScrollBarVisibility="Disabled"
-                            VerticalScrollBarVisibility="Disabled">
-                        
-                        <DataGrid.Columns>
-                            <!-- Hiển thị 8 cột: DN, DIN, Ngày, Giờ, Loại, Phương thức, Hành động, Ghi chú -->
-                            <DataGridTextColumn Header="DN" Binding="{Binding DN}" Width="80" MinWidth="60"/>
-                            <DataGridTextColumn Header="DIN" Binding="{Binding DIN}" Width="120" MinWidth="100"/>
-                            <DataGridTextColumn Header="Ngày" Binding="{Binding Date}" Width="130" MinWidth="120"/>
-                            <DataGridTextColumn Header="Giờ" Binding="{Binding Time}" Width="110" MinWidth="100"/>
-                            <DataGridTextColumn Header="Loại" Binding="{Binding Type}" Width="120" MinWidth="100"/>
-                            <DataGridTextColumn Header="Phương thức" Binding="{Binding Verify}" Width="110" MinWidth="90"/>
-                            <DataGridTextColumn Header="Hành động" Binding="{Binding Action}" Width="100" MinWidth="90"/>
-                            <DataGridTextColumn Header="Ghi chú" Binding="{Binding Remark}" Width="*" MinWidth="120"/>
-                        </DataGrid.Columns>
-                    </DataGrid>
-                </ScrollViewer>
+                <!-- Data Grid - với scroll bars tự động -->
+                <DataGrid ItemsSource="{Binding AttendanceRecords}"
+                        SelectedItem="{Binding SelectedRecord}"
+                        AutoGenerateColumns="False"
+                        CanUserAddRows="False"
+                        IsReadOnly="True"
+                        SelectionMode="Single"
+                        HorizontalScrollBarVisibility="Auto"
+                        VerticalScrollBarVisibility="Auto"
+                        EnableRowVirtualization="True"
+                        EnableColumnVirtualization="True"
+                        Visibility="{Binding IsLoading, Converter={StaticResource InverseBoolToVisConverter}}">
+                    
+                    <DataGrid.Columns>
+                        <!-- Hiển thị 8 cột: DN, DIN, Ngày, Giờ, Loại, Phương thức, Hành động, Ghi chú -->
+                        <DataGridTextColumn Header="DN" Binding="{Binding DN}" Width="80" MinWidth="60"/>
+                        <DataGridTextColumn Header="DIN" Binding="{Binding DIN}" Width="120" MinWidth="100"/>
+                        <DataGridTextColumn Header="Ngày" Binding="{Binding Date}" Width="130" MinWidth="120"/>
+                        <DataGridTextColumn Header="Giờ" Binding="{Binding Time}" Width="110" MinWidth="100"/>
+                        <DataGridTextColumn Header="Loại" Binding="{Binding Type}" Width="120" MinWidth="100"/>
+                        <DataGridTextColumn Header="Phương thức" Binding="{Binding Verify}" Width="110" MinWidth="90"/>
+                        <DataGridTextColumn Header="Hành động" Binding="{Binding Action}" Width="100" MinWidth="90"/>
+                        <DataGridTextColumn Header="Ghi chú" Binding="{Binding Remark}" Width="*" MinWidth="120"/>
+                    </DataGrid.Columns>
+                </DataGrid>
             </Grid>
         </materialDesign:Card>
 
@@ -206,5 +206,6 @@
                 <Run Text="ms)"/>
             </TextBlock>
         </StackPanel>
-    </Grid>
+        </Grid>
+    </ScrollViewer>
 </UserControl>
