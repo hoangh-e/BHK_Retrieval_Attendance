@@ -25,6 +25,7 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
         private EmployeeViewModel _employeeViewModel;
         private AttendanceManagementViewModel _attendanceManagementViewModel;
         private SettingsViewModel _settingsViewModel;
+        private AboutViewModel _aboutViewModel;
         
         // ✅ Bổ sung thêm thông tin thiết bị
         private string _serialNumber;
@@ -40,7 +41,8 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
             IOptions<DeviceOptions> deviceOptions,
             EmployeeViewModel employeeViewModel,
             AttendanceManagementViewModel attendanceManagementViewModel,
-            SettingsViewModel settingsViewModel)
+            SettingsViewModel settingsViewModel,
+            AboutViewModel aboutViewModel)
         {
             _deviceService = deviceService ?? throw new ArgumentNullException(nameof(deviceService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -54,6 +56,9 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
             
             // ✅ THÊM: Khởi tạo SettingsViewModel
             _settingsViewModel = settingsViewModel ?? throw new ArgumentNullException(nameof(settingsViewModel));
+
+            // ✅ THÊM: Khởi tạo AboutViewModel
+            _aboutViewModel = aboutViewModel ?? throw new ArgumentNullException(nameof(aboutViewModel));
 
             // Initialize properties with device connection info
             _ipAddress = _deviceOptions.DefaultIpAddress;
@@ -191,6 +196,15 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
         {
             get => _settingsViewModel;
             set => SetProperty(ref _settingsViewModel, value);
+        }
+
+        /// <summary>
+        /// ViewModel cho trang thông tin phần mềm
+        /// </summary>
+        public AboutViewModel AboutViewModel
+        {
+            get => _aboutViewModel;
+            set => SetProperty(ref _aboutViewModel, value);
         }
 
         #endregion

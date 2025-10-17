@@ -373,12 +373,10 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
                 IsLoading = true;
                 _logger.LogInformation($"Searching employees with keyword: {SearchKeyword}");
 
-                // Lấy tất cả nhân viên và lọc
+                // Lấy tất cả nhân viên và lọc theo ID (DIN)
                 var allUsers = await _deviceService.GetAllUsersAsync();
                 var filteredUsers = allUsers.Where(u =>
-                    u.UserName?.Contains(SearchKeyword, StringComparison.OrdinalIgnoreCase) == true ||
-                    u.DIN.ToString().Contains(SearchKeyword) ||
-                    u.IDNumber?.Contains(SearchKeyword, StringComparison.OrdinalIgnoreCase) == true
+                    u.DIN.ToString().Contains(SearchKeyword)
                 ).ToList();
 
                 // Cập nhật phân trang

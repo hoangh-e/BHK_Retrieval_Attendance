@@ -123,6 +123,7 @@ namespace BHK.Retrieval.Attendance.WPF.Configuration.DI
             services.AddTransient<AttendanceManagementViewModel>();
             services.AddTransient<ExportConfigurationDialogViewModel>();
             services.AddTransient<SettingsViewModel>();
+            services.AddTransient<AboutViewModel>();
             services.AddTransient<ViewModels.ExportEmployeeViewModel>();
             
             // ✅ Export Dialog ViewModels

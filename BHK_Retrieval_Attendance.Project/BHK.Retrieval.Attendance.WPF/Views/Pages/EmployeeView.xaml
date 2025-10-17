@@ -83,7 +83,7 @@
 
                     <TextBox Grid.Column="0"
                              Text="{Binding SearchKeyword, UpdateSourceTrigger=PropertyChanged}"
-                             materialDesign:HintAssist.Hint="Tìm kiếm theo ID, tên, hoặc số CMND..."
+                             materialDesign:HintAssist.Hint="Tìm kiếm theo ID nhân viên..."
                              Style="{StaticResource MaterialDesignOutlinedTextBox}"
                              Margin="0,0,8,0"/>
 

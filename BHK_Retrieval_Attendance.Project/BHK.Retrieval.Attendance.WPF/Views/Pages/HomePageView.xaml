@@ -318,6 +318,25 @@
                     </StackPanel>
                 </TabItem>
 
+                <!-- Tab: Giới thiệu phần mềm -->
+                <TabItem x:Name="AboutTab">
+                    <TabItem.Header>
+                        <StackPanel Width="68" Height="80">
+                            <materialDesign:PackIcon Kind="Information" 
+                                                    Width="32" Height="32" 
+                                                    HorizontalAlignment="Center"
+                                                    Margin="0,8,0,4"/>
+                            <TextBlock Text="Giới thiệu" 
+                                      TextWrapping="Wrap"
+                                      TextAlignment="Center"
+                                      FontSize="11"
+                                      LineHeight="14"
+                                      MaxWidth="110"/>
+                        </StackPanel>
+                    </TabItem.Header>
+                    <views:AboutView DataContext="{Binding AboutViewModel}"/>
+                </TabItem>
+
             </TabControl>
         </materialDesign:Card>
     </Grid>
