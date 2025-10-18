@@ -1,11 +1,13 @@
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using ClosedXML.Excel;
 using Microsoft.Extensions.Logging;
 using BHK.Retrieval.Attendance.WPF.Services.Interfaces;
+using BHK.Retrieval.Attendance.WPF.Utilities;
 
 namespace BHK.Retrieval.Attendance.WPF.Services.Implementations
 {
@@ -185,6 +187,11 @@ namespace BHK.Retrieval.Attendance.WPF.Services.Implementations
                         // Chỉ sử dụng tên table thuần túy, không có prefix
                         string actualTableName = ExtractActualTableName(tableName);
                         var table = worksheet.Range(1, 1, 2, 6).CreateTable(actualTableName);
+                        
+                        if (table == null)
+                        {
+                            throw new InvalidOperationException($"Failed to create Attendance table '{actualTableName}'. The table name may be invalid or already exists.");
+                        }
 
                         // Format header
                         var headerRange = worksheet.Range(1, 1, 1, 6);
@@ -264,6 +271,11 @@ namespace BHK.Retrieval.Attendance.WPF.Services.Implementations
                         // Chỉ sử dụng tên table thuần túy, không có prefix
                         string actualTableName = ExtractActualTableName(tableName);
                         var table = worksheet.Range(1, 1, 2, 7).CreateTable(actualTableName);
+                        
+                        if (table == null)
+                        {
+                            throw new InvalidOperationException($"Failed to create Employee table '{actualTableName}'. The table name may be invalid or already exists.");
+                        }
                         
                         // Format header
                         var headerRange = worksheet.Range(1, 1, 1, 7);
@@ -847,7 +859,17 @@ namespace BHK.Retrieval.Attendance.WPF.Services.Implementations
         /// </summary>
         private void RefactorTableByRecreation(IXLTable table, IXLWorksheet worksheet, List<string> expectedColumns, string tableType, string actualTableName)
         {
+            if (table == null)
+                throw new ArgumentNullException(nameof(table), "Table cannot be null");
+            if (worksheet == null)
+                throw new ArgumentNullException(nameof(worksheet), "Worksheet cannot be null");
+            if (expectedColumns == null || expectedColumns.Count == 0)
+                throw new ArgumentException("Expected columns cannot be null or empty", nameof(expectedColumns));
+            
             var currentRange = table.RangeAddress;
+            if (currentRange == null)
+                throw new InvalidOperationException("Table range address is null");
+                
             var headerRow = table.HeadersRow();
             
             if (headerRow != null)
@@ -859,96 +881,218 @@ namespace BHK.Retrieval.Attendance.WPF.Services.Implementations
                     foreach (var row in table.DataRange.Rows())
                     {
                         var rowData = new List<object>();
-                        var maxCol = Math.Min(row.LastCellUsed()?.Address.ColumnNumber ?? 0, expectedColumns.Count);
-                        for (int col = 1; col <= maxCol; col++)
+                        var lastCell = row.LastCellUsed();
+                        if (lastCell != null)
                         {
-                            rowData.Add(row.Cell(col).Value);
+                            var maxCol = Math.Min(lastCell.Address.ColumnNumber, expectedColumns.Count);
+                            for (int col = 1; col <= maxCol; col++)
+                            {
+                                var cell = row.Cell(col);
+                                rowData.Add(cell?.Value ?? "");
+                            }
                         }
                         existingData.Add(rowData);
                     }
                 }
                 
-                // ✅ BƯỚC 2: Xóa table cũ
-                var startRow = currentRange.FirstAddress.RowNumber;
-                var startCol = currentRange.FirstAddress.ColumnNumber;
-                table.Delete(XLShiftDeletedCells.ShiftCellsUp);
+                // ✅ BƯỚC 2: Đảm bảo tên table hợp lệ & duy nhất
+                var safeName = actualTableName;
+                if (string.IsNullOrWhiteSpace(safeName)) 
+                    safeName = "Table1";
                 
-                // ✅ BƯỚC 3: Tạo header mới với đúng số cột
-                for (int i = 0; i < expectedColumns.Count; i++)
+                // Lưu vị trí table cũ
+                var oldStartRow = currentRange.FirstAddress.RowNumber;
+                var oldStartCol = currentRange.FirstAddress.ColumnNumber;
+                var oldEndRow = currentRange.LastAddress.RowNumber;
+                var oldEndCol = currentRange.LastAddress.ColumnNumber;
+                
+                // ✅ LƯU SỐ CỘT CŨ TRƯỚC KHI XÓA (table reference sẽ invalid sau khi xóa worksheet)
+                int oldColumnCount = table.Fields?.Count() ?? 0;
+                
+                // ✅ BƯỚC 3: GIẢI PHÁP CUỐI CÙNG - TẠO LẠI WORKSHEET MỚI
+                // Vì ClosedXML không cho phép xóa table đúng cách, ta sẽ:
+                // 1. Tạo worksheet mới
+                // 2. Copy dữ liệu sang
+                // 3. Xóa worksheet cũ
+                // 4. Đổi tên worksheet mới thành tên cũ
+                
+                try
                 {
-                    var cell = worksheet.Cell(startRow, startCol + i);
-                    cell.Value = expectedColumns[i];
-                    cell.Style.Font.Bold = true;
-                    cell.Style.Fill.BackgroundColor = tableType == "Employee" ? XLColor.LightGreen : XLColor.LightBlue;
-                    cell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
-                }
+                    _logger.LogInformation($"Using worksheet recreation method to bypass ClosedXML table deletion bug");
+                    
+                    var oldSheetName = worksheet.Name;
+                    var workbook = worksheet.Workbook;
+                    var oldSheetPosition = worksheet.Position;
+                    
+                    // Tạo worksheet mới tạm thời
+                    var tempSheet = workbook.Worksheets.Add($"_TEMP_{oldSheetName}");
+                    
+                    // ✅ BƯỚC 4: Tạo table mới trên worksheet sạch
+                _logger.LogInformation($"Creating new table on clean worksheet");
                 
-                // ✅ BƯỚC 4: Tạo table mới với range đúng kích thước
-                var newEndColumn = startCol + expectedColumns.Count - 1;
-                var newEndRow = startRow + Math.Max(0, existingData.Count); // Ít nhất 1 row cho header
+                // Xác định kích thước table
+                var finalEndRow = 1 + Math.Max(1, existingData.Count);
+                var finalEndCol = Math.Max(1, expectedColumns.Count);
                 
-                var newRange = worksheet.Range(startRow, startCol, newEndRow, newEndColumn);
-                var newTable = newRange.CreateTable(actualTableName);
+                IXLTable finalTable;
                 
-                // ✅ BƯỚC 5: Khôi phục dữ liệu với số cột mới
                 if (existingData.Count > 0)
                 {
-                    for (int row = 0; row < existingData.Count; row++)
+                    // Có data: dùng InsertTable từ DataTable
+                    var dataTable = new System.Data.DataTable();
+                    
+                    // Thêm columns
+                    for (int i = 0; i < expectedColumns.Count; i++)
                     {
-                        var rowData = existingData[row];
-                        for (int col = 0; col < expectedColumns.Count; col++)
+                        var colName = expectedColumns[i];
+                        if (string.IsNullOrWhiteSpace(colName))
                         {
-                            var cellValue = col < rowData.Count ? rowData[col]?.ToString() ?? "" : "";
-                            worksheet.Cell(startRow + 1 + row, startCol + col).Value = cellValue;
+                            colName = $"Column{i + 1}";
                         }
+                        dataTable.Columns.Add(colName, typeof(string));
                     }
+                    
+                    // Đảm bảo tên cột unique
+                    dataTable.EnsureUniqueColumnNames();
+                    
+                    // Thêm rows
+                    foreach (var rowData in existingData)
+                    {
+                        var row = dataTable.NewRow();
+                        for (int i = 0; i < expectedColumns.Count; i++)
+                        {
+                            row[i] = i < rowData.Count ? (rowData[i]?.ToString() ?? "") : "";
+                        }
+                        dataTable.Rows.Add(row);
+                    }
+                    
+                    _logger.LogInformation($"Inserting table '{safeName}' with {dataTable.Rows.Count} rows and {dataTable.Columns.Count} columns");
+                    
+                    finalTable = tempSheet.Cell(1, 1).InsertTable(dataTable, safeName, true);
+                    finalTable.ShowTotalsRow = false;
                 }
-                
-                // ✅ BƯỚC 6: Thiết lập theme cho table
-                newTable.Theme = tableType == "Employee" ? XLTableTheme.TableStyleMedium9 : XLTableTheme.TableStyleMedium2;
-                
-                // ✅ BƯỚC 7: Xóa các cột thừa bên phải table (nếu thu hẹp)
-                var oldEndCol = currentRange.LastAddress.ColumnNumber;
-                if (newEndColumn < oldEndCol)
+                else
                 {
-                    _logger.LogInformation($"Cleaning up {oldEndCol - newEndColumn} excess columns after table recreation");
-                    for (int col = oldEndCol; col > newEndColumn; col--)
+                    // Không có data: tạo table trống
+                    _logger.LogInformation($"Creating empty table");
+                    
+                    // Ghi header thủ công
+                    for (int c = 0; c < finalEndCol; c++)
                     {
-                        try
-                        {
-                            // Clear toàn bộ cột từ header đến end của old range
-                            var clearRange = worksheet.Range(startRow, col, currentRange.LastAddress.RowNumber, col);
-                            clearRange.Clear();
-                        }
-                        catch (Exception ex)
-                        {
-                            _logger.LogWarning($"Failed to clear column {col}: {ex.Message}");
-                        }
+                        var header = (c < expectedColumns.Count && !string.IsNullOrWhiteSpace(expectedColumns[c]))
+                            ? expectedColumns[c]
+                            : $"Column{c + 1}";
+                        var cell = tempSheet.Cell(1, c + 1);
+                        cell.Value = header;
+                        cell.Style.Font.Bold = true;
+                        cell.Style.Fill.BackgroundColor = tableType == "Employee" ? XLColor.LightGreen : XLColor.LightBlue;
+                        cell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
                     }
+                    
+                    // Thêm 1 dòng trống
+                    for (int col = 0; col < finalEndCol; col++)
+                    {
+                        tempSheet.Cell(2, 1 + col).Value = "";
+                    }
+                    
+                    var tableRange = tempSheet.Range(1, 1, 2, finalEndCol);
+                    finalTable = tableRange.CreateTable(safeName);
                 }
                 
-                // ✅ BƯỚC 8: Điều chỉnh độ rộng cột
-                worksheet.Columns().AdjustToContents();
+                if (finalTable == null)
+                {
+                    throw new Exception($"Failed to create table '{safeName}' on temporary worksheet");
+                }
+                
+                // ✅ BƯỚC 5: Format table
+                _logger.LogInformation($"Formatting table");
+                finalTable.Theme = XLTableTheme.TableStyleMedium2;
+                finalTable.ShowAutoFilter = true;
+                finalTable.ShowTotalsRow = false;
+                
+                // Format header
+                var newHeaderRow = finalTable.HeadersRow();
+                if (newHeaderRow != null)
+                {
+                    newHeaderRow.Style.Font.Bold = true;
+                    newHeaderRow.Style.Fill.BackgroundColor = tableType == "Employee" ? XLColor.LightGreen : XLColor.LightBlue;
+                    newHeaderRow.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                }
+                
+                // Adjust column widths
+                tempSheet.Columns().AdjustToContents();
+                
+                // ✅ BƯỚC 6: Xóa worksheet cũ và đổi tên worksheet mới
+                _logger.LogInformation($"Replacing old worksheet '{oldSheetName}' with new worksheet");
+                
+                // Xóa worksheet cũ
+                worksheet.Delete();
+                
+                // Đổi tên và di chuyển worksheet mới về vị trí cũ
+                tempSheet.Name = oldSheetName;
+                tempSheet.Position = oldSheetPosition;
+                
+                _logger.LogInformation($"Successfully recreated worksheet with new table structure");
+                _logger.LogInformation($"Refactored table '{actualTableName}' from {oldColumnCount} to {expectedColumns.Count} columns");
             }
+            catch (Exception ex)
+            {
+                _logger.LogError($"Error in worksheet recreation: {ex.Message}");
+                throw;
+            }
+            } // Close if (headerRow != null)
         }
 
         #region Private Helper Methods
 
         /// <summary>
         /// Trích xuất tên table thực từ display name có format "TableName (Sheet: SheetName)"
+        /// và sanitize để phù hợp với quy tắc Excel table name
         /// </summary>
         private string ExtractActualTableName(string displayTableName)
         {
             if (string.IsNullOrEmpty(displayTableName))
-                return displayTableName;
+                return "Table1"; // Default name
+
+            string tableName = displayTableName;
 
             // Nếu có format "TableName (Sheet: SheetName)", lấy phần tên table
-            if (displayTableName.Contains(" (Sheet: "))
+            if (tableName.Contains(" (Sheet: "))
             {
-                return displayTableName.Split(" (Sheet: ")[0];
+                tableName = tableName.Split(" (Sheet: ")[0];
             }
 
-            return displayTableName;
+            // ✅ Sanitize table name theo quy tắc của Excel:
+            // - Không chứa: : ( ) [ ] ? * / \ khoảng trắng
+            // - Phải bắt đầu bằng chữ cái hoặc underscore
+            // - Tối đa 255 ký tự
+            
+            // Thay thế các ký tự không hợp lệ bằng underscore
+            char[] invalidChars = { ':', '(', ')', '[', ']', '?', '*', '/', '\\', ' ', '-', '.', ',', ';', '!', '@', '#', '$', '%', '^', '&', '+', '=', '{', '}', '<', '>', '|', '~', '`', '"', '\'' };
+            foreach (char c in invalidChars)
+            {
+                tableName = tableName.Replace(c, '_');
+            }
+
+            // Đảm bảo bắt đầu bằng chữ cái hoặc underscore
+            if (!char.IsLetter(tableName[0]) && tableName[0] != '_')
+            {
+                tableName = "_" + tableName;
+            }
+
+            // Giới hạn độ dài
+            if (tableName.Length > 255)
+            {
+                tableName = tableName.Substring(0, 255);
+            }
+
+            // Đảm bảo không rỗng
+            if (string.IsNullOrWhiteSpace(tableName))
+            {
+                tableName = "Table1";
+            }
+
+            return tableName;
         }
 
         /// <summary>
