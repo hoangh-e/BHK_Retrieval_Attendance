@@ -56,7 +56,7 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
             // Initialize commands
             ConnectCommand = new RelayCommand(async _ => await ConnectAsync(), _ => CanConnect());
             DisconnectCommand = new RelayCommand(async _ => await DisconnectAsync(), _ => CanDisconnect());
-            ManageDevicesCommand = new RelayCommand(_ => ManageDevices(), _ => false); // Mặc định disable
+            ManageDevicesCommand = new RelayCommand(async _ => await ManageDevicesAsync(), _ => CanManageDevices());
             RefreshCommand = new RelayCommand(async _ => await RefreshAsync(), _ => !IsBusy);
 
             _logger.LogInformation("DeviceConnectionViewModel initialized with config - IP: {IP}, Port: {Port}, TestMode: {TestMode}", 
@@ -165,12 +165,12 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
                     DialogHelper.ShowSuccess(
                         _deviceOptions.Test 
                             ? "Kết nối thành công (TEST MODE)\n\nChế độ thử nghiệm được bật. Đây là kết nối mô phỏng." 
-                            : "Kết nối thiết bị thành công!",
+                            : "Kết nối thiết bị thành công!\n\nVui lòng click 'Quản lý thiết bị' để tiếp tục.",
                         "Kết nối thành công"
                     );
 
-                    // Chuyển sang giao diện kế tiếp sau khi kết nối thành công
-                    await NavigateToNextViewAsync();
+                    // ✅ Enable nút Quản lý thiết bị sau khi kết nối thành công
+                    // CommandManager.InvalidateRequerySuggested() sẽ trigger CanExecute của ManageDevicesCommand
                 }
                 else
                 {
@@ -311,12 +311,27 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
             }
         }
 
-        private void ManageDevices()
+        private bool CanManageDevices()
         {
-            // Placeholder for device management functionality
-            // This will be implemented in future updates
-            _logger.LogInformation("Manage Devices clicked - Feature not yet implemented");
-            DialogHelper.ShowInformation("Tính năng Quản lý thiết bị đang được phát triển", "Thông báo");
+            return !IsBusy && ConnectionModel.IsConnected;
+        }
+
+        private async Task ManageDevicesAsync()
+        {
+            if (IsBusy) return;
+
+            try
+            {
+                _logger.LogInformation("Manage Devices clicked - Navigating to next view");
+                
+                // Chuyển sang giao diện kế tiếp
+                await NavigateToNextViewAsync();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error navigating from Manage Devices");
+                DialogHelper.ShowError("Lỗi khi chuyển sang giao diện quản lý", ex.Message, "Lỗi");
+            }
         }
 
         private async Task RefreshAsync()

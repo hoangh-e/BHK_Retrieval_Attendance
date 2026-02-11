@@ -56,10 +56,10 @@
                     </Grid.ColumnDefinitions>
 
                     <StackPanel Grid.Column="0">
-                        <TextBlock Text="TCP/IP Device Connection" 
+                        <TextBlock Text="Kết nối thiết bị TCP/IP" 
                                    Style="{StaticResource MaterialDesignHeadline5TextBlock}"
                                    Margin="0,0,0,8"/>
-                        <TextBlock Text="Configure and manage network connection to attendance device" 
+                        <TextBlock Text="Cấu hình và quản lý kết nối mạng đến thiết bị chấm công" 
                                    Style="{StaticResource MaterialDesignBody2TextBlock}"
                                    Foreground="{DynamicResource MaterialDesignBodyLight}"/>
                     </StackPanel>
@@ -67,7 +67,7 @@
                     <StackPanel Grid.Column="1" VerticalAlignment="Center">
                         <Button Style="{StaticResource MaterialDesignIconButton}"
                                 Command="{Binding RefreshCommand}"
-                                ToolTip="Refresh Status">
+                                ToolTip="Làm mới trạng thái">
                             <materialDesign:PackIcon Kind="Refresh" Width="24" Height="24"/>
                         </Button>
                     </StackPanel>
@@ -77,7 +77,7 @@
             <!-- Connection Settings & Control Card (Merged) -->
             <materialDesign:Card Grid.Row="1" Style="{StaticResource CardStyle}">
                 <StackPanel>
-                    <TextBlock Text="Connection Control" Style="{StaticResource SectionHeaderStyle}"/>
+                    <TextBlock Text="Điều khiển kết nối" Style="{StaticResource SectionHeaderStyle}"/>
 
                     <!-- Connection Settings -->
                     <Grid Margin="0,0,0,16">
@@ -96,63 +96,63 @@
 
                         <!-- IP Address -->
                         <TextBlock Grid.Row="0" Grid.Column="0" 
-                                   Text="IP Address:" 
+                                   Text="Địa chỉ IP:" 
                                    Style="{StaticResource LabelStyle}"/>
                         <TextBox Grid.Row="0" Grid.Column="1"
                                  Text="{Binding ConnectionModel.IpAddress, UpdateSourceTrigger=PropertyChanged}"
                                  Style="{StaticResource InputStyle}"
-                                 materialDesign:HintAssist.Hint="e.g., 192.168.1.225"
+                                 materialDesign:HintAssist.Hint="Ví dụ: 192.168.1.225"
                                  IsEnabled="{Binding ConnectionModel.IsConnected, Converter={StaticResource InverseBooleanConverter}}"/>
 
                         <!-- Port -->
                         <TextBlock Grid.Row="1" Grid.Column="0" 
-                                   Text="UDP Port:" 
+                                   Text="Cổng UDP:" 
                                    Style="{StaticResource LabelStyle}"/>
                         <TextBox Grid.Row="1" Grid.Column="1"
                                  Text="{Binding ConnectionModel.Port, UpdateSourceTrigger=PropertyChanged}"
                                  Style="{StaticResource InputStyle}"
-                                 materialDesign:HintAssist.Hint="e.g., 4370"
+                                 materialDesign:HintAssist.Hint="Ví dụ: 4370"
                                  IsEnabled="{Binding ConnectionModel.IsConnected, Converter={StaticResource InverseBooleanConverter}}"/>
 
                         <!-- Device Name -->
                         <TextBlock Grid.Row="2" Grid.Column="0" 
-                                   Text="Device Name:" 
+                                   Text="Tên thiết bị:" 
                                    Style="{StaticResource LabelStyle}"/>
                         <TextBox Grid.Row="2" Grid.Column="1"
                                  Text="{Binding ConnectionModel.DeviceName}"
                                  Style="{StaticResource InputStyle}"
                                  IsReadOnly="True"
-                                 materialDesign:HintAssist.Hint="Auto-detected device name"/>
+                                 materialDesign:HintAssist.Hint="Tự động phát hiện tên thiết bị"/>
 
                         <!-- Device Number -->
                         <TextBlock Grid.Row="3" Grid.Column="0" 
-                                   Text="Device Number (DN):" 
+                                   Text="Số hiệu thiết bị (DN):" 
                                    Style="{StaticResource LabelStyle}"/>
                         <TextBox Grid.Row="3" Grid.Column="1"
                                  Text="{Binding ConnectionModel.DeviceNumber, UpdateSourceTrigger=PropertyChanged}"
                                  Style="{StaticResource InputStyle}"
-                                 materialDesign:HintAssist.Hint="Device identification number"
+                                 materialDesign:HintAssist.Hint="Số định danh thiết bị"
                                  IsEnabled="{Binding ConnectionModel.IsConnected, Converter={StaticResource InverseBooleanConverter}}"/>
 
                         <!-- Password -->
                         <TextBlock Grid.Row="4" Grid.Column="0" 
-                                   Text="Password:" 
+                                   Text="Mật khẩu:" 
                                    Style="{StaticResource LabelStyle}"/>
                         <PasswordBox Grid.Row="4" Grid.Column="1"
                                      Style="{StaticResource MaterialDesignOutlinedPasswordBox}"
                                      Margin="0,8"
-                                     materialDesign:HintAssist.Hint="Device password"
+                                     materialDesign:HintAssist.Hint="Mật khẩu thiết bị"
                                      IsEnabled="{Binding ConnectionModel.IsConnected, Converter={StaticResource InverseBooleanConverter}}"/>
 
                         <!-- Device Model -->
                         <TextBlock Grid.Row="5" Grid.Column="0" 
-                                   Text="Device Model:" 
+                                   Text="Mẫu thiết bị:" 
                                    Style="{StaticResource LabelStyle}"/>
                         <TextBox Grid.Row="5" Grid.Column="1"
                                  Text="{Binding ConnectionModel.DeviceModel}"
                                  Style="{StaticResource InputStyle}"
                                  IsReadOnly="True"
-                                 materialDesign:HintAssist.Hint="Device model type"/>
+                                 materialDesign:HintAssist.Hint="Loại mẫu thiết bị"/>
                     </Grid>
 
                     <!-- Status Display -->
@@ -203,7 +203,7 @@
                     <!-- Action Buttons -->
                     <UniformGrid Rows="1" Columns="3" HorizontalAlignment="Stretch">
                         <!-- Connect Button -->
-                        <Button Content="CONNECT"
+                        <Button Content="KẾT NỐI"
                                 Command="{Binding ConnectCommand}"
                                 Margin="0,0,8,0"
                                 Height="48"
@@ -221,7 +221,7 @@
                         </Button>
 
                         <!-- Disconnect Button -->
-                        <Button Content="DISCONNECT"
+                        <Button Content="NGẮT KẾT NỐI"
                                 Command="{Binding DisconnectCommand}"
                                 Style="{StaticResource MaterialDesignRaisedButton}"
                                 Margin="4,0"
@@ -235,8 +235,7 @@
                                 Style="{StaticResource MaterialDesignOutlinedButton}"
                                 Margin="8,0,0,0"
                                 Height="48"
-                                materialDesign:ButtonAssist.CornerRadius="4"
-                                IsEnabled="False"/>
+                                materialDesign:ButtonAssist.CornerRadius="4"/>
                     </UniformGrid>
                 </StackPanel>
             </materialDesign:Card>
