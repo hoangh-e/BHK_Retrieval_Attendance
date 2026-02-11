@@ -68,6 +68,9 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
                 StatusMessage = "⚠️ TEST MODE - Connection will be simulated";
                 _logger.LogWarning("Application is running in TEST MODE");
             }
+            
+            // Check connection status khi khởi tạo
+            CheckConnectionStatus();
         }
 
         #region Properties
@@ -107,6 +110,28 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
         public ICommand DisconnectCommand { get; }
         public ICommand ManageDevicesCommand { get; }
         public ICommand RefreshCommand { get; }
+
+        #endregion
+
+        #region Public Methods
+
+        /// <summary>
+        /// Kiểm tra và đồng bộ trạng thái kết nối từ DeviceService
+        /// </summary>
+        public void CheckConnectionStatus()
+        {
+            bool isConnected = _deviceService.IsConnected;
+            
+            if (ConnectionModel.IsConnected != isConnected)
+            {
+                ConnectionModel.IsConnected = isConnected;
+                StatusMessage = isConnected ? "Connected" : "Disconnected";
+                _logger.LogInformation("✅ Connection status synced: {Status}", StatusMessage);
+                
+                // Refresh command states
+                CommandManager.InvalidateRequerySuggested();
+            }
+        }
 
         #endregion
 
@@ -160,14 +185,6 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
                     StatusMessage = _deviceOptions.Test ? "Connected (TEST MODE)" : "Connected successfully";
                     
                     _logger.LogInformation("✅ Connection successful");
-                    
-                    // ✅ Use DialogHelper for success message
-                    DialogHelper.ShowSuccess(
-                        _deviceOptions.Test 
-                            ? "Kết nối thành công (TEST MODE)\n\nChế độ thử nghiệm được bật. Đây là kết nối mô phỏng." 
-                            : "Kết nối thiết bị thành công!\n\nVui lòng click 'Quản lý thiết bị' để tiếp tục.",
-                        "Kết nối thành công"
-                    );
 
                     // ✅ Enable nút Quản lý thiết bị sau khi kết nối thành công
                     // CommandManager.InvalidateRequerySuggested() sẽ trigger CanExecute của ManageDevicesCommand
@@ -230,9 +247,6 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
                 ConnectionModel.IsConnected = false;
                 StatusMessage = "Disconnected";
                 _logger.LogInformation("✅ Disconnected successfully");
-                
-                // ✅ Use DialogHelper for disconnect success
-                DialogHelper.ShowInformation("Đã ngắt kết nối thiết bị thành công", "Ngắt kết nối");
             }
             catch (Exception ex)
             {

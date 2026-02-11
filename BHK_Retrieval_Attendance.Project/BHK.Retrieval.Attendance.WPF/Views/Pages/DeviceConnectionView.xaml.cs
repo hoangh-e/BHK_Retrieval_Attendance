@@ -1,4 +1,5 @@
 using System.Windows.Controls;
+using BHK.Retrieval.Attendance.WPF.ViewModels;
 
 namespace BHK.Retrieval.Attendance.WPF.Views.Pages
 {
@@ -10,6 +11,16 @@ namespace BHK.Retrieval.Attendance.WPF.Views.Pages
         public DeviceConnectionView()
         {
             InitializeComponent();
+            Loaded += DeviceConnectionView_Loaded;
+        }
+
+        private void DeviceConnectionView_Loaded(object sender, System.Windows.RoutedEventArgs e)
+        {
+            // Sync connection status khi view được load
+            if (DataContext is DeviceConnectionViewModel viewModel)
+            {
+                viewModel.CheckConnectionStatus();
+            }
         }
     }
 }

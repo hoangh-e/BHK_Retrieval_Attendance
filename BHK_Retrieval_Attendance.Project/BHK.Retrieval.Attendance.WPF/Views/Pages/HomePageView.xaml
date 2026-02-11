@@ -21,6 +21,7 @@
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
                 <materialDesign:PackIcon Grid.Column="0" 
@@ -36,6 +37,26 @@
                           VerticalAlignment="Center"
                           Margin="16,0,0,0"
                           Foreground="{DynamicResource PrimaryHueMidBrush}"/>
+                
+                <!-- Disconnect Button -->
+                <Button Grid.Column="2"
+                        Command="{Binding DisconnectAndReturnCommand}"
+                        Style="{StaticResource MaterialDesignRaisedButton}"
+                        Height="40"
+                        Background="#FF9800"
+                        Foreground="White"
+                        ToolTip="Ngắt kết nối và quay lại màn hình kết nối"
+                        materialDesign:ButtonAssist.CornerRadius="4">
+                    <Button.Content>
+                        <StackPanel Orientation="Horizontal">
+                            <materialDesign:PackIcon Kind="Power" 
+                                                    Width="20" Height="20" 
+                                                    VerticalAlignment="Center"
+                                                    Margin="0,0,8,0"/>
+                            <TextBlock Text="NGẮT KẾT NỐI" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button.Content>
+                </Button>
             </Grid>
         </materialDesign:Card>
 

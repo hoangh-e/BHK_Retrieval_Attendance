@@ -1,4 +1,6 @@
 using System;
+using System.Threading.Tasks;
+using System.Windows.Input;
 using BHK.Retrieval.Attendance.WPF.Services.Interfaces;
 using BHK.Retrieval.Attendance.WPF.ViewModels.Base;
 using Microsoft.Extensions.Logging;
@@ -15,6 +17,7 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
         private readonly IDeviceService _deviceService;
         private readonly ILogger<HomePageViewModel> _logger;
         private readonly DeviceOptions _deviceOptions;
+        private readonly INavigationService _navigationService;
 
         private string _ipAddress;
         private int _port;
@@ -39,6 +42,7 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
             IDeviceService deviceService,
             ILogger<HomePageViewModel> logger,
             IOptions<DeviceOptions> deviceOptions,
+            INavigationService navigationService,
             EmployeeViewModel employeeViewModel,
             AttendanceManagementViewModel attendanceManagementViewModel,
             SettingsViewModel settingsViewModel,
@@ -47,6 +51,7 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
             _deviceService = deviceService ?? throw new ArgumentNullException(nameof(deviceService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _deviceOptions = deviceOptions?.Value ?? throw new ArgumentNullException(nameof(deviceOptions));
+            _navigationService = navigationService ?? throw new ArgumentNullException(nameof(navigationService));
             
             // ✅ THÊM: Khởi tạo EmployeeViewModel
             _employeeViewModel = employeeViewModel ?? throw new ArgumentNullException(nameof(employeeViewModel));
@@ -59,6 +64,9 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
 
             // ✅ THÊM: Khởi tạo AboutViewModel
             _aboutViewModel = aboutViewModel ?? throw new ArgumentNullException(nameof(aboutViewModel));
+
+            // Initialize disconnect command
+            DisconnectAndReturnCommand = new RelayCommand(async _ => await DisconnectAndReturnAsync(), _ => true);
 
             // Initialize properties with device connection info
             _ipAddress = _deviceOptions.DefaultIpAddress;
@@ -207,6 +215,11 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
             set => SetProperty(ref _aboutViewModel, value);
         }
 
+        /// <summary>
+        /// Command để ngắt kết nối và quay về màn hình kết nối
+        /// </summary>
+        public ICommand DisconnectAndReturnCommand { get; }
+
         #endregion
 
         #region Public Methods
@@ -308,6 +321,64 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
             {
                 _logger.LogError(ex, "Error loading device information");
                 ConnectionStatus = "Error ⚠️";
+            }
+        }
+
+        /// <summary>
+        /// Ngắt kết nối thiết bị và quay về màn hình kết nối
+        /// </summary>
+        private async Task DisconnectAndReturnAsync()
+        {
+            try
+            {
+                _logger.LogInformation("Disconnecting device and returning to connection view");
+                
+                // Ngắt kết nối thiết bị
+                await _deviceService.DisconnectAsync();
+                _logger.LogInformation("✅ Device disconnected successfully");
+                
+                // Chuyển về màn hình kết nối
+                _navigationService.NavigateTo<DeviceConnectionViewModel>();
+                _logger.LogInformation("✅ Navigated back to DeviceConnectionView");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error during disconnect and return");
+            }
+        }
+
+        #endregion
+
+        #region Helper Classes
+
+        /// <summary>
+        /// RelayCommand implementation for ICommand
+        /// </summary>
+        private class RelayCommand : ICommand
+        {
+            private readonly Action<object?> _execute;
+            private readonly Predicate<object?>? _canExecute;
+
+            public RelayCommand(Action<object?> execute, Predicate<object?>? canExecute = null)
+            {
+                _execute = execute ?? throw new ArgumentNullException(nameof(execute));
+                _canExecute = canExecute;
+            }
+
+            public event EventHandler? CanExecuteChanged
+            {
+                add => CommandManager.RequerySuggested += value;
+                remove => CommandManager.RequerySuggested -= value;
+            }
+
+            public bool CanExecute(object? parameter)
+            {
+                return _canExecute?.Invoke(parameter) ?? true;
+            }
+
+            public void Execute(object? parameter)
+            {
+                _execute(parameter);
             }
         }
 

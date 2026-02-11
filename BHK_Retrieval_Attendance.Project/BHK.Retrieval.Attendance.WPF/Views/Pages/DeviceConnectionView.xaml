@@ -82,7 +82,7 @@
                     <!-- Connection Settings -->
                     <Grid Margin="0,0,0,16">
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto" MinWidth="150"/>
+                            <ColumnDefinition Width="Auto" MinWidth="180"/>
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
                         <Grid.RowDefinitions>
@@ -96,8 +96,9 @@
 
                         <!-- IP Address -->
                         <TextBlock Grid.Row="0" Grid.Column="0" 
-                                   Text="Địa chỉ IP:" 
-                                   Style="{StaticResource LabelStyle}"/>
+                                   Style="{StaticResource LabelStyle}">
+                            <Span Foreground="Red" FontWeight="Bold">* </Span>Địa chỉ IP:
+                        </TextBlock>
                         <TextBox Grid.Row="0" Grid.Column="1"
                                  Text="{Binding ConnectionModel.IpAddress, UpdateSourceTrigger=PropertyChanged}"
                                  Style="{StaticResource InputStyle}"
@@ -106,8 +107,9 @@
 
                         <!-- Port -->
                         <TextBlock Grid.Row="1" Grid.Column="0" 
-                                   Text="Cổng UDP:" 
-                                   Style="{StaticResource LabelStyle}"/>
+                                   Style="{StaticResource LabelStyle}">
+                            <Span Foreground="Red" FontWeight="Bold">* </Span>Cổng UDP:
+                        </TextBlock>
                         <TextBox Grid.Row="1" Grid.Column="1"
                                  Text="{Binding ConnectionModel.Port, UpdateSourceTrigger=PropertyChanged}"
                                  Style="{StaticResource InputStyle}"
@@ -116,7 +118,7 @@
 
                         <!-- Device Name -->
                         <TextBlock Grid.Row="2" Grid.Column="0" 
-                                   Text="Tên thiết bị:" 
+                                   Text="   Tên thiết bị:" 
                                    Style="{StaticResource LabelStyle}"/>
                         <TextBox Grid.Row="2" Grid.Column="1"
                                  Text="{Binding ConnectionModel.DeviceName}"
@@ -126,8 +128,9 @@
 
                         <!-- Device Number -->
                         <TextBlock Grid.Row="3" Grid.Column="0" 
-                                   Text="Số hiệu thiết bị (DN):" 
-                                   Style="{StaticResource LabelStyle}"/>
+                                   Style="{StaticResource LabelStyle}">
+                            <Span Foreground="Red" FontWeight="Bold">* </Span>Số hiệu thiết bị (DN):
+                        </TextBlock>
                         <TextBox Grid.Row="3" Grid.Column="1"
                                  Text="{Binding ConnectionModel.DeviceNumber, UpdateSourceTrigger=PropertyChanged}"
                                  Style="{StaticResource InputStyle}"
@@ -136,7 +139,7 @@
 
                         <!-- Password -->
                         <TextBlock Grid.Row="4" Grid.Column="0" 
-                                   Text="Mật khẩu:" 
+                                   Text="   Mật khẩu:" 
                                    Style="{StaticResource LabelStyle}"/>
                         <PasswordBox Grid.Row="4" Grid.Column="1"
                                      Style="{StaticResource MaterialDesignOutlinedPasswordBox}"
@@ -146,7 +149,7 @@
 
                         <!-- Device Model -->
                         <TextBlock Grid.Row="5" Grid.Column="0" 
-                                   Text="Mẫu thiết bị:" 
+                                   Text="   Mẫu thiết bị:" 
                                    Style="{StaticResource LabelStyle}"/>
                         <TextBox Grid.Row="5" Grid.Column="1"
                                  Text="{Binding ConnectionModel.DeviceModel}"
@@ -226,16 +229,27 @@
                                 Style="{StaticResource MaterialDesignRaisedButton}"
                                 Margin="4,0"
                                 Height="48"
-                                Background="OrangeRed"
+                                Background="#FF9800"
                                 materialDesign:ButtonAssist.CornerRadius="4"/>
 
                         <!-- Device Management Button -->
                         <Button Content="QUẢN LÝ THIẾT BỊ"
                                 Command="{Binding ManageDevicesCommand}"
-                                Style="{StaticResource MaterialDesignOutlinedButton}"
                                 Margin="8,0,0,0"
                                 Height="48"
-                                materialDesign:ButtonAssist.CornerRadius="4"/>
+                                materialDesign:ButtonAssist.CornerRadius="4">
+                            <Button.Style>
+                                <Style TargetType="Button" BasedOn="{StaticResource MaterialDesignRaisedButton}">
+                                    <Setter Property="Background" Value="{DynamicResource SecondaryHueMidBrush}"/>
+                                    <Style.Triggers>
+                                        <Trigger Property="IsEnabled" Value="False">
+                                            <Setter Property="Background" Value="LightGray"/>
+                                            <Setter Property="Opacity" Value="0.6"/>
+                                        </Trigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Button.Style>
+                        </Button>
                     </UniformGrid>
                 </StackPanel>
             </materialDesign:Card>
