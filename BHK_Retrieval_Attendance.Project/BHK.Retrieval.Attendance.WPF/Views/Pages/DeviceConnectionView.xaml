@@ -74,17 +74,19 @@
                 </Grid>
             </materialDesign:Card>
 
-            <!-- Connection Settings Card -->
+            <!-- Connection Settings & Control Card (Merged) -->
             <materialDesign:Card Grid.Row="1" Style="{StaticResource CardStyle}">
                 <StackPanel>
-                    <TextBlock Text="Connection Settings" Style="{StaticResource SectionHeaderStyle}"/>
+                    <TextBlock Text="Connection Control" Style="{StaticResource SectionHeaderStyle}"/>
 
-                    <Grid>
+                    <!-- Connection Settings -->
+                    <Grid Margin="0,0,0,16">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto" MinWidth="150"/>
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
                         <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
@@ -112,43 +114,46 @@
                                  materialDesign:HintAssist.Hint="e.g., 4370"
                                  IsEnabled="{Binding ConnectionModel.IsConnected, Converter={StaticResource InverseBooleanConverter}}"/>
 
-                        <!-- Device Number -->
+                        <!-- Device Name -->
                         <TextBlock Grid.Row="2" Grid.Column="0" 
-                                   Text="Device Number (DN):" 
+                                   Text="Device Name:" 
                                    Style="{StaticResource LabelStyle}"/>
                         <TextBox Grid.Row="2" Grid.Column="1"
+                                 Text="{Binding ConnectionModel.DeviceName}"
+                                 Style="{StaticResource InputStyle}"
+                                 IsReadOnly="True"
+                                 materialDesign:HintAssist.Hint="Auto-detected device name"/>
+
+                        <!-- Device Number -->
+                        <TextBlock Grid.Row="3" Grid.Column="0" 
+                                   Text="Device Number (DN):" 
+                                   Style="{StaticResource LabelStyle}"/>
+                        <TextBox Grid.Row="3" Grid.Column="1"
                                  Text="{Binding ConnectionModel.DeviceNumber, UpdateSourceTrigger=PropertyChanged}"
                                  Style="{StaticResource InputStyle}"
                                  materialDesign:HintAssist.Hint="Device identification number"
                                  IsEnabled="{Binding ConnectionModel.IsConnected, Converter={StaticResource InverseBooleanConverter}}"/>
 
                         <!-- Password -->
-                        <TextBlock Grid.Row="3" Grid.Column="0" 
+                        <TextBlock Grid.Row="4" Grid.Column="0" 
                                    Text="Password:" 
                                    Style="{StaticResource LabelStyle}"/>
-                        <PasswordBox Grid.Row="3" Grid.Column="1"
+                        <PasswordBox Grid.Row="4" Grid.Column="1"
                                      Style="{StaticResource MaterialDesignOutlinedPasswordBox}"
                                      Margin="0,8"
                                      materialDesign:HintAssist.Hint="Device password"
                                      IsEnabled="{Binding ConnectionModel.IsConnected, Converter={StaticResource InverseBooleanConverter}}"/>
 
                         <!-- Device Model -->
-                        <TextBlock Grid.Row="4" Grid.Column="0" 
+                        <TextBlock Grid.Row="5" Grid.Column="0" 
                                    Text="Device Model:" 
                                    Style="{StaticResource LabelStyle}"/>
-                        <TextBox Grid.Row="4" Grid.Column="1"
+                        <TextBox Grid.Row="5" Grid.Column="1"
                                  Text="{Binding ConnectionModel.DeviceModel}"
                                  Style="{StaticResource InputStyle}"
                                  IsReadOnly="True"
                                  materialDesign:HintAssist.Hint="Device model type"/>
                     </Grid>
-                </StackPanel>
-            </materialDesign:Card>
-
-            <!-- Connection Control Card -->
-            <materialDesign:Card Grid.Row="2" Style="{StaticResource CardStyle}">
-                <StackPanel>
-                    <TextBlock Text="Connection Control" Style="{StaticResource SectionHeaderStyle}"/>
 
                     <!-- Status Display -->
                     <Border BorderBrush="{DynamicResource MaterialDesignDivider}"
@@ -224,13 +229,14 @@
                                 Background="OrangeRed"
                                 materialDesign:ButtonAssist.CornerRadius="4"/>
 
-                        <!-- Test Connection Button -->
-                        <Button Content="TEST"
-                                Command="{Binding TestConnectionCommand}"
+                        <!-- Device Management Button -->
+                        <Button Content="QUẢN LÝ THIẾT BỊ"
+                                Command="{Binding ManageDevicesCommand}"
                                 Style="{StaticResource MaterialDesignOutlinedButton}"
                                 Margin="8,0,0,0"
                                 Height="48"
-                                materialDesign:ButtonAssist.CornerRadius="4"/>
+                                materialDesign:ButtonAssist.CornerRadius="4"
+                                IsEnabled="False"/>
                     </UniformGrid>
                 </StackPanel>
             </materialDesign:Card>

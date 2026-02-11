@@ -17,6 +17,7 @@ namespace BHK.Retrieval.Attendance.WPF.Models.Device
         private bool _isConnected;
         private string _connectionStatus = "Disconnected";
         private string _deviceModel = string.Empty;
+        private string _deviceName = string.Empty;
         private string _lastError = string.Empty;
         private DateTime? _lastConnected;
         private DeviceInfo? _deviceInfo;
@@ -129,6 +130,22 @@ namespace BHK.Retrieval.Attendance.WPF.Models.Device
                 if (_deviceModel != value)
                 {
                     _deviceModel = value;
+                    OnPropertyChanged();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Tên thiết bị (tự động phát hiện từ network)
+        /// </summary>
+        public string DeviceName
+        {
+            get => _deviceName;
+            set
+            {
+                if (_deviceName != value)
+                {
+                    _deviceName = value;
                     OnPropertyChanged();
                 }
             }

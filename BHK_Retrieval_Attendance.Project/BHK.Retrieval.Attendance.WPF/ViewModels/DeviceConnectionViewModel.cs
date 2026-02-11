@@ -1,4 +1,6 @@
 using System;
+using System.Net;
+using System.Net.NetworkInformation;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using BHK.Retrieval.Attendance.WPF.Models.Device;
@@ -54,7 +56,7 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
             // Initialize commands
             ConnectCommand = new RelayCommand(async _ => await ConnectAsync(), _ => CanConnect());
             DisconnectCommand = new RelayCommand(async _ => await DisconnectAsync(), _ => CanDisconnect());
-            TestConnectionCommand = new RelayCommand(async _ => await TestConnectionAsync(), _ => CanTestConnection());
+            ManageDevicesCommand = new RelayCommand(_ => ManageDevices(), _ => false); // Mặc định disable
             RefreshCommand = new RelayCommand(async _ => await RefreshAsync(), _ => !IsBusy);
 
             _logger.LogInformation("DeviceConnectionViewModel initialized with config - IP: {IP}, Port: {Port}, TestMode: {TestMode}", 
@@ -103,7 +105,7 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
 
         public ICommand ConnectCommand { get; }
         public ICommand DisconnectCommand { get; }
-        public ICommand TestConnectionCommand { get; }
+        public ICommand ManageDevicesCommand { get; }
         public ICommand RefreshCommand { get; }
 
         #endregion
@@ -126,6 +128,26 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
                 _logger.LogInformation("Attempting to connect - IP: {IP}, Port: {Port}", 
                     ConnectionModel.IpAddress, ConnectionModel.Port);
 
+                // ✅ Bước 1: Phát hiện tên thiết bị trước khi kết nối
+                if (!_deviceOptions.Test)
+                {
+                    StatusMessage = "Đang phát hiện thiết bị...";
+                    string? deviceName = await DetectDeviceNameAsync(ConnectionModel.IpAddress);
+                    
+                    if (!string.IsNullOrEmpty(deviceName))
+                    {
+                        ConnectionModel.DeviceName = deviceName;
+                        _logger.LogInformation("✅ Device name detected: {DeviceName}", deviceName);
+                    }
+                    else
+                    {
+                        ConnectionModel.DeviceName = string.Empty;
+                        _logger.LogWarning("⚠️ Could not detect device name, but will continue connecting");
+                    }
+                }
+
+                // ✅ Bước 2: Thực hiện kết nối với logic ban đầu
+                StatusMessage = _deviceOptions.Test ? "Connecting (TEST MODE)..." : "Connecting to device...";
                 bool success = await _deviceService.ConnectTcpAsync(
                     ConnectionModel.IpAddress,
                     ConnectionModel.Port,
@@ -289,6 +311,14 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
             }
         }
 
+        private void ManageDevices()
+        {
+            // Placeholder for device management functionality
+            // This will be implemented in future updates
+            _logger.LogInformation("Manage Devices clicked - Feature not yet implemented");
+            DialogHelper.ShowInformation("Tính năng Quản lý thiết bị đang được phát triển", "Thông báo");
+        }
+
         private async Task RefreshAsync()
         {
             if (IsBusy) return;
@@ -368,6 +398,56 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
                 DialogHelper.ShowWarning(
                     "Kết nối thành công nhưng không thể chuyển đến màn hình tiếp theo", 
                     ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// Phát hiện tên thiết bị từ IP address bằng Ping và DNS lookup
+        /// </summary>
+        /// <param name="ipAddress">Địa chỉ IP của thiết bị</param>
+        /// <returns>Tên thiết bị nếu phát hiện được, null nếu không</returns>
+        private async Task<string?> DetectDeviceNameAsync(string ipAddress)
+        {
+            try
+            {
+                _logger.LogInformation("Detecting device name for IP: {IP}", ipAddress);
+
+                // Bước 1: Ping thiết bị để kiểm tra thiết bị có online không
+                using (var ping = new Ping())
+                {
+                    var reply = await ping.SendPingAsync(ipAddress, timeout: 3000);
+                    
+                    if (reply.Status != IPStatus.Success)
+                    {
+                        _logger.LogWarning("Ping failed for {IP}: {Status}", ipAddress, reply.Status);
+                        return null;
+                    }
+                    
+                    _logger.LogInformation("✅ Ping successful to {IP}, roundtrip: {RoundtripTime}ms", 
+                        ipAddress, reply.RoundtripTime);
+                }
+
+                // Bước 2: Lấy hostname từ IP bằng reverse DNS lookup
+                var hostEntry = await Dns.GetHostEntryAsync(ipAddress);
+                
+                if (!string.IsNullOrEmpty(hostEntry.HostName))
+                {
+                    _logger.LogInformation("✅ Device name found: {HostName}", hostEntry.HostName);
+                    return hostEntry.HostName;
+                }
+                
+                _logger.LogWarning("⚠️ No hostname found for {IP}", ipAddress);
+                return null;
+            }
+            catch (PingException pingEx)
+            {
+                _logger.LogWarning(pingEx, "Ping exception for {IP}", ipAddress);
+                return null;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to detect device name for {IP}", ipAddress);
+                return null;
             }
         }
 
