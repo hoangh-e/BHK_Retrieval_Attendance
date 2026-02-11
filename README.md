@@ -297,7 +297,7 @@ Xem file [LICENSE](./LICENSE) để biết thêm chi tiết.
 
 <div align="center">
 
-**Built with ❤️ using .NET 8.0 & WPF**
+**Built with using .NET 8.0 & WPF**
 
 [⬆ Back to top](#-bhk-retrieval-attendance-system)
 

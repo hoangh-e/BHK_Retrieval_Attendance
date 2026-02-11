@@ -6,8 +6,20 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
-    <AssemblyName>BHK.Retrieval.Attendance.WPF</AssemblyName>
+    <AssemblyName>BHK.Retrieval.Attendance</AssemblyName>
     <RootNamespace>BHK.Retrieval.Attendance.WPF</RootNamespace>
+    
+    <!-- THÔNG TIN ỨNG DỤNG -->
+    <Product>BHK Retrieval Attendance System</Product>
+    <Version>1.0.0</Version>
+    
+    <!-- THÔNG TIN TÁC GIẢ -->
+    <Company>BHK AI Development Team</Company>
+    <Authors>BHK AI Development Team</Authors>
+    <Copyright>Copyright © 2025 BHK AI Development Team. All rights reserved.</Copyright>
+    
+    <!-- ICON APP -->
+    <ApplicationIcon>Resources\Images\Icons\app-icon.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
@@ -72,6 +84,11 @@
     <None Update="appsettings.Production.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Application Icon -->
+    <Resource Include="Resources\Images\Icons\app-icon.ico" />
   </ItemGroup>
 
 </Project>

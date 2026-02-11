@@ -90,6 +90,7 @@ namespace BHK.Retrieval.Attendance.WPF
 
         private void ConfigureSerilogFromAppSettings(IConfiguration configuration)
         {
+            // ✅ FIX: Serilog:Using section added in appsettings.json for Single File publish
             // Reconfigure Serilog with settings from appsettings.json
             Log.Logger = new LoggerConfiguration()
                 .ReadFrom.Configuration(configuration)
