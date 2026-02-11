@@ -27,6 +27,11 @@
             <views:SettingsView/>
         </DataTemplate>
         
+        <!-- ActivityHistoryViewModel → ActivityHistoryView -->
+        <DataTemplate DataType="{x:Type vm:ActivityHistoryViewModel}">
+            <views:ActivityHistoryView/>
+        </DataTemplate>
+        
         <!-- Thêm các DataTemplate khác ở đây khi cần -->
     </Window.Resources>
     

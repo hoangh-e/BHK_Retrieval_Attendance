@@ -1,0 +1,133 @@
+<Window x:Class="BHK.Retrieval.Attendance.WPF.Views.Dialogs.DeleteActivitiesDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+        Title="Xóa lịch sử hoạt động" 
+        Height="450" 
+        Width="550"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        Background="{DynamicResource MaterialDesignPaper}">
+
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <StackPanel Grid.Row="0" Margin="0,0,0,20">
+            <TextBlock Text="Xóa lịch sử hoạt động" 
+                       Style="{StaticResource MaterialDesignHeadline5TextBlock}"
+                       FontWeight="Bold"/>
+            <TextBlock Text="Chọn phương thức xóa dữ liệu lịch sử" 
+                       Style="{StaticResource MaterialDesignCaptionTextBlock}"
+                       Foreground="{DynamicResource MaterialDesignBodyLight}"
+                       Margin="0,5,0,0"/>
+        </StackPanel>
+
+        <!-- Delete Options -->
+        <materialDesign:Card Grid.Row="1" Padding="16">
+            <StackPanel>
+                <!-- Option 1: Delete by Date Range -->
+                <RadioButton x:Name="DeleteByDateRangeRadio"
+                             Content="Xóa theo khoảng thời gian"
+                             IsChecked="True"
+                             Margin="0,0,0,15"
+                             Style="{StaticResource MaterialDesignRadioButton}"/>
+                
+                <Grid Margin="30,0,0,15" IsEnabled="{Binding IsChecked, ElementName=DeleteByDateRangeRadio}">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="10"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    
+                    <DatePicker Grid.Column="0"
+                                x:Name="FromDatePicker"
+                                materialDesign:HintAssist.Hint="Từ ngày"
+                                Style="{StaticResource MaterialDesignFloatingHintDatePicker}"
+                                SelectedDate="{Binding FromDate, Mode=TwoWay}"/>
+                    
+                    <DatePicker Grid.Column="2"
+                                x:Name="ToDatePicker"
+                                materialDesign:HintAssist.Hint="Đến ngày"
+                                Style="{StaticResource MaterialDesignFloatingHintDatePicker}"
+                                SelectedDate="{Binding ToDate, Mode=TwoWay}"/>
+                </Grid>
+
+                <Separator Margin="0,10"/>
+
+                <!-- Option 2: Delete by Device -->
+                <RadioButton x:Name="DeleteByDeviceRadio"
+                             Content="Xóa theo thiết bị"
+                             Margin="0,15,0,15"
+                             Style="{StaticResource MaterialDesignRadioButton}"/>
+                
+                <ComboBox x:Name="DeviceComboBox"
+                          Grid.Column="0"
+                          Margin="30,0,0,15"
+                          materialDesign:HintAssist.Hint="Chọn thiết bị"
+                          Style="{StaticResource MaterialDesignFloatingHintComboBox}"
+                          ItemsSource="{Binding DeviceIpAddresses}"
+                          SelectedItem="{Binding SelectedDeviceIp, Mode=TwoWay}"
+                          IsEnabled="{Binding IsChecked, ElementName=DeleteByDeviceRadio}"/>
+
+                <Separator Margin="0,10"/>
+
+                <!-- Option 3: Delete All -->
+                <RadioButton x:Name="DeleteAllRadio"
+                             Content="Xóa tất cả lịch sử"
+                             Margin="0,15,0,10"
+                             Style="{StaticResource MaterialDesignRadioButton}"/>
+                
+                <TextBlock Text="⚠️ Cảnh báo: Thao tác này sẽ xóa toàn bộ lịch sử và không thể khôi phục!"
+                           Margin="30,0,0,0"
+                           TextWrapping="Wrap"
+                           Foreground="#F44336"
+                           FontStyle="Italic"
+                           IsEnabled="{Binding IsChecked, ElementName=DeleteAllRadio}"/>
+            </StackPanel>
+        </materialDesign:Card>
+
+        <!-- Preview Count -->
+        <materialDesign:Card Grid.Row="2" Margin="0,15,0,15" Padding="12"
+                             Background="{DynamicResource MaterialDesignToolBarBackground}">
+            <StackPanel Orientation="Horizontal">
+                <materialDesign:PackIcon Kind="Information" 
+                                        VerticalAlignment="Center"
+                                        Margin="0,0,10,0"
+                                        Foreground="{DynamicResource PrimaryHueMidBrush}"/>
+                <TextBlock x:Name="PreviewTextBlock" 
+                           Text="Chưa xác định số lượng bản ghi sẽ xóa"
+                           VerticalAlignment="Center"/>
+            </StackPanel>
+        </materialDesign:Card>
+
+        <!-- Action Buttons -->
+        <Grid Grid.Row="3">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="10"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <Button Grid.Column="1"
+                    Content="XÓA"
+                    Style="{StaticResource MaterialDesignRaisedButton}"
+                    Background="#F44336"
+                    Foreground="White"
+                    Width="120"
+                    Click="DeleteButton_Click"/>
+
+            <Button Grid.Column="3"
+                    Content="HỦY"
+                    Style="{StaticResource MaterialDesignOutlinedButton}"
+                    Width="120"
+                    Click="CancelButton_Click"/>
+        </Grid>
+    </Grid>
+</Window>

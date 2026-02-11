@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Threading.Tasks;
@@ -7,6 +8,8 @@ using BHK.Retrieval.Attendance.WPF.Models.Device;
 using BHK.Retrieval.Attendance.WPF.Services.Interfaces;
 using BHK.Retrieval.Attendance.WPF.ViewModels.Base;
 using BHK.Retrieval.Attendance.WPF.Utilities;
+using BHK.Retrieval.Attendance.Core.Interfaces;
+using BHK.Retrieval.Attendance.Core.Enums;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using BHK.Retrieval.Attendance.Shared.Options;
@@ -23,6 +26,7 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
         private readonly ILogger<DeviceConnectionViewModel> _logger;
         private readonly DeviceOptions _deviceOptions;
         private readonly INavigationService _navigationService;
+        private readonly IActivityHistoryService _activityHistoryService;
 
         private DeviceConnectionModel _connectionModel;
         private bool _isBusy;
@@ -33,13 +37,15 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
             IDialogService dialogService,
             ILogger<DeviceConnectionViewModel> logger,
             IOptions<DeviceOptions> deviceOptions,
-            INavigationService navigationService)
+            INavigationService navigationService,
+            IActivityHistoryService activityHistoryService)
         {
             _deviceService = deviceService ?? throw new ArgumentNullException(nameof(deviceService));
             _dialogService = dialogService ?? throw new ArgumentNullException(nameof(dialogService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _deviceOptions = deviceOptions?.Value ?? throw new ArgumentNullException(nameof(deviceOptions));
             _navigationService = navigationService ?? throw new ArgumentNullException(nameof(navigationService));
+            _activityHistoryService = activityHistoryService ?? throw new ArgumentNullException(nameof(activityHistoryService));
 
             // Khởi tạo Model với giá trị từ appsettings.json
             _connectionModel = new DeviceConnectionModel
@@ -146,6 +152,7 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
         {
             if (IsBusy) return;
 
+            var stopwatch = Stopwatch.StartNew();
             try
             {
                 IsBusy = true;
@@ -181,10 +188,21 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
 
                 if (success)
                 {
+                    stopwatch.Stop();
                     ConnectionModel.IsConnected = true;
                     StatusMessage = _deviceOptions.Test ? "Connected (TEST MODE)" : "Connected successfully";
                     
                     _logger.LogInformation("✅ Connection successful");
+
+                    // ✅ Log activity history
+                    await _activityHistoryService.LogSuccessAsync(
+                        ConnectionModel.IpAddress,
+                        ConnectionModel.DeviceName,
+                        ActivityType.Connection,
+                        "Kết nối thiết bị thành công",
+                        $"Device Model: {ConnectionModel.DeviceModel}, Port: {ConnectionModel.Port}",
+                        duration: stopwatch.Elapsed
+                    );
 
                     // ✅ Enable nút Quản lý thiết bị sau khi kết nối thành công
                     // CommandManager.InvalidateRequerySuggested() sẽ trigger CanExecute của ManageDevicesCommand
@@ -209,9 +227,20 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
             }
             catch (Exception ex)
             {
+                stopwatch.Stop();
                 _logger.LogError(ex, "Exception during connection");
                 StatusMessage = "Connection error";
                 ConnectionModel.IsConnected = false;
+                
+                // ✅ Log failed connection to Activity History
+                await _activityHistoryService.LogFailedAsync(
+                    ConnectionModel.IpAddress,
+                    ConnectionModel.DeviceName,
+                    ActivityType.Connection,
+                    "Kết nối thiết bị thất bại",
+                    ex.Message,
+                    $"Device Model: {ConnectionModel.DeviceModel}, Port: {ConnectionModel.Port}"
+                );
                 
                 // ✅ Use DialogHelper for exception error
                 DialogHelper.ShowError(

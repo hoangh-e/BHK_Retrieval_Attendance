@@ -78,11 +78,11 @@
                 <!-- Thông tin Table -->
                 <StackPanel Margin="0,0,0,15" 
                             Visibility="{Binding IsTableSelected, Converter={StaticResource BoolToVisibility}}">
-                    <TextBlock Text="{Binding RecordCount, StringFormat='📊 Số records trong table: {0}'}"
-                               Foreground="{DynamicResource PrimaryHueMidBrush}" 
-                               FontWeight="Bold" 
+                    <TextBlock Text="{Binding RecordCount, StringFormat='Số records trong table: {0}'}"
+                               Foreground="{DynamicResource MaterialDesignBody}" 
+                               FontWeight="SemiBold" 
                                Style="{StaticResource MaterialDesignBody1TextBlock}"/>
-                    <TextBlock Text="{Binding SelectedTable, StringFormat='📋 Tên Excel table: {0}'}"
+                    <TextBlock Text="{Binding SelectedTable, StringFormat='Tên Excel table: {0}'}"
                                Foreground="{DynamicResource MaterialDesignBodyLight}" 
                                Style="{StaticResource MaterialDesignCaptionTextBlock}"/>
                 </StackPanel>
@@ -104,39 +104,43 @@
                 <!-- Table Validation Message & Actions -->
                 <materialDesign:Card Padding="15" 
                                      Margin="0,10,0,0"
-                                     Background="{DynamicResource ValidationErrorBrush}"
+                                     Background="#FFFFE0B2"
+                                     BorderBrush="#FFF57C00"
+                                     BorderThickness="1"
                                      Visibility="{Binding TableValidationMessage, Converter={StaticResource StringToVisibilityConverter}}">
                     <StackPanel>
                         <TextBlock Text="{Binding TableValidationMessage}" 
-                                   Foreground="{DynamicResource MaterialDesignPaper}"
-                                   FontWeight="Bold"
+                                   Foreground="#FF424242"
+                                   FontWeight="SemiBold"
                                    TextWrapping="Wrap"
                                    Margin="0,0,0,10"
                                    Style="{StaticResource MaterialDesignBody1TextBlock}"/>
                         <Button Content="REFACTOR CỘT" 
                                     Command="{Binding ShowRefactorDialogCommand}"
-                                    Style="{StaticResource MaterialDesignRaisedLightButton}"/>
+                                    Style="{StaticResource MaterialDesignRaisedButton}"/>
                     </StackPanel>
                 </materialDesign:Card>
 
                 <!-- Create Default Table (when no tables exist) -->
                 <materialDesign:Card Padding="15" 
                                      Margin="0,10,0,0"
-                                     Background="{DynamicResource SecondaryHueMidBrush}"
+                                     Background="#FFE3F2FD"
+                                     BorderBrush="{DynamicResource PrimaryHueMidBrush}"
+                                     BorderThickness="1"
                                      Visibility="{Binding ShowCreateDefaultTable, Converter={StaticResource BoolToVisibility}}">
                     <StackPanel>
                         <TextBlock Text="Tạo Employee Table mặc định" 
-                                   Foreground="{DynamicResource MaterialDesignPaper}"
-                                   FontWeight="Bold"
+                                   Foreground="{DynamicResource PrimaryHueDarkBrush}"
+                                   FontWeight="SemiBold"
                                    Margin="0,0,0,5"
                                    Style="{StaticResource MaterialDesignSubtitle2TextBlock}"/>
                         <TextBlock Text="Tạo table với cấu trúc Employee chuẩn (10 cột) trên sheet đầu tiên" 
-                                   Foreground="{DynamicResource MaterialDesignPaper}"
+                                   Foreground="{DynamicResource MaterialDesignBody}"
                                    Margin="0,0,0,10"
                                    Style="{StaticResource MaterialDesignCaptionTextBlock}"/>
                         <Button Content="TẠO EMPLOYEE TABLE" 
                                 Command="{Binding CreateDefaultTableCommand}"
-                                Style="{StaticResource MaterialDesignRaisedLightButton}"/>
+                                Style="{StaticResource MaterialDesignRaisedButton}"/>
                     </StackPanel>
                 </materialDesign:Card>
 
@@ -150,19 +154,19 @@
                     HorizontalAlignment="Right" 
                     Margin="0,20,0,0">
             
-            <Button Content="🔧 TẠO EXCEL TABLE MỚI" 
+            <Button Content="TẠO EXCEL TABLE MỚI" 
                     Command="{Binding CreateTableCommand}"
                     Visibility="{Binding CanCreateTable, Converter={StaticResource BoolToVisibility}}"
                     Margin="0,0,10,0"
                     ToolTip="Tạo Excel Table mới trong file (không phải worksheet)"
                     Style="{StaticResource MaterialDesignOutlinedButton}"/>
             
-            <Button Content="❌ HỦY" 
+            <Button Content="HỦY" 
                     Command="{Binding CancelCommand}"
                     Margin="0,0,10,0"
                     Style="{StaticResource MaterialDesignOutlinedButton}"/>
             
-            <Button Content="📤 XUẤT VÀO TABLE" 
+            <Button Content="XUẤT VÀO TABLE" 
                     Command="{Binding ExportCommand}"
                     IsEnabled="{Binding IsTableSelected}"
                     ToolTip="Xuất dữ liệu vào Excel Table đã chọn"

@@ -12,6 +12,8 @@ using BHK.Retrieval.Attendance.Shared.Options;
 using BHK.Retrieval.Attendance.Infrastructure.Configuration;
 using BHK.Retrieval.Attendance.Core.Interfaces.Services;
 using BHK.Retrieval.Attendance.Infrastructure.Services;
+using BHK.Retrieval.Attendance.Core.Interfaces;
+using BHK.Retrieval.Attendance.Infrastructure.Data;
 
 namespace BHK.Retrieval.Attendance.WPF.Configuration.DI
 {
@@ -32,13 +34,16 @@ namespace BHK.Retrieval.Attendance.WPF.Configuration.DI
             // 2. Infrastructure Services (Device Communication)
             services.AddDeviceServices();
 
-            // ✅ 3. ViewModels (TRƯỚC Application Services)
+            // ✅ 3. Activity History Services (SQLite)
+            RegisterActivityHistoryServices(services, configuration);
+
+            // ✅ 4. ViewModels (TRƯỚC Application Services)
             RegisterViewModels(services);
 
-            // ✅ 4. Application Services (SAU ViewModels)
+            // ✅ 5. Application Services (SAU ViewModels)
             RegisterApplicationServices(services);
 
-            // 5. Views/Pages
+            // 6. Views/Pages
             RegisterViews(services);
 
             return services;
@@ -61,6 +66,32 @@ namespace BHK.Retrieval.Attendance.WPF.Configuration.DI
             // ✅ Settings mới cho Excel export
             services.Configure<OneDriveSettings>(configuration.GetSection("OneDriveSettings"));
             services.Configure<SharePointSettings>(configuration.GetSection("SharePointSettings"));
+            
+            // ✅ Settings cho Activity History
+            services.Configure<ActivityHistorySettings>(configuration.GetSection("ActivityHistorySettings"));
+        }
+
+        /// <summary>
+        /// Đăng ký Activity History Services (SQLite)
+        /// </summary>
+        private static void RegisterActivityHistoryServices(IServiceCollection services, IConfiguration configuration)
+        {
+            // Lấy DatabasePath từ configuration (nếu có)
+            var activityHistorySettings = configuration.GetSection("ActivityHistorySettings").Get<ActivityHistorySettings>();
+            var databasePath = activityHistorySettings?.DatabasePath;
+            
+            // SQLite Connection Factory - Singleton
+            services.AddSingleton<ISQLiteConnectionFactory>(sp => 
+                new SQLiteConnectionFactory(string.IsNullOrWhiteSpace(databasePath) ? null : databasePath));
+            
+            // Database Initializer - Singleton
+            services.AddSingleton<IDatabaseInitializer, DatabaseInitializer>();
+            
+            // Activity History Repository - Singleton
+            services.AddSingleton<IActivityHistoryRepository, ActivityHistoryRepository>();
+            
+            // Activity History Service - Singleton
+            services.AddSingleton<IActivityHistoryService, ActivityHistoryService>();
         }
 
         /// <summary>
@@ -129,6 +160,9 @@ namespace BHK.Retrieval.Attendance.WPF.Configuration.DI
             // ✅ Export Dialog ViewModels
             services.AddTransient<ViewModels.Dialogs.ExportAttendanceDialogViewModel>();
             services.AddTransient<ViewModels.Dialogs.ExportEmployeeDialogViewModel>();
+            
+            // ✅ Activity History ViewModel
+            services.AddTransient<ActivityHistoryViewModel>();
             
             // ✅ Factory functions for ViewModels
             services.AddTransient<Func<ViewModels.ExportEmployeeViewModel>>(provider => 

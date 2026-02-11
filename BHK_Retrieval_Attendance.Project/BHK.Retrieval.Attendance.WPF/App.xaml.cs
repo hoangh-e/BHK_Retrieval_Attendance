@@ -13,6 +13,7 @@ using BHK.Retrieval.Attendance.WPF.ViewModels;
 using BHK.Retrieval.Attendance.WPF.Services.Interfaces;
 using BHK.Retrieval.Attendance.WPF.Utilities;
 using BHK.Retrieval.Attendance.Shared.Options;
+using BHK.Retrieval.Attendance.Infrastructure.Data;
 
 namespace BHK.Retrieval.Attendance.WPF
 {
@@ -26,6 +27,9 @@ namespace BHK.Retrieval.Attendance.WPF
 
         public App()
         {
+            // Configure EPPlus license context (NonCommercial for free usage)
+            OfficeOpenXml.ExcelPackage.LicenseContext = OfficeOpenXml.LicenseContext.NonCommercial;
+
             // Configure basic Serilog (will be reconfigured from appsettings later)
             Log.Logger = new LoggerConfiguration()
                 .WriteTo.File("logs/app-.log", rollingInterval: RollingInterval.Day)
@@ -59,6 +63,9 @@ namespace BHK.Retrieval.Attendance.WPF
                     .Build();
 
                 await _host.StartAsync();
+
+                // ✅ Initialize Activity History database
+                await InitializeActivityHistoryDatabaseAsync();
 
                 // Show MainWindow instead of DeviceConnectionView directly
                 ShowMainWindow();
@@ -95,6 +102,43 @@ namespace BHK.Retrieval.Attendance.WPF
             Log.Logger = new LoggerConfiguration()
                 .ReadFrom.Configuration(configuration)
                 .CreateLogger();
+        }
+
+        /// <summary>
+        /// Khởi tạo Activity History database và chạy auto cleanup nếu được bật
+        /// </summary>
+        private async System.Threading.Tasks.Task InitializeActivityHistoryDatabaseAsync()
+        {
+            try
+            {
+                if (_host == null)
+                    return;
+
+                Log.Information("Initializing Activity History database...");
+
+                var initializer = _host.Services.GetRequiredService<IDatabaseInitializer>();
+                await initializer.InitializeAsync();
+
+                Log.Information("Activity History database initialized successfully");
+
+                // Auto cleanup nếu được bật
+                var activityHistorySettings = _host.Services.GetRequiredService<IOptions<ActivityHistorySettings>>().Value;
+                if (activityHistorySettings.EnableAutoCleanup)
+                {
+                    var activityHistoryService = _host.Services.GetRequiredService<Core.Interfaces.IActivityHistoryService>();
+                    var deletedCount = await activityHistoryService.ClearOldActivitiesAsync(activityHistorySettings.AutoCleanupDays);
+                    
+                    if (deletedCount > 0)
+                    {
+                        Log.Information("Auto cleanup: Deleted {Count} old activity records", deletedCount);
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex, "Failed to initialize Activity History database");
+                // Không throw lỗi để không ảnh hưởng đến app startup
+            }
         }
 
         /// <summary>

@@ -329,14 +329,7 @@
                                       MaxWidth="110"/>
                         </StackPanel>
                     </TabItem.Header>
-                    <StackPanel Margin="24">
-                        <TextBlock Text="LỊCH SỬ HOẠT ĐỘNG" 
-                                  FontSize="20" 
-                                  FontWeight="Bold"/>
-                        <TextBlock Text="Tính năng đang phát triển..." 
-                                  Margin="0,16,0,0" 
-                                  FontStyle="Italic"/>
-                    </StackPanel>
+                    <ContentControl Content="{Binding ActivityHistoryViewModel}"/>
                 </TabItem>
 
                 <!-- Tab: Giới thiệu phần mềm -->

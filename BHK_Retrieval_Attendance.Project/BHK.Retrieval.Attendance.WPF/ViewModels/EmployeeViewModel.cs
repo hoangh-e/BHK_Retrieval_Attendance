@@ -92,7 +92,14 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
         public int TotalPages
         {
             get => _totalPages;
-            set => SetProperty(ref _totalPages, value);
+            set
+            {
+                if (SetProperty(ref _totalPages, value))
+                {
+                    OnPropertyChanged(nameof(CurrentPageDisplay));
+                    OnPropertyChanged(nameof(CanGoNext));
+                }
+            }
         }
 
         /// <summary>

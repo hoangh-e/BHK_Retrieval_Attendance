@@ -9,6 +9,7 @@
 
   <ItemGroup>
     <!-- Entity Framework -->
+    <PackageReference Include="Dapper" Version="2.1.66" />
     <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.0.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="8.0.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.0.0" />
@@ -28,6 +29,8 @@
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="8.0.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="8.0.0" />
     <PackageReference Include="Microsoft.Extensions.Options" Version="8.0.0" />
+    <PackageReference Include="Serilog" Version="4.3.1" />
+    <PackageReference Include="System.Data.SQLite.Core" Version="1.0.119" />
   </ItemGroup>
 
   <ItemGroup>
@@ -42,6 +45,13 @@
     <!-- Project References - Infrastructure phụ thuộc Core và Shared -->
     <ProjectReference Include="..\BHK.Retrieval.Attendance.Core\BHK.Retrieval.Attendance.Core.csproj" />
     <ProjectReference Include="..\BHK.Retrieval.Attendance.Shared\BHK.Retrieval.Attendance.Shared.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Copy SQL migration scripts to output directory -->
+    <None Include="Data\Migrations\*.sql">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
 </Project>

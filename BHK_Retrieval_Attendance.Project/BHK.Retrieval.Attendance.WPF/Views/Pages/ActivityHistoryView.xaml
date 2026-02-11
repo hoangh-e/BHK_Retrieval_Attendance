@@ -1,0 +1,375 @@
+<UserControl x:Class="BHK.Retrieval.Attendance.WPF.Views.Pages.ActivityHistoryView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+             xmlns:viewmodels="clr-namespace:BHK.Retrieval.Attendance.WPF.ViewModels"
+             xmlns:enums="clr-namespace:BHK.Retrieval.Attendance.Core.Enums;assembly=BHK.Retrieval.Attendance.Core"
+             xmlns:converters="clr-namespace:BHK.Retrieval.Attendance.WPF.Converters"
+             xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
+             mc:Ignorable="d" 
+             d:DesignHeight="800" d:DesignWidth="1200"
+             d:DataContext="{d:DesignInstance Type=viewmodels:ActivityHistoryViewModel}">
+    
+    <i:Interaction.Triggers>
+        <i:EventTrigger EventName="Loaded">
+            <i:InvokeCommandAction Command="{Binding LoadActivitiesCommand}"/>
+        </i:EventTrigger>
+    </i:Interaction.Triggers>
+    
+    <UserControl.Resources>
+        <!-- Converters -->
+        <converters:ActivityTypeToVietnameseConverter x:Key="ActivityTypeToVietnameseConverter"/>
+        
+        <!-- Status color converter -->
+        <Style x:Key="StatusCellStyle" TargetType="DataGridCell">
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding Status}" Value="{x:Static enums:ActivityStatus.Success}">
+                    <Setter Property="Foreground" Value="#4CAF50"/>
+                    <Setter Property="FontWeight" Value="SemiBold"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Status}" Value="{x:Static enums:ActivityStatus.Failed}">
+                    <Setter Property="Foreground" Value="#F44336"/>
+                    <Setter Property="FontWeight" Value="SemiBold"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding Status}" Value="{x:Static enums:ActivityStatus.Warning}">
+                    <Setter Property="Foreground" Value="#FF9800"/>
+                    <Setter Property="FontWeight" Value="SemiBold"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/> <!-- Header -->
+            <RowDefinition Height="Auto"/> <!-- Filters -->
+            <RowDefinition Height="Auto"/> <!-- Statistics -->
+            <RowDefinition Height="*"/>    <!-- DataGrid -->
+            <RowDefinition Height="Auto"/> <!-- Pagination -->
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <Grid Grid.Row="0" Margin="0,0,0,20">
+            <StackPanel>
+                <TextBlock Text="Lịch sử hoạt động" 
+                           Style="{StaticResource MaterialDesignHeadline5TextBlock}"
+                           FontWeight="Bold"/>
+                <TextBlock Text="{Binding StatusMessage}" 
+                           Style="{StaticResource MaterialDesignCaptionTextBlock}"
+                           Foreground="{DynamicResource MaterialDesignBodyLight}"
+                           Margin="0,5,0,0"/>
+            </StackPanel>
+            <Button Style="{StaticResource MaterialDesignFloatingActionMiniButton}"
+                    HorizontalAlignment="Right"
+                    ToolTip="Làm mới"
+                    Command="{Binding RefreshCommand}">
+                <materialDesign:PackIcon Kind="Refresh"/>
+            </Button>
+        </Grid>
+
+        <!-- Filters Panel -->
+        <materialDesign:Card Grid.Row="1" Margin="0,0,0,20" Padding="16">
+            <StackPanel>
+                <!-- Quick Filters Row -->
+                <WrapPanel Margin="0,0,0,10">
+                    <Button Content="Hôm nay" 
+                            Style="{StaticResource MaterialDesignOutlinedButton}"
+                            Margin="0,0,10,0"
+                            Command="{Binding QuickFilterTodayCommand}"/>
+                    <Button Content="7 ngày qua" 
+                            Style="{StaticResource MaterialDesignOutlinedButton}"
+                            Margin="0,0,10,0"
+                            Command="{Binding QuickFilterLast7DaysCommand}"/>
+                    <Button Content="30 ngày qua" 
+                            Style="{StaticResource MaterialDesignOutlinedButton}"
+                            Margin="0,0,10,0"
+                            Command="{Binding QuickFilterLast30DaysCommand}"/>
+                    <Button Content="90 ngày qua" 
+                            Style="{StaticResource MaterialDesignOutlinedButton}"
+                            Command="{Binding QuickFilterLast90DaysCommand}"/>
+                </WrapPanel>
+
+                <Separator Margin="0,10"/>
+
+                <!-- Filter Controls -->
+                <Grid Margin="0,10,0,0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <!-- Row 1 -->
+                    <DatePicker Grid.Row="0" Grid.Column="0"
+                                materialDesign:HintAssist.Hint="Từ ngày"
+                                Style="{StaticResource MaterialDesignFloatingHintDatePicker}"
+                                SelectedDate="{Binding DateFrom, Mode=TwoWay}"
+                                Margin="0,0,10,10"/>
+
+                    <DatePicker Grid.Row="0" Grid.Column="1"
+                                materialDesign:HintAssist.Hint="Đến ngày"
+                                Style="{StaticResource MaterialDesignFloatingHintDatePicker}"
+                                SelectedDate="{Binding DateTo, Mode=TwoWay}"
+                                Margin="0,0,10,10"/>
+
+                    <TextBox Grid.Row="0" Grid.Column="2"
+                             materialDesign:HintAssist.Hint="Địa chỉ IP thiết bị"
+                             Style="{StaticResource MaterialDesignFloatingHintTextBox}"
+                             Text="{Binding SelectedDeviceIp, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                             Margin="0,0,10,10"/>
+
+                    <!-- Row 2 -->
+                    <ComboBox Grid.Row="1" Grid.Column="0"
+                              materialDesign:HintAssist.Hint="Loại hoạt động"
+                              Style="{StaticResource MaterialDesignFloatingHintComboBox}"
+                              ItemsSource="{Binding ActivityTypes}"
+                              SelectedItem="{Binding SelectedActivityType, Mode=TwoWay}"
+                              Margin="0,0,10,10">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding}"/>
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+
+                    <ComboBox Grid.Row="1" Grid.Column="1"
+                              materialDesign:HintAssist.Hint="Trạng thái"
+                              Style="{StaticResource MaterialDesignFloatingHintComboBox}"
+                              ItemsSource="{Binding ActivityStatuses}"
+                              SelectedItem="{Binding SelectedStatus, Mode=TwoWay}"
+                              Margin="0,0,10,10">
+                        <ComboBox.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding}"/>
+                            </DataTemplate>
+                        </ComboBox.ItemTemplate>
+                    </ComboBox>
+
+                    <TextBox Grid.Row="1" Grid.Column="2"
+                             materialDesign:HintAssist.Hint="Tìm kiếm (Action, Details)"
+                             Style="{StaticResource MaterialDesignFloatingHintTextBox}"
+                             Text="{Binding SearchText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                             Margin="0,0,10,10">
+                        <TextBox.InputBindings>
+                            <KeyBinding Key="Enter" Command="{Binding ApplyFiltersCommand}"/>
+                        </TextBox.InputBindings>
+                    </TextBox>
+
+                    <!-- Filter Buttons -->
+                    <StackPanel Grid.Row="0" Grid.RowSpan="2" Grid.Column="3"
+                                Orientation="Vertical"
+                                VerticalAlignment="Center">
+                        <Button Content="Áp dụng"
+                                Style="{StaticResource MaterialDesignRaisedButton}"
+                                Command="{Binding ApplyFiltersCommand}"
+                                Margin="0,0,0,10"
+                                Width="100"/>
+                        <Button Content="Xóa bộ lọc"
+                                Style="{StaticResource MaterialDesignOutlinedButton}"
+                                Command="{Binding ClearFiltersCommand}"
+                                Width="100"/>
+                    </StackPanel>
+                </Grid>
+            </StackPanel>
+        </materialDesign:Card>
+
+        <!-- Statistics Cards -->
+        <Grid Grid.Row="2" Margin="0,0,0,20">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Total Activities Card -->
+            <materialDesign:Card Grid.Column="0" Margin="0,0,10,0" Padding="16">
+                <StackPanel>
+                    <TextBlock Text="Tổng hoạt động" 
+                               Style="{StaticResource MaterialDesignCaptionTextBlock}"
+                               Foreground="{DynamicResource MaterialDesignBodyLight}"/>
+                    <TextBlock Text="{Binding TotalActivities}" 
+                               Style="{StaticResource MaterialDesignHeadline4TextBlock}"
+                               FontWeight="Bold"
+                               Foreground="{DynamicResource PrimaryHueMidBrush}"/>
+                </StackPanel>
+            </materialDesign:Card>
+
+            <!-- Success Rate Card -->
+            <materialDesign:Card Grid.Column="1" Margin="0,0,10,0" Padding="16">
+                <StackPanel>
+                    <TextBlock Text="Tỷ lệ thành công" 
+                               Style="{StaticResource MaterialDesignCaptionTextBlock}"
+                               Foreground="{DynamicResource MaterialDesignBodyLight}"/>
+                    <TextBlock Style="{StaticResource MaterialDesignHeadline4TextBlock}"
+                               FontWeight="Bold"
+                               Foreground="#4CAF50">
+                        <TextBlock.Text>
+                            <MultiBinding StringFormat="{}{0:0.0}%">
+                                <Binding Path="SuccessRate"/>
+                            </MultiBinding>
+                        </TextBlock.Text>
+                    </TextBlock>
+                </StackPanel>
+            </materialDesign:Card>
+
+            <!-- Failed Count Card -->
+            <materialDesign:Card Grid.Column="2" Margin="0,0,10,0" Padding="16">
+                <StackPanel>
+                    <TextBlock Text="Số lỗi" 
+                               Style="{StaticResource MaterialDesignCaptionTextBlock}"
+                               Foreground="{DynamicResource MaterialDesignBodyLight}"/>
+                    <TextBlock Text="{Binding FailedCount}" 
+                               Style="{StaticResource MaterialDesignHeadline4TextBlock}"
+                               FontWeight="Bold"
+                               Foreground="#F44336"/>
+                </StackPanel>
+            </materialDesign:Card>
+
+            <!-- Device Count Card -->
+            <materialDesign:Card Grid.Column="3" Padding="16">
+                <StackPanel>
+                    <TextBlock Text="Số thiết bị" 
+                               Style="{StaticResource MaterialDesignCaptionTextBlock}"
+                               Foreground="{DynamicResource MaterialDesignBodyLight}"/>
+                    <TextBlock Text="{Binding DeviceCount}" 
+                               Style="{StaticResource MaterialDesignHeadline4TextBlock}"
+                               FontWeight="Bold"
+                               Foreground="{DynamicResource SecondaryHueMidBrush}"/>
+                </StackPanel>
+            </materialDesign:Card>
+        </Grid>
+
+        <!-- DataGrid -->
+        <materialDesign:Card Grid.Row="3">
+            <DataGrid ItemsSource="{Binding Activities}"
+                      SelectedItem="{Binding SelectedActivity, Mode=TwoWay}"
+                      AutoGenerateColumns="False"
+                      CanUserAddRows="False"
+                      CanUserDeleteRows="False"
+                      IsReadOnly="True"
+                      SelectionMode="Single"
+                      VirtualizingPanel.IsVirtualizing="True"
+                      VirtualizingPanel.VirtualizationMode="Recycling"
+                      EnableRowVirtualization="True">
+                
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="Thời gian" 
+                                        Binding="{Binding Timestamp, StringFormat='dd/MM/yyyy HH:mm:ss'}" 
+                                        Width="140"/>
+                    <DataGridTextColumn Header="IP thiết bị" 
+                                        Binding="{Binding DeviceIp}" 
+                                        Width="120"/>
+                    <DataGridTextColumn Header="Tên thiết bị" 
+                                        Binding="{Binding DeviceName}" 
+                                        Width="120"/>
+                    <DataGridTextColumn Header="Loại" 
+                                        Binding="{Binding ActivityType, Converter={StaticResource ActivityTypeToVietnameseConverter}}" 
+                                        Width="150"/>
+                    <DataGridTextColumn Header="Hành động" 
+                                        Binding="{Binding Action}" 
+                                        Width="*"/>
+                    <DataGridTextColumn Header="Trạng thái" 
+                                        Binding="{Binding Status}" 
+                                        Width="100"
+                                        CellStyle="{StaticResource StatusCellStyle}"/>
+                    <DataGridTextColumn Header="Thời gian (s)" 
+                                        Binding="{Binding Duration, StringFormat='{}{0:0.00}'}" 
+                                        Width="100"/>
+                    <DataGridTextColumn Header="Số bản ghi" 
+                                        Binding="{Binding RecordCount}" 
+                                        Width="100"/>
+                </DataGrid.Columns>
+
+                <DataGrid.ContextMenu>
+                    <ContextMenu>
+                        <MenuItem Header="Xem chi tiết" 
+                                  IsEnabled="False">
+                            <MenuItem.Icon>
+                                <materialDesign:PackIcon Kind="InformationOutline"/>
+                            </MenuItem.Icon>
+                        </MenuItem>
+                        <MenuItem Header="Xóa" 
+                                  Command="{Binding DeleteSelectedCommand}">
+                            <MenuItem.Icon>
+                                <materialDesign:PackIcon Kind="Delete"/>
+                            </MenuItem.Icon>
+                        </MenuItem>
+                    </ContextMenu>
+                </DataGrid.ContextMenu>
+            </DataGrid>
+        </materialDesign:Card>
+
+        <!-- Pagination Footer -->
+        <Grid Grid.Row="4" Margin="0,20,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Pagination Info -->
+            <TextBlock Grid.Column="0"
+                       Text="{Binding PaginationInfo}"
+                       VerticalAlignment="Center"
+                       Style="{StaticResource MaterialDesignBody2TextBlock}"/>
+
+            <!-- Action Buttons -->
+            <StackPanel Grid.Column="1" 
+                        Orientation="Horizontal" 
+                        HorizontalAlignment="Center">
+                <Button Content="Xóa tất cả"
+                        Style="{StaticResource MaterialDesignOutlinedButton}"
+                        Command="{Binding DeleteAllCommand}">
+                    <Button.CommandParameter>
+                        <materialDesign:PackIcon Kind="DeleteSweep"/>
+                    </Button.CommandParameter>
+                </Button>
+            </StackPanel>
+
+            <!-- Pagination Controls -->
+            <StackPanel Grid.Column="2" 
+                        Orientation="Horizontal">
+                <Button Style="{StaticResource MaterialDesignIconButton}"
+                        Command="{Binding PreviousPageCommand}"
+                        ToolTip="Trang trước">
+                    <materialDesign:PackIcon Kind="ChevronLeft"/>
+                </Button>
+                <TextBlock Text="{Binding CurrentPageDisplay}"
+                           VerticalAlignment="Center"
+                           Margin="10,0"
+                           FontWeight="SemiBold"/>
+                <Button Style="{StaticResource MaterialDesignIconButton}"
+                        Command="{Binding NextPageCommand}"
+                        ToolTip="Trang sau">
+                    <materialDesign:PackIcon Kind="ChevronRight"/>
+                </Button>
+            </StackPanel>
+        </Grid>
+
+        <!-- Loading Overlay -->
+        <Grid Grid.RowSpan="5"
+              Background="#80000000"
+              Visibility="{Binding IsBusy, Converter={StaticResource BooleanToVisibilityConverter}}">
+            <StackPanel HorizontalAlignment="Center" 
+                        VerticalAlignment="Center">
+                <ProgressBar Style="{StaticResource MaterialDesignCircularProgressBar}"
+                             Value="0"
+                             IsIndeterminate="True"
+                             Width="50"
+                             Height="50"/>
+                <TextBlock Text="Đang tải dữ liệu..."
+                           Foreground="White"
+                           Margin="0,20,0,0"
+                           FontSize="16"/>
+            </StackPanel>
+        </Grid>
+    </Grid>
+</UserControl>

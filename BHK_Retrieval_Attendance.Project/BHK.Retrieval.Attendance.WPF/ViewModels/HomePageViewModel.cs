@@ -3,6 +3,8 @@ using System.Threading.Tasks;
 using System.Windows.Input;
 using BHK.Retrieval.Attendance.WPF.Services.Interfaces;
 using BHK.Retrieval.Attendance.WPF.ViewModels.Base;
+using BHK.Retrieval.Attendance.Core.Interfaces;
+using BHK.Retrieval.Attendance.Core.Enums;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using BHK.Retrieval.Attendance.Shared.Options;
@@ -18,6 +20,7 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
         private readonly ILogger<HomePageViewModel> _logger;
         private readonly DeviceOptions _deviceOptions;
         private readonly INavigationService _navigationService;
+        private readonly IActivityHistoryService _activityHistoryService;
 
         private string _ipAddress;
         private int _port;
@@ -29,6 +32,7 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
         private AttendanceManagementViewModel _attendanceManagementViewModel;
         private SettingsViewModel _settingsViewModel;
         private AboutViewModel _aboutViewModel;
+        private ActivityHistoryViewModel _activityHistoryViewModel;
         
         // ✅ Bổ sung thêm thông tin thiết bị
         private string _serialNumber;
@@ -43,15 +47,18 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
             ILogger<HomePageViewModel> logger,
             IOptions<DeviceOptions> deviceOptions,
             INavigationService navigationService,
+            IActivityHistoryService activityHistoryService,
             EmployeeViewModel employeeViewModel,
             AttendanceManagementViewModel attendanceManagementViewModel,
             SettingsViewModel settingsViewModel,
-            AboutViewModel aboutViewModel)
+            AboutViewModel aboutViewModel,
+            ActivityHistoryViewModel activityHistoryViewModel)
         {
             _deviceService = deviceService ?? throw new ArgumentNullException(nameof(deviceService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _deviceOptions = deviceOptions?.Value ?? throw new ArgumentNullException(nameof(deviceOptions));
             _navigationService = navigationService ?? throw new ArgumentNullException(nameof(navigationService));
+            _activityHistoryService = activityHistoryService ?? throw new ArgumentNullException(nameof(activityHistoryService));
             
             // ✅ THÊM: Khởi tạo EmployeeViewModel
             _employeeViewModel = employeeViewModel ?? throw new ArgumentNullException(nameof(employeeViewModel));
@@ -64,6 +71,9 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
 
             // ✅ THÊM: Khởi tạo AboutViewModel
             _aboutViewModel = aboutViewModel ?? throw new ArgumentNullException(nameof(aboutViewModel));
+
+            // ✅ THÊM: Khởi tạo ActivityHistoryViewModel
+            _activityHistoryViewModel = activityHistoryViewModel ?? throw new ArgumentNullException(nameof(activityHistoryViewModel));
 
             // Initialize disconnect command
             DisconnectAndReturnCommand = new RelayCommand(async _ => await DisconnectAndReturnAsync(), _ => true);
@@ -216,6 +226,15 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
         }
 
         /// <summary>
+        /// ViewModel cho trang lịch sử hoạt động
+        /// </summary>
+        public ActivityHistoryViewModel ActivityHistoryViewModel
+        {
+            get => _activityHistoryViewModel;
+            set => SetProperty(ref _activityHistoryViewModel, value);
+        }
+
+        /// <summary>
         /// Command để ngắt kết nối và quay về màn hình kết nối
         /// </summary>
         public ICommand DisconnectAndReturnCommand { get; }
@@ -337,6 +356,15 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
                 await _deviceService.DisconnectAsync();
                 _logger.LogInformation("✅ Device disconnected successfully");
                 
+                // ✅ Log disconnect activity to Activity History
+                await _activityHistoryService.LogSuccessAsync(
+                    IpAddress,
+                    null, // Device name not available in HomePage
+                    ActivityType.Connection,
+                    "Ngắt kết nối thiết bị",
+                    $"Device Model: {DeviceModel}, Disconnected from HomePage"
+                );
+                
                 // Chuyển về màn hình kết nối
                 _navigationService.NavigateTo<DeviceConnectionViewModel>();
                 _logger.LogInformation("✅ Navigated back to DeviceConnectionView");
@@ -344,6 +372,16 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error during disconnect and return");
+                
+                // ✅ Log failed disconnect to Activity History
+                await _activityHistoryService.LogFailedAsync(
+                    IpAddress,
+                    null,
+                    ActivityType.Connection,
+                    "Ngắt kết nối thiết bị thất bại",
+                    ex.Message,
+                    $"Device Model: {DeviceModel}"
+                );
             }
         }
 

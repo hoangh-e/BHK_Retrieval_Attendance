@@ -13,6 +13,9 @@ using Microsoft.Extensions.Logging;
 using BHK.Retrieval.Attendance.WPF.Services.Interfaces;
 using BHK.Retrieval.Attendance.Core.DTOs.Responses;
 using BHK.Retrieval.Attendance.WPF.Models.Data;
+using BHK.Retrieval.Attendance.Core.Interfaces;
+using BHK.Retrieval.Attendance.Core.DTOs;
+using BHK.Retrieval.Attendance.Core.Enums;
 
 namespace BHK.Retrieval.Attendance.WPF.ViewModels.Dialogs
 {
@@ -24,6 +27,7 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels.Dialogs
     {
         private readonly IPathConfigurationService _pathConfig;
         private readonly IExcelTableService _excelService;
+        private readonly IActivityHistoryService _activityHistoryService;
         private readonly ILogger<ExportAttendanceDialogViewModel> _logger;
         private List<AttendanceExportDto> _data;
         private Window? _dialog;
@@ -83,10 +87,12 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels.Dialogs
         public ExportAttendanceDialogViewModel(
             IPathConfigurationService pathConfig,
             IExcelTableService excelService,
+            IActivityHistoryService activityHistoryService,
             ILogger<ExportAttendanceDialogViewModel> logger)
         {
             _pathConfig = pathConfig ?? throw new ArgumentNullException(nameof(pathConfig));
             _excelService = excelService ?? throw new ArgumentNullException(nameof(excelService));
+            _activityHistoryService = activityHistoryService ?? throw new ArgumentNullException(nameof(activityHistoryService));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
             _data = new List<AttendanceExportDto>();
 
@@ -242,6 +248,27 @@ namespace BHK.Retrieval.Attendance.WPF.ViewModels.Dialogs
 
                 StatusMessage = $"Đã xuất {_data.Count} bản ghi thành công!";
                 _logger.LogInformation($"Exported {_data.Count} records to {fullFilePath}");
+
+                // ✅ Log vào ActivityHistory
+                try
+                {
+                    await _activityHistoryService.LogActivityAsync(new ActivityHistoryDto
+                    {
+                        Timestamp = DateTime.Now,
+                        DeviceIp = "System",
+                        DeviceName = "Application",
+                        ActivityType = ActivityType.Export,
+                        Action = $"Xuất báo cáo chấm công ({TableName})",
+                        Status = ActivityStatus.Success,
+                        Duration = TimeSpan.Zero,
+                        RecordCount = _data.Count,
+                        Details = $"File: {GeneratedFileName}"
+                    });
+                }
+                catch (Exception logEx)
+                {
+                    _logger.LogWarning(logEx, "Failed to log export activity to ActivityHistory");
+                }
 
                 System.Windows.MessageBox.Show($"Đã xuất {_data.Count} bản ghi vào file '{GeneratedFileName}' thành công!\n\nĐường dẫn: {fullFilePath}",
                     "Thành công",
