@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Thông tin đăng nhập</title>
+  <style>
+    body{font-family:Arial, sans-serif; max-width:720px; margin:40px auto; padding:0 16px;}
+    .card{border:1px solid #ddd; border-radius:10px; padding:18px;}
+    .row{margin:10px 0;}
+    code{background:#f6f6f6; padding:2px 6px; border-radius:6px;}
+    button{padding:8px 12px; cursor:pointer;}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>Thông tin đăng nhập</h2>
+
+    <div class="row"><b>Tài khoản:</b> <code>dev01@bhk.vn</code></div>
+
+    <div class="row">
+      <b>Mật khẩu:</b>
+      <code id="pwd" style="filter: blur(6px); user-select:none;">xyz</code>
+      <button id="toggle">Hiện</button>
+    </div>
+
+    <small>Lưu ý: Không chia sẻ thông tin này cho người khác.</small>
+  </div>
+
+  <script>
+    const pwd = document.getElementById('pwd');
+    const btn = document.getElementById('toggle');
+    let shown = false;
+    btn.onclick = () => {
+      shown = !shown;
+      pwd.style.filter = shown ? 'none' : 'blur(6px)';
+      pwd.style.userSelect = shown ? 'text' : 'none';
+      btn.textContent = shown ? 'Ẩn' : 'Hiện';
+    };
+  </script>
+</body>
+</html>
