@@ -132,6 +132,12 @@ namespace BHK.Retrieval.Attendance.WPF.Configuration.DI
             services.AddSingleton<NavigationService>();
             services.AddSingleton<INavigationService>(sp => sp.GetRequiredService<NavigationService>());
 
+            // ✅ HttpClient for UpdateService
+            services.AddHttpClient();
+
+            // ✅ Update Service - Singleton
+            services.AddSingleton<IUpdateService, UpdateService>();
+
             // TODO: Thêm các services khác khi implement
         }
 
@@ -160,6 +166,9 @@ namespace BHK.Retrieval.Attendance.WPF.Configuration.DI
             // ✅ Export Dialog ViewModels
             services.AddTransient<ViewModels.Dialogs.ExportAttendanceDialogViewModel>();
             services.AddTransient<ViewModels.Dialogs.ExportEmployeeDialogViewModel>();
+            
+            // ✅ Update Dialog ViewModel
+            services.AddTransient<ViewModels.Dialogs.UpdateDialogViewModel>();
             
             // ✅ Activity History ViewModel
             services.AddTransient<ActivityHistoryViewModel>();

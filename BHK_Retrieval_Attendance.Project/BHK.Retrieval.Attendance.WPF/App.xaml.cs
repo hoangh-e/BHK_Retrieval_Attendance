@@ -69,6 +69,9 @@ namespace BHK.Retrieval.Attendance.WPF
 
                 // Show MainWindow instead of DeviceConnectionView directly
                 ShowMainWindow();
+
+                // ✅ Kiểm tra cập nhật (async, không block UI)
+                _ = CheckForUpdatesAsync();
             }
             catch (Exception ex)
             {
@@ -222,6 +225,59 @@ namespace BHK.Retrieval.Attendance.WPF
                     ex.Message,
                     "Lỗi khởi động"
                 );
+            }
+        }
+
+        /// <summary>
+        /// Kiểm tra cập nhật phần mềm (chạy ngầm, không block UI)
+        /// </summary>
+        private async System.Threading.Tasks.Task CheckForUpdatesAsync()
+        {
+            try
+            {
+                if (_host == null)
+                    return;
+
+                // Đợi 3 giây để app khởi động hoàn toàn
+                await System.Threading.Tasks.Task.Delay(3000);
+
+                Log.Information("Checking for application updates...");
+
+                var updateService = _host.Services.GetRequiredService<Core.Interfaces.IUpdateService>();
+                var currentVersion = typeof(App).Assembly.GetName().Version?.ToString() ?? "1.0.0";
+
+                var updateInfo = await updateService.CheckForUpdateAsync(currentVersion);
+
+                if (updateInfo != null)
+                {
+                    Log.Information("Update available: {Version}", updateInfo.Version);
+
+                    // Hiển thị dialog trên UI thread
+                    await Dispatcher.InvokeAsync(() =>
+                    {
+                        try
+                        {
+                            var viewModel = _host.Services.GetRequiredService<ViewModels.Dialogs.UpdateDialogViewModel>();
+                            viewModel.SetUpdateInfo(updateInfo);
+
+                            var dialog = new Views.Dialogs.UpdateDialog(viewModel);
+                            dialog.ShowDialog();
+                        }
+                        catch (Exception ex)
+                        {
+                            Log.Error(ex, "Error showing update dialog");
+                        }
+                    });
+                }
+                else
+                {
+                    Log.Information("No updates available");
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Warning(ex, "Error checking for updates");
+                // Không hiển thị lỗi cho user, chỉ log
             }
         }
 
